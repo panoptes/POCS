@@ -1,13 +1,19 @@
+"""Abstract base and helpers for camera filter wheels.
+
+Defines AbstractFilterWheel with common properties (position, current_filter,
+ready state) and movement helpers shared by concrete wheel drivers.
+"""
+
 import threading
+from abc import ABCMeta, abstractmethod
 from collections import abc
-from abc import ABCMeta
-from abc import abstractmethod
 from contextlib import suppress
 
 from astropy import units as u
-from panoptes.pocs.base import PanBase
 from panoptes.utils import error
 from panoptes.utils.utils import listify
+
+from panoptes.pocs.base import PanBase
 
 
 class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
@@ -30,16 +36,19 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
             apply when moving between filters. If None (default), no offsets are applied.
     """
 
-    def __init__(self,
-                 name='Generic Filter Wheel',
-                 model='simulator',
-                 camera=None,
-                 filter_names=None,
-                 timeout=None,
-                 serial_number='XXXXXX',
-                 dark_position=None,
-                 focus_offsets=None,
-                 *args, **kwargs):
+    def __init__(
+        self,
+        name="Generic Filter Wheel",
+        model="simulator",
+        camera=None,
+        filter_names=None,
+        timeout=None,
+        serial_number="XXXXXX",
+        dark_position=None,
+        focus_offsets=None,
+        *args,
+        **kwargs,
+    ):
         super().__init__(*args, **kwargs)
 
         # Define the focus offsets
@@ -75,7 +84,7 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
         self._move_event = threading.Event()
         self._move_event.set()
 
-        self.logger.debug('Filter wheel created: {}'.format(self))
+        self.logger.debug(f"Filter wheel created: {self}")
 
     ##################################################################################################
     # Properties
@@ -83,32 +92,33 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
 
     @property
     def model(self):
-        """ Model of the filter wheel """
+        """Model of the filter wheel"""
         return self._model
 
     @property
     def name(self):
-        """ Name of the filter wheel """
+        """Name of the filter wheel"""
         return self._name
 
     @property
     def uid(self):
-        """ A serial number of the filter wheel """
+        """A serial number of the filter wheel"""
         return self._serial_number
 
     @property
     def is_connected(self):
-        """ Is the filterwheel available """
+        """Is the filterwheel available"""
         return self._connected
 
     @property
     @abstractmethod
     def is_moving(self):
-        """ Is the filterwheel currently moving """
+        """Is the filterwheel currently moving"""
         raise NotImplementedError
 
     @property
     def is_ready(self):
+        """Whether the wheel is connected and not currently moving."""
         # A filterwheel is 'ready' if it is connected and isn't currently moving.
         return self.is_connected and not self.is_moving
 
@@ -122,35 +132,46 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
 
     @camera.setter
     def camera(self, camera):
+        """Attach this filter wheel to a camera.
+
+        Args:
+            camera (AbstractCamera): The associated camera instance.
+        """
         if self._camera and self._camera.uid != camera.uid:
-            self.logger.warning(f"{self} assigned to {self.camera.name}, "
-                                f"skipping attempted assignment to {camera.name}!")
+            self.logger.warning(
+                f"{self} assigned to {self.camera.name}, skipping attempted assignment to {camera.name}!"
+            )
         elif self._camera:
             self._camera = camera
 
     @property
     def filter_names(self):
-        """ List of the names of the filters installed in the filter wheel """
+        """List of the names of the filters installed in the filter wheel"""
         return self._filter_names
 
     @property
     def n_positions(self):
-        """ Number of positions in the filter wheel """
+        """Number of positions in the filter wheel"""
         return self._n_positions
 
     @property
     @abstractmethod
     def position(self):
-        """ Current integer position of the filter wheel """
+        """Current integer position of the filter wheel"""
         raise NotImplementedError
 
     @position.setter
     def position(self, position):
+        """Set the filter wheel position.
+
+        Args:
+            position (int | str): New position (1-based index) or a filter name/prefix.
+        """
         self.move_to(position, blocking=True)
 
     @property
     def current_filter(self):
-        """ Name of the filter in the current position """
+        """Name of the filter in the current position"""
         try:
             filter_name = self.filter_name(self.position)
         except ValueError:
@@ -160,10 +181,20 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
 
     @current_filter.setter
     def current_filter(self, filter_name):
+        """Move to the specified filter.
+
+        Args:
+            filter_name (str | int): Filter name or 1-based position.
+        """
         self.move_to(filter_name, blocking=True)
 
     @property
     def is_unidirectional(self):
+        """Whether the filter wheel enforces one-way rotation.
+
+        Returns:
+            bool: True if the wheel only rotates in a single direction.
+        """
         raise NotImplementedError
 
     ##################################################################################################
@@ -172,11 +203,11 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
 
     @abstractmethod
     def connect(self):
-        """ Connect to filter wheel """
+        """Connect to filter wheel"""
         raise NotImplementedError
 
     def filter_name(self, position):
-        """ Name of the filter in the given integer position. """
+        """Name of the filter in the given integer position."""
         # Validate input by passing it through _parse_position(), may raise ValueError
         int_position = self._parse_position(position)
         return self.filter_names[int_position - 1]
@@ -217,15 +248,15 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
         assert self.is_connected, self.logger.error("Filter wheel must be connected to move")
 
         if self.is_moving:
-            msg = f'Attempt to move filter wheel {self} while already moving, ignoring.'
+            msg = f"Attempt to move filter wheel {self} while already moving, ignoring."
             self.logger.error(msg)
             raise error.PanError(msg)
 
         if self.camera is not None:
-
             if self.camera.is_exposing:
-                raise error.PanError(f'Attempt to move filter wheel {self} while camera is'
-                                     ' exposing, ignoring.')
+                raise error.PanError(
+                    f"Attempt to move filter wheel {self} while camera is exposing, ignoring."
+                )
 
             if self.camera.has_focuser:
                 try:
@@ -238,8 +269,7 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
 
         if new_position == self.position:
             # Already at requested position, don't go nowhere.
-            self.logger.debug(f"{self} already at position {new_position}"
-                              f" ({self.filter_name(new_position)})")
+            self.logger.debug(f"{self} already at position {new_position} ({self.filter_name(new_position)})")
             return self._move_event
 
         # Store current position so we can revert back with move_to_light_position()
@@ -248,8 +278,7 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
         else:
             self._last_light_position = new_position
 
-        self.logger.info("Moving {} to position {} ({})".format(
-            self, new_position, self.filter_name(new_position)))
+        self.logger.info(f"Moving {self} to position {new_position} ({self.filter_name(new_position)})")
         self._move_event.clear()
         self._move_to(new_position)  # Private method to actually perform the move.
 
@@ -259,7 +288,7 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
         return self._move_event
 
     def move_to_dark_position(self, blocking=False):
-        """ Move to filterwheel position for taking darks. """
+        """Move to filterwheel position for taking darks."""
         try:
             self.logger.debug(f"Ensuring filterwheel {self} is at dark position.")
             return self.move_to(self._dark_position, blocking=blocking)
@@ -268,13 +297,12 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
             raise error.NotFound(msg)
 
     def move_to_light_position(self, blocking=False):
-        """ Return to last filterwheel position from before taking darks. """
+        """Return to last filterwheel position from before taking darks."""
         try:
             self.logger.debug(f"Ensuring filterwheel {self} is not at dark position.")
             return self.move_to(self._last_light_position, blocking=blocking)
         except ValueError:
-            msg = f"Request to revert to last light position but {self} has" + \
-                  "no light position stored."
+            msg = f"Request to revert to last light position but {self} has" + "no light position stored."
             raise error.NotFound(msg)
 
     ##################################################################################################
@@ -302,8 +330,10 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
                         int_position = i + 1  # 1 based numbering for filter wheel positions
                     else:
                         # Already matched at least once
-                        msg = "More than one filter name matches '{}', using '{}'".format(
-                            position, self.filter_names[int_position - 1])
+                        msg = (
+                            f"More than one filter name matches '{position}', "
+                            f"using '{self.filter_names[int_position - 1]}'"
+                        )
                         self.logger.warning(msg)
                         break
 
@@ -317,21 +347,21 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
                 raise ValueError(msg)
 
         if int_position < 1 or int_position > self.n_positions:
-            msg = f'Position must be between 1 and {self.n_positions}, got {int_position}'
+            msg = f"Position must be between 1 and {self.n_positions}, got {int_position}"
             self.logger.error(msg)
             raise ValueError(msg)
 
         return int_position
 
     def _add_fits_keywords(self, header):
-        header.set('FW-NAME', self.name, 'Filter wheel name')
-        header.set('FW-MOD', self.model, 'Filter wheel model')
-        header.set('FW-ID', self.uid, 'Filter wheel serial number')
-        header.set('FW-POS', self.position, 'Filter wheel position')
+        header.set("FW-NAME", self.name, "Filter wheel name")
+        header.set("FW-MOD", self.model, "Filter wheel model")
+        header.set("FW-ID", self.uid, "Filter wheel serial number")
+        header.set("FW-POS", self.position, "Filter wheel position")
         return header
 
     def _apply_filter_focus_offset(self, new_position):
-        """ Apply the filter-specific focus offset.
+        """Apply the filter-specific focus offset.
         Args:
             new_position (int or str): The new filter name or filter position.
         """
@@ -349,18 +379,20 @@ class AbstractFilterWheel(PanBase, metaclass=ABCMeta):
         current_offset = self.focus_offsets.get(self.current_filter, 0)
         focus_offset = new_offset - current_offset
 
-        self.logger.debug(f"Applying focus position offset of {focus_offset} moving from filter "
-                          f"{self.current_filter} to {new_filter}.")
+        self.logger.debug(
+            f"Applying focus position offset of {focus_offset} moving from filter "
+            f"{self.current_filter} to {new_filter}."
+        )
         self.camera.focuser.move_by(focus_offset)
 
     def __str__(self):
-        s = f'{self.name} ({self.uid})'
+        s = f"{self.name} ({self.uid})"
 
         try:
             with suppress(AttributeError):
-                s += f' [Camera: {self.camera.name}]'
+                s += f" [Camera: {self.camera.name}]"
         except Exception as e:  # noqa
-            self.logger.warning(f'Unable to stringify filterwheel: e={e!r}')
+            self.logger.warning(f"Unable to stringify filterwheel: e={e!r}")
             s = str(self.__class__)
 
         return s

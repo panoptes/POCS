@@ -6,17 +6,39 @@ command_version: 3.10
 cmd_pre: ':'
 cmd_post: '#'
 
+# Mount formatting
+location_units: centiarcsecond
+ra_coords_units: centiarcsecond
+dec_coords_units: centiarcsecond
+latitude_format: '{:+09.0f}'
+longitude_format: '{:+09.0f}'
+ra_format: '{:09.0f}'
+dec_format: '{:+09.0f}'
+status_format: >-
+  (?P<longitude>[+\-]\d{8}) 
+  (?P<latitude>\d{8})
+  (?P<gps>[0-2])
+  (?P<state>[0-7]) 
+  (?P<tracking>[0-4]) 
+  (?P<movement_speed>[1-9]) 
+  (?P<time_source>[1-3])
+  (?P<hemisphere>[01])
+coords_format: >-
+  (?P<dec_sign>[\+\-])(?P<dec>\d{8}) 
+  (?P<ra>\d{9}) 
+  (?P<pier_side>\d)
+  (?P<pointing_state>\d)
+
 # Telescope Information
 get_status:
   cmd: GLS
   response: sTTTTTTTTTTTTTTTTnnnnnn
-get_local_time:
+get_timestamp:
   cmd: GUT
   response: sMMMnXXXXXXXXXXXXX
-
 get_coordinates:
   cmd: GEP
-  response: sTTTTTTTTTTTTTTTTnn
+  response: sTTTTTTTTTTTTTTTTTnn
 get_coordinates_altaz:
   cmd: GAC
   response: sTTTTTTTTTTTTTTTTT
@@ -32,7 +54,7 @@ get_max_slew_speed:
 get_altitude_limit:
   cmd: GAL
   response: snn
-.get_guide_rate:
+get_guide_rate:
   cmd: AG
   response: nnnn
 get_meridian_treatment:
@@ -188,7 +210,7 @@ move_south:
 move_west:
   cmd: mw
 stop_moving:
-  cmd: q
+  cmd: Q
   response: 1
 stop_moving_horizontal:
   cmd: qR
@@ -253,4 +275,4 @@ firmware_radec:
   response: YYMMDDYYMMDD
 mount_info:
   cmd: MountInfo
-  response: '0030'
+  response: '0040'

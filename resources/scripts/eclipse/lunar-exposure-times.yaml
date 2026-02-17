@@ -1,0 +1,31 @@
+settings:
+  - shutter_index: 1
+    exptime: '30'
+    iso: 100
+  - shutter_index: 4
+    exptime: '15'
+    iso: 100
+  - shutter_index: 10
+    exptime: '4'
+    iso: 100
+  - shutter_index: 16
+    exptime: '1'
+    iso: 100
+  - shutter_index: 22
+    exptime: 1/4
+    iso: 100
+  - shutter_index: 28
+    exptime: 1/15
+    iso: 100
+  - shutter_index: 34
+    exptime: 1/60
+    iso: 100
+  - shutter_index: 40
+    exptime: 1/250
+    iso: 100
+  - shutter_index: 46
+    exptime: 1/1000
+    iso: 100
+  - shutter_index: 52
+    exptime: 1/4000
+    iso: 100

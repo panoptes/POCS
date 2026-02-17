@@ -1,3 +1,11 @@
+"""Base scheduler primitives and common helpers.
+
+Defines BaseScheduler, an abstract class that loads field definitions
+and manages the list of Observation objects, current selection, and common
+properties used during scheduling. Concrete schedulers subclass this and
+implement get_observation().
+"""
+
 import os
 from abc import abstractmethod
 from collections import OrderedDict
@@ -5,10 +13,8 @@ from contextlib import suppress
 
 from astroplan import Observer
 from astropy import units as u
-from astropy.coordinates import get_moon
-
+from astropy.coordinates import get_body
 from panoptes.utils import error
-from panoptes.utils.library import load_module
 from panoptes.utils.serializers import from_yaml
 from panoptes.utils.time import current_time
 
@@ -17,9 +23,13 @@ from panoptes.pocs.scheduler.observation.base import Observation
 
 
 class BaseScheduler(PanBase):
+    """Abstract base class for schedulers.
 
-    def __init__(self, observer, fields_list=None, fields_file=None, constraints=None, *args,
-                 **kwargs):
+    Loads fields and constraints, manages observations and the current
+    selection, and provides helpers used by concrete schedulers.
+    """
+
+    def __init__(self, observer, fields_list=None, fields_file=None, constraints=None, *args, **kwargs):
         """Loads `~pocs.scheduler.field.Field`s from a field.
 
         Note:
@@ -53,7 +63,7 @@ class BaseScheduler(PanBase):
         self.constraints = constraints or list()
         self.observed_list = OrderedDict()
 
-        if self.get_config('scheduler.check_file', default=True):
+        if self.get_config("scheduler.check_file", default=True):
             self.logger.debug("Reading fields list.")
             self.read_field_list()
 
@@ -62,9 +72,10 @@ class BaseScheduler(PanBase):
 
     @property
     def status(self):
+        """dict: Summary of constraints and current observation."""
         return {
-            'constraints': self.constraints,
-            'current_observation': self.current_observation,
+            "constraints": self.constraints,
+            "current_observation": self.current_observation,
         }
 
     @property
@@ -82,6 +93,7 @@ class BaseScheduler(PanBase):
 
     @property
     def has_valid_observations(self):
+        """bool: True if one or more observations are currently available."""
         return len(self._observations.keys()) > 0
 
     @property
@@ -99,7 +111,12 @@ class BaseScheduler(PanBase):
 
     @current_observation.setter
     def current_observation(self, new_observation):
+        """Update the current observation and record sequencing metadata.
 
+        Args:
+            new_observation (Observation | None): New observation to select, or
+                None to clear and reset the prior current observation.
+        """
         if self.current_observation is None:
             # If we have no current observation but do have a new one, set seq_time
             # and add to the list
@@ -122,7 +139,7 @@ class BaseScheduler(PanBase):
                     # Add the new observation to the list
                     self.observed_list[new_observation.seq_time] = new_observation
 
-        self.logger.info("Setting new observation to {}".format(new_observation))
+        self.logger.info(f"Setting new observation to {new_observation}")
         self._current_observation = new_observation
 
     @property
@@ -144,6 +161,12 @@ class BaseScheduler(PanBase):
 
     @fields_file.setter
     def fields_file(self, new_file):
+        """Set the path to the fields YAML and reload observations.
+
+        Args:
+            new_file (str | os.PathLike | None): Path to a YAML file describing
+                fields; if None, keeps the in-memory fields_list.
+        """
         self.clear_available_observations()
 
         self._fields_file = new_file
@@ -168,6 +191,11 @@ class BaseScheduler(PanBase):
 
     @fields_list.setter
     def fields_list(self, new_list):
+        """Replace the in-memory list of field configs and rebuild observations.
+
+        Args:
+            new_list (list[dict] | None): Sequence of field configuration dicts.
+        """
         self.clear_available_observations()
 
         self._fields_list = new_list
@@ -185,8 +213,8 @@ class BaseScheduler(PanBase):
         self._observations = dict()
 
     def reset_observed_list(self):
-        """Reset the observed list """
-        self.logger.debug('Resetting observed list')
+        """Reset the observed list"""
+        self.logger.debug("Resetting observed list")
         self.observed_list = OrderedDict()
 
     def observation_available(self, observation, time):
@@ -199,7 +227,7 @@ class BaseScheduler(PanBase):
         """
         return self.observer.target_is_up(time, observation.field, horizon=30 * u.degree)
 
-    def add_observation(self, observation_config, **kwargs):
+    def add_observation(self, observation_config: dict, **kwargs):
         """Adds an `Observation` to the scheduler.
 
         Args:
@@ -232,13 +260,12 @@ class BaseScheduler(PanBase):
 
     def read_field_list(self):
         """Reads the field file and creates valid `Observations`."""
-        self.logger.debug(f'Reading fields from file: {self.fields_file}')
+        self.logger.debug(f"Reading fields from file: {self.fields_file}")
         if self._fields_file is not None:
-
             if not os.path.exists(self.fields_file):
                 raise FileNotFoundError
 
-            with open(self.fields_file, 'r') as f:
+            with open(self.fields_file) as f:
                 self._fields_list = from_yaml(f.read())
 
         if self._fields_list is not None:
@@ -250,9 +277,9 @@ class BaseScheduler(PanBase):
 
     def set_common_properties(self, time):
         """Sets some properties common to all observations, such as end of night, moon, etc."""
-        horizon_limit = self.get_config('location.observe_horizon', default=-18 * u.degree)
+        horizon_limit = self.get_config("location.observe_horizon", default=-18 * u.degree)
         self.common_properties = {
-            'end_of_night': self.observer.tonight(time=time, horizon=horizon_limit)[-1],
-            'moon': get_moon(time, self.observer.location),
-            'observed_list': self.observed_list
+            "end_of_night": self.observer.tonight(time=time, horizon=horizon_limit)[-1],
+            "moon": get_body("moon", time, self.observer.location),
+            "observed_list": self.observed_list,
         }

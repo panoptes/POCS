@@ -1,48 +1,57 @@
-from abc import abstractmethod
+"""Abstract base class and helpers for telescope mounts.
+
+Provides AbstractMount, a hardware-agnostic base with common properties
+(status, tracking, parking, slewing) and orchestration helpers (target
+handling, coordinate conversion, command table mapping). Concrete mount
+implementations (iOptron, Bisque, simulator, etc.) subclass this and
+implement device-specific read/write/query and motion control.
+"""
+
 import time
+from abc import abstractmethod
 from pathlib import Path
 
 from astropy import units as u
-from astropy.coordinates import EarthLocation
-from astropy.coordinates import SkyCoord
-from panoptes.pocs.base import PanBase
-from panoptes.utils.serializers import from_yaml
-from panoptes.utils.time import current_time
+from astropy.coordinates import EarthLocation, SkyCoord
 from panoptes.utils import error
-from panoptes.utils.time import CountdownTimer
+from panoptes.utils.serializers import from_yaml
+from panoptes.utils.time import CountdownTimer, current_time
+from panoptes.utils.utils import get_quantity_value
+
+from panoptes.pocs.base import PanBase
 
 
 class AbstractMount(PanBase):
     """
-        Abstract Base class for controlling a mount. This provides the basic functionality
-        for the mounts. Sub-classes should override the `initialize` method for mount-specific
-        issues as well as any helper methods specific mounts might need. See
-        "NotImplemented Methods" section of this module.
+    Abstract Base class for controlling a mount. This provides the basic functionality
+    for the mounts. Sub-classes should override the `initialize` method for mount-specific
+    issues as well as any helper methods specific mounts might need. See
+    "NotImplemented Methods" section of this module.
 
-        Sets the following properties:
+    Sets the following properties:
 
-            - self.non_sidereal_available = False
-            - self.PEC_available = False
-            - self._is_initialized = False
+        - self.non_sidereal_available = False
+        - self.PEC_available = False
+        - self._is_initialized = False
 
-        Args:
-            config (dict):              Custom configuration passed to base mount. This is usually
-                                        read from the main system config.
+    Args:
+        config (dict):              Custom configuration passed to base mount. This is usually
+                                    read from the main system config.
 
-            commands (dict):            Commands for the telescope. These are read from a yaml file
-                                        that maps the mount-specific commands to common commands.
+        commands (dict):            Commands for the telescope. These are read from a yaml file
+                                    that maps the mount-specific commands to common commands.
 
-            location (EarthLocation):   An `astropy.coordinates.EarthLocation` that
-                contains location information.
+        location (EarthLocation):   An `astropy.coordinates.EarthLocation` that
+            contains location information.
 
     """
 
     def __init__(self, location, commands=None, *args, **kwargs):
-        super(AbstractMount, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         assert isinstance(location, EarthLocation)
 
         # Create an object for just the mount config items
-        self.mount_settings = self.get_config('mount.settings', dict())
+        self.mount_settings = self.get_config("mount.settings", dict())
 
         self.logger.debug(f"Mount settings: {self.mount_settings}")
 
@@ -51,13 +60,14 @@ class AbstractMount(PanBase):
         self._setup_commands(commands)
         self.logger.debug("Mount commands set up")
 
+        self._mount_version = None
+
         # Set the initial location
         self._location = location
 
         # Get mount settings from config.
-        self.non_sidereal_available = self.mount_settings.setdefault('non_sidereal_available',
-                                                                     False)
-        self.PEC_available = self.mount_settings.setdefault('PEC_available', False)
+        self.non_sidereal_available = self.mount_settings.setdefault("non_sidereal_available", False)
+        self.PEC_available = self.mount_settings.setdefault("PEC_available", False)
 
         # Initial states
         self._is_connected = False
@@ -68,34 +78,30 @@ class AbstractMount(PanBase):
         self._at_mount_park = True
         self._is_tracking = False
         self._is_home = False
-        self._state = 'Parked'
+        self._state = "Parked"
 
-        self.sidereal_rate = ((360 * u.degree).to(u.arcsec) / (86164 * u.second))
+        self.sidereal_rate = (360 * u.degree).to(u.arcsec) / (86164 * u.second)
         self.ra_guide_rate = 0.9  # Sidereal
         self.dec_guide_rate = 0.9  # Sidereal
         self._tracking_rate = 1.0  # Sidereal
-        self._tracking = 'Sidereal'
-        self.min_tracking_threshold = self.mount_settings.setdefault('min_tracking_threshold',
-                                                                     100)  # ms
-        self.max_tracking_threshold = self.mount_settings.setdefault('max_tracking_threshold',
-                                                                     99999)  # ms
+        self._tracking = "Sidereal"
+        self.min_tracking_threshold = self.mount_settings.setdefault("min_tracking_threshold", 100)  # ms
+        self.max_tracking_threshold = self.mount_settings.setdefault("max_tracking_threshold", 99999)  # ms
 
-        self._movement_speed = ''
-
-        self._status_lookup = dict()
+        self._movement_speed = ""
 
         # Set initial coordinates
         self._target_coordinates = None
         self._current_coordinates = None
         self._park_coordinates = None
-        self.brand = self.get_config('mount.brand', '')
-        self.model = self.get_config('mount.model', '')
-        self.port = self.get_config('mount.serial.port')
+        self.brand = self.get_config("mount.brand", "")
+        self.model = self.get_config("mount.model", "")
+        self.port = self.get_config("mount.serial.port")
 
     def __str__(self):
-        mount_str = f'{self.brand} {self.model}'
+        mount_str = f"{self.brand} {self.model}"
         if self.port is not None:
-            mount_str = f'{mount_str} {self.port}'
+            mount_str = f"{mount_str} {self.port}"
 
         return mount_str
 
@@ -106,42 +112,69 @@ class AbstractMount(PanBase):
 
     @abstractmethod
     def initialize(self, *arg, **kwargs):
+        """Initialize the mount hardware and prepare for use.
+
+        Subclasses should perform device-specific setup such as establishing
+        communications, homing, and applying any required configuration so the
+        mount is ready to slew and track.
+        """
         raise NotImplementedError
 
     def disconnect(self):
-        self.logger.info('Disconnecting mount')
+        """Disconnect from the mount, parking if necessary.
+
+        If the mount is not currently parked this will issue a park command
+        before closing the connection, then mark the connection as closed.
+        """
+        self.logger.info("Disconnecting mount")
         if not self.is_parked:
             self.park()
 
         self._is_connected = False
 
+    def update_status(self):
+        """Thin-wrapper to call the status property."""
+        self.logger.debug(f"Updating mount status: {self.status}")
+
     @property
     def status(self):
+        """Return a snapshot of current mount parameters and positions.
+
+        Returns:
+            dict: Mapping of basic rates, movement speed, current coordinates
+                (if available), and target coordinates (if set), augmented by
+                subclass-specific fields from _update_status().
+        """
+        self.logger.trace("Getting mount status")
         status = {}
         try:
-            status['tracking_rate'] = f'{self.tracking_rate:0.04f}'
-            status['ra_guide_rate'] = self.ra_guide_rate
-            status['dec_guide_rate'] = self.dec_guide_rate
-            status['movement_speed'] = self.movement_speed
+            status["tracking_rate"] = self.tracking_rate
+            status["ra_guide_rate"] = self.ra_guide_rate
+            status["dec_guide_rate"] = self.dec_guide_rate
+            status["movement_speed"] = self.movement_speed
 
             current_coord = self.get_current_coordinates()
+            self.logger.trace(f"{current_coord=}")
             if current_coord is not None:
-                status['current_ra'] = current_coord.ra
-                status['current_dec'] = current_coord.dec
+                self.logger.trace("Getting current_ra and current_dec")
+                status["current_ra"] = get_quantity_value(current_coord.ra, unit="degree")
+                status["current_dec"] = get_quantity_value(current_coord.dec, unit="degree")
 
             if self.has_target:
                 target_coord = self.get_target_coordinates()
-                status['mount_target_ra'] = target_coord.ra
-                status['mount_target_dec'] = target_coord.dec
+                self.logger.trace(f"{target_coord=}")
+                status["mount_target_ra"] = get_quantity_value(target_coord.ra, unit="degree")
+                status["mount_target_dec"] = get_quantity_value(target_coord.dec, unit="degree")
         except Exception as e:
-            self.logger.debug(f'Problem getting mount status: {e!r}')
+            self.logger.trace(f"Problem getting mount status: {e!r}")
 
+        self.logger.trace("Updating status with _update_status")
         status.update(self._update_status())
         return status
 
     @property
     def location(self):
-        """ astropy.coordinates.SkyCoord: The location details for the mount.
+        """astropy.coordinates.SkyCoord: The location details for the mount.
 
         When a new location is set,`_setup_location_for_mount` is called, which
         will update the mount with the current location. It is anticipated the
@@ -153,111 +186,86 @@ class AbstractMount(PanBase):
 
     @location.setter
     def location(self, location):
+        """Update the mount location and propagate to the hardware.
+
+        Args:
+            location (astropy.coordinates.EarthLocation): New EarthLocation to use.
+        """
         self._location = location
         # If the location changes we need to update the mount
         self._setup_location_for_mount()
 
     @property
     def is_connected(self):
-        """ bool: Checks the serial connection on the mount to determine if connection is open """
+        """bool: Checks the serial connection on the mount to determine if connection is open"""
         return self._is_connected
 
     @property
     def is_initialized(self):
-        """ bool: Has mount been initialised with connection """
+        """bool: Has mount been initialised with connection"""
         return self._is_initialized
 
     @property
     def is_parked(self):
-        """ bool: Mount parked status. """
+        """bool: Mount parked status."""
         return self._is_parked
 
     @property
     def at_mount_park(self):
-        """ bool: True if mount is at park position. """
+        """bool: True if mount is at park position."""
         return self._at_mount_park
 
     @property
     def is_home(self):
-        """ bool: Mount home status. """
+        """bool: Mount home status."""
         return self._is_home
 
     @property
     def is_tracking(self):
-        """ bool: Mount tracking status.  """
+        """bool: Mount tracking status."""
         return self._is_tracking
 
     @property
     def is_slewing(self):
-        """ bool: Mount slewing status. """
+        """bool: Mount slewing status."""
         return self._is_slewing
 
     @property
     def state(self):
-        """ bool: Mount state. """
+        """bool: Mount state."""
         return self._state
 
     @property
     def movement_speed(self):
-        """ bool: Movement speed when button pressed. """
+        """bool: Movement speed when button pressed."""
         return self._movement_speed
 
     @property
     def has_target(self):
+        """Whether a target coordinate has been set for the mount.
+
+        Returns:
+            bool: True if set_target_coordinates has been called successfully.
+        """
         return self._target_coordinates is not None
 
     @property
     def tracking_rate(self):
-        """ bool: Mount tracking rate """
+        """bool: Mount tracking rate"""
         return self._tracking_rate
 
     @tracking_rate.setter
     def tracking_rate(self, value):
-        """ Set the tracking rate """
+        """Set the tracking rate"""
         self._tracking_rate = value
 
-    def set_park_coordinates(self, ha=-170 * u.degree, dec=-10 * u.degree):
-        """ Calculates the RA-Dec for the the park position.
-
-        This method returns a location that points the optics of the unit down toward the ground.
-
-        The RA is calculated from subtracting the desired hourangle from the
-        local sidereal time. This requires a proper location be set.
-
-        Note:
-            Mounts usually don't like to track or slew below the horizon so this
-                will most likely require a configuration item be set on the mount
-                itself.
-
-        Args:
-            ha (Optional[astropy.units.degree]): Hourangle of desired parking
-                position. Defaults to -165 degrees.
-            dec (Optional[astropy.units.degree]): Declination of desired parking
-                position. Defaults to -165 degrees.
-
-        Returns:
-            park_skycoord (astropy.coordinates.SkyCoord): A SkyCoord object
-                representing current parking position.
-        """
-        self.logger.debug('Setting park position')
-
-        park_time = current_time()
-        park_time.location = self.location
-
-        lst = park_time.sidereal_time('apparent')
-        self.logger.debug(f'LST: {lst}')
-        self.logger.debug(f'HA: {ha}')
-
-        ra = lst - ha
-        self.logger.debug(f'RA: {ra}')
-        self.logger.debug(f'Dec: {dec}')
-
-        self._park_coordinates = SkyCoord(ra, dec)
-
-        self.logger.debug(f'Park Coordinates RA-Dec: {self._park_coordinates}')
+    @property
+    def mount_version(self):
+        """str: Mount version"""
+        return self._mount_version
 
     def get_target_coordinates(self):
-        """ Gets the RA and Dec for the mount's current target. This does NOT necessarily
+        """Gets the RA and Dec for the mount's current target. This does NOT necessarily
         reflect the current position of the mount, see `get_current_coordinates`.
 
         Returns:
@@ -266,7 +274,7 @@ class AbstractMount(PanBase):
         return self._target_coordinates
 
     def set_target_coordinates(self, coords):
-        """ Sets the RA and Dec for the mount's current target.
+        """Sets the RA and Dec for the mount's current target.
 
         Args:
             coords (astropy.coordinates.SkyCoord): coordinates specifying target location
@@ -285,17 +293,17 @@ class AbstractMount(PanBase):
 
         # Send coordinates to mount
         try:
-            self.query('set_ra', mount_coords[0])
-            self.query('set_dec', mount_coords[1])
+            self.query("set_ra", mount_coords[0])
+            self.query("set_dec", mount_coords[1])
             target_set = True
         except Exception as e:
             self.logger.warning(f"Problem setting mount coordinates: {mount_coords} {e!r}")
 
-        self.logger.debug(f'Mount simulator set target coordinates: {target_set}')
+        self.logger.debug(f"Mount set target coordinates: {target_set}")
         return target_set
 
     def get_current_coordinates(self):
-        """ Reads out the current coordinates from the mount.
+        """Reads out the current coordinates from the mount.
 
         Note:
             See `_mount_coord_to_skycoord` and `_skycoord_to_mount_coord` for translation of
@@ -304,9 +312,7 @@ class AbstractMount(PanBase):
         Returns:
             astropy.coordinates.SkyCoord
         """
-        # self.logger.debug('Getting current mount coordinates')
-
-        mount_coords = self.query('get_coordinates')
+        mount_coords = self.query("get_coordinates")
 
         # Turn the mount coordinates into a SkyCoord
         self._current_coordinates = self._mount_coord_to_skycoord(mount_coords)
@@ -314,24 +320,21 @@ class AbstractMount(PanBase):
         return self._current_coordinates
 
     def distance_from_target(self):
-        """ Get current distance from target
+        """Get current distance from target
 
         Returns:
             u.Angle: An angle represeting the current on-sky separation from the target
         """
         target = self.get_target_coordinates().coord
-        separation = self.get_current_coordinates().separation(target)
+        separation = self.get_current_coordinates().separation(target, origin_mismatch="ignore")
 
-        self.logger.debug("Current separation from target: {}".format(separation))
+        self.logger.debug(f"Current separation from target: {separation}")
 
         return separation
 
-    def get_tracking_correction(self,
-                                offset_info,
-                                pointing_ha,
-                                min_tracking_threshold=None,
-                                max_tracking_threshold=None
-                                ):
+    def get_tracking_correction(
+        self, offset_info, pointing_ha, min_tracking_threshold=None, max_tracking_threshold=None
+    ):
         """Determine the needed tracking corrections from current position.
 
         This method will determine the direction and number of milliseconds to
@@ -358,19 +361,19 @@ class AbstractMount(PanBase):
                 than this are set to this value. Default 99999ms from `self.max_tracking_threshold`.
 
         Returns:
-            dict: Offset corrections for each axis as needed ::
+            dict: Offset corrections for each axis as needed. Example:
 
-                dict: {
+                {
                     # axis: (arcsec, millisecond, direction)
                     'ra': (float, float, str),
                     'dec': (float, float, str),
                 }
         """
-        pier_side = 'east'
+        pier_side = "east"
         if 0 <= pointing_ha <= 12:
-            pier_side = 'west'
+            pier_side = "west"
 
-        self.logger.debug(f'Mount pier side: {pier_side} {pointing_ha:.02f}')
+        self.logger.debug(f"Mount pier side: {pier_side} {pointing_ha:.02f}")
 
         if min_tracking_threshold is None:
             min_tracking_threshold = self.min_tracking_threshold
@@ -379,56 +382,56 @@ class AbstractMount(PanBase):
             max_tracking_threshold = self.max_tracking_threshold
 
         axis_corrections = {
-            'dec': None,
-            'ra': None,
+            "dec": None,
+            "ra": None,
         }
 
         for axis in axis_corrections.keys():
             # find the number of ms and direction for Dec axis
-            offset = getattr(offset_info, f'delta_{axis}')
+            offset = getattr(offset_info, f"delta_{axis}")
             offset_ms = self.get_ms_offset(offset, axis=axis)
 
-            if axis == 'dec':
+            if axis == "dec":
                 # Determine which direction to move based on direction mount
                 # is moving (i.e. what side it started on).
-                if pier_side == 'east':
+                if pier_side == "east":
                     if offset_ms >= 0:
-                        delta_direction = 'north'
+                        delta_direction = "north"
                     else:
-                        delta_direction = 'south'
+                        delta_direction = "south"
                 else:
                     if offset_ms >= 0:
-                        delta_direction = 'south'
+                        delta_direction = "south"
                     else:
-                        delta_direction = 'north'
+                        delta_direction = "north"
             else:
                 if offset_ms >= 0:
-                    delta_direction = 'west'
+                    delta_direction = "west"
                 else:
-                    delta_direction = 'east'
+                    delta_direction = "east"
 
             offset_ms = abs(offset_ms.value)
-            self.logger.debug(f'Tracking offset: {offset_ms} ms')
+            self.logger.debug(f"Tracking offset: {offset_ms} ms")
 
             # Skip short corrections
             if offset_ms <= min_tracking_threshold:
-                self.logger.debug(f'Min tracking threshold: {min_tracking_threshold} ms')
-                self.logger.debug(f'Requested tracking lower than threshold, skipping correction')
+                self.logger.debug(f"Min tracking threshold: {min_tracking_threshold} ms")
+                self.logger.debug("Requested tracking lower than threshold, skipping correction")
                 continue
 
             # Correct long offset
             if offset_ms > max_tracking_threshold:
-                self.logger.debug(f'Max tracking threshold: {max_tracking_threshold} ms')
-                self.logger.debug('Requested tracking higher than threshold, setting to threshold')
+                self.logger.debug(f"Max tracking threshold: {max_tracking_threshold} ms")
+                self.logger.debug("Requested tracking higher than threshold, setting to threshold")
                 offset_ms = max_tracking_threshold
 
-            self.logger.debug(f'{axis}: {delta_direction} {offset_ms:.02f} ms')
+            self.logger.debug(f"{axis}: {delta_direction} {offset_ms:.02f} ms")
             axis_corrections[axis] = (offset, offset_ms, delta_direction)
 
         return axis_corrections
 
-    def correct_tracking(self, correction_info, axis_timeout=30.):
-        """ Make tracking adjustment corrections.
+    def correct_tracking(self, correction_info, axis_timeout=30.0):
+        """Make tracking adjustment corrections.
 
         Args:
             correction_info (dict[tuple]): Correction info to be applied, see
@@ -447,42 +450,32 @@ class AbstractMount(PanBase):
             offset_ms = corrections[1]
             delta_direction = corrections[2]
 
-            self.logger.info("Adjusting {}: {} {:0.2f} ms {:0.2f}".format(
-                axis, delta_direction, offset_ms, offset))
+            self.logger.info(f"Adjusting {axis}: {delta_direction} {offset_ms:0.2f} ms {offset:0.2f}")
 
-            self.query(
-                'move_ms_{}'.format(delta_direction),
-                '{:05.0f}'.format(offset_ms)
-            )
+            self.query(f"move_ms_{delta_direction}", f"{offset_ms:05.0f}")
 
             # Adjust tracking for `axis_timeout` seconds then fail if not done.
             start_tracking_time = current_time()
             while self.is_tracking is False:
                 if (current_time() - start_tracking_time).sec > axis_timeout:
-                    raise error.Timeout("Tracking adjustment timeout: {}".format(axis))
+                    raise error.Timeout(f"Tracking adjustment timeout: {axis}")
 
-                self.logger.debug("Waiting for {} tracking adjustment".format(axis))
+                self.logger.debug(f"Waiting for {axis} tracking adjustment")
                 time.sleep(0.5)
 
-    def slew_to_coordinates(self, coords, ra_rate=15.0, dec_rate=0.0, *args, **kwargs):
-        """ Slews to given coordinates.
-
-        Note:
-            Slew rates are not implemented yet.
+    def slew_to_coordinates(self, coords, *args, **kwargs):
+        """Slews to given coordinates.
 
         Args:
-            coords (astropy.SkyCoord): Coordinates to slew to
-            ra_rate (Optional[float]): Slew speed - RA tracking rate in
-                arcsecond per second. Defaults to 15.0
-            dec_rate (Optional[float]): Slew speed - Dec tracking rate in
-                arcsec per second. Defaults to 0.0
+            coords (astropy.SkyCoord): The coordinates to slew to.
 
         Returns:
             bool: indicating success
         """
         if not isinstance(coords, SkyCoord):
-            raise TypeError("coords should be an instance of astropy.coordinates.SkyCoord,"
-                            f" got {type(coords)}.")
+            raise TypeError(
+                "coords should be an instance of astropy.coordinates.SkyCoord, got {type(coords)}."
+            )
         response = 0
 
         if not self.is_parked:
@@ -495,8 +488,7 @@ class AbstractMount(PanBase):
         return response
 
     def home_and_park(self, *args, **kwargs):
-        """ Convenience method to first slew to the home position and then park.
-        """
+        """Convenience method to first slew to the home position and then park."""
         if not self.is_parked:
             self.slew_to_home(blocking=True)
 
@@ -512,8 +504,8 @@ class AbstractMount(PanBase):
 
         self.logger.debug("Mount parked")
 
-    def slew_to_target(self, blocking=False, timeout=180):
-        """ Slews to the currently assigned target coordinates.
+    def slew_to_target(self, blocking: bool = False, timeout: int | float = 180) -> bool:
+        """Slews to the currently assigned target coordinates.
 
         Slews the mount to the coordinates that have been assigned by `~set_target_coordinates`.
         If no coordinates have been set, do nothing and return `False`, otherwise
@@ -539,32 +531,36 @@ class AbstractMount(PanBase):
         elif not self.has_target:
             self.logger.info("Target Coordinates not set")
         else:
-            self.logger.debug('Slewing to target')
-            success = self.query('slew_to_target')
+            self.logger.debug("Slewing to target")
+            success = bool(self.query("slew_to_target"))
 
-            self.logger.debug("Mount response: {}".format(success))
+            self.logger.debug(f"Mount response: {success}")
             if success:
                 if blocking:
                     # Set up the timeout timer
-                    self.logger.debug(f'Setting slew timeout timer for {timeout} sec')
-                    timeout_timer = CountdownTimer(timeout)
+                    self.logger.debug(f"Setting slew timeout timer for {timeout} sec")
+                    timeout_timer = CountdownTimer(timeout, name="SlewToTarget")
                     block_time = 3  # seconds
 
+                    # Check the status, which updates the tracking status.
+                    self.update_status()
                     while self.is_tracking is False:
                         if timeout_timer.expired():
-                            self.logger.warning(f'slew_to_target timout: {timeout} seconds')
-                            raise error.Timeout('Problem slewing to target')
+                            self.logger.warning(f"slew_to_target timout: {timeout} seconds")
+                            raise error.Timeout("Problem slewing to target")
 
-                        self.logger.debug(f'Slewing to target, sleeping for {block_time} seconds')
+                        self.logger.debug(f"Slewing to target, sleeping for {block_time} seconds")
                         timeout_timer.sleep(max_sleep=block_time)
+                        # Check the status, which updates the tracking status.
+                        self.update_status()
 
-                    self.logger.debug(f'Done with slew_to_target block')
+                    self.logger.debug("Done with slew_to_target block")
             else:
-                self.logger.warning('Problem with slew_to_target')
+                self.logger.warning("Problem with slew_to_target")
 
         return success
 
-    def slew_to_home(self, blocking=False, timeout=180):
+    def slew_to_home(self, blocking=True, timeout=180):
         """Slews the mount to the home position.
 
         Note:
@@ -572,15 +568,12 @@ class AbstractMount(PanBase):
 
         Args:
             blocking (bool, optional): If command should block while slewing to
-                home, default False.
+                home, default True.
             timeout (int, optional): Maximum time spent slewing to home, default 180 seconds.
 
         Returns:
             bool: indicating success
 
-        Args:
-            blocking (bool, optional): If command should block while slewing to
-                home, default False.
         """
         response = 0
 
@@ -592,26 +585,32 @@ class AbstractMount(PanBase):
             # Reset target coordinates
             self._target_coordinates = None
             # Start the slew
-            response = self.query('slew_to_home')
+            response = self.query("slew_to_home")
             if response and blocking:
                 while self.is_home is False:
                     if timeout_timer.expired():
-                        self.logger.warning(f'slew_to_home timout: {timeout} seconds')
+                        self.logger.warning(f"slew_to_home timout: {timeout} seconds")
                         response = 0
                         break
-                    self.logger.debug(f'Slewing to home, sleeping for {block_time} seconds')
+                    self.logger.debug(f"Slewing to home, sleeping for {block_time} seconds")
                     timeout_timer.sleep(max_sleep=block_time)
+                    self.update_status()
         else:
-            self.logger.info('Mount is parked')
+            self.logger.info("Mount is parked")
 
         return response
 
     def slew_to_zero(self, blocking=False):
-        """ Calls `slew_to_home` in base class. Can be overridden.  """
+        """Calls `slew_to_home` in base class. Can be overridden."""
         self.slew_to_home(blocking=blocking)
 
     def park(self, *args, **kwargs):
-        """ Slews to the park position and parks the mount.
+        """Slews to the park position and parks the mount.
+
+        The park position must be set manually first for this method to work.
+
+        Most mount subclasses will override this method to provide mount-specific
+        park functionality.
 
         Note:
             When mount is parked no movement commands will be accepted.
@@ -619,18 +618,14 @@ class AbstractMount(PanBase):
         Returns:
             bool: indicating success
         """
-
-        self.set_park_coordinates()
-        self.set_target_coordinates(self._park_coordinates)
-
-        response = self.query('park')
+        response = self.query("park")
 
         if response:
-            self.logger.debug('Slewing to park')
+            self.logger.debug("Slewing to park")
         else:
-            self.logger.warning('Problem with slew_to_park')
+            self.logger.warning("Problem with slew_to_park")
 
-        while not self.at_mount_park:
+        while not self.is_parked:
             self._update_status()
             time.sleep(2)
 
@@ -639,59 +634,66 @@ class AbstractMount(PanBase):
         return response
 
     def unpark(self):
-        """ Unparks the mount. Does not do any movement commands but makes them available again.
+        """Unparks the mount. Does not do any movement commands but makes them available again.
 
         Returns:
             bool: indicating success
         """
 
-        response = self.query('unpark')
+        response = self.query("unpark")
 
         if response:
             self._is_parked = False
             self._at_mount_park = False
-            self.logger.debug('Mount unparked')
+            self.logger.debug("Mount unparked")
         else:
-            self.logger.warning('Problem with unpark')
+            self.logger.warning("Problem with unpark")
 
         return response
 
-    def move_direction(self, direction='north', seconds=1.0):
-        """ Move mount in specified `direction` for given amount of `seconds`
+    def move_direction(self, direction="north", seconds=1.0):
+        """Move the mount in a specified direction for a duration.
 
+        Args:
+            direction (str): One of {"north", "south", "east", "west"} indicating
+                the direction to move.
+            seconds (float): Duration in seconds to move in the given direction.
+
+        Raises:
+            AssertionError: If the provided direction is not valid.
+            Exception: Propagates any low-level I/O exceptions encountered while
+                issuing movement commands to the mount; movement is stopped in
+                the finally block regardless.
         """
         seconds = float(seconds)
-        assert direction in ['north', 'south', 'east', 'west']
+        assert direction in ["north", "south", "east", "west"]
 
-        move_command = f'move_{direction}'
-        self.logger.debug(f'Move command: {move_command}')
+        short_direction = direction[0].lower()
+
+        # Use low-level commands without a lookup to make timing exact.
+        move_command = f":m{short_direction}#"
+        stop_command = ":Q#"
 
         try:
-            now = current_time()
-            self.logger.debug(f'Moving {direction} for {seconds} seconds. ')
-            self.query(move_command)
-
+            self.logger.debug(f"Moving {direction} for {seconds} seconds. ")
+            t0 = time.perf_counter()
+            self.write(move_command)
             time.sleep(seconds)
+            self.write(stop_command)
+            t1 = time.perf_counter()
 
-            self.logger.debug(f'{(current_time() - now).sec} seconds passed before stop')
-            self.query('stop_moving')
-            self.logger.debug(f'{(current_time() - now).sec} seconds passed total')
+            self.logger.debug(f"{(t1 - t0):.02f} seconds passed total")
         except KeyboardInterrupt:
-            self.logger.warning('Keyboard interrupt, stopping movement.')
+            self.logger.warning("Keyboard interrupt, stopping movement.")
         except Exception as e:
-            self.logger.warning(f'Problem moving mount! Make sure mount has stopped moving: {e!r}')
+            self.logger.warning(f"Problem moving mount! Make sure mount has stopped moving: {e!r}")
         finally:
             # Note: We do this twice. That's fine.
             self.logger.debug("Stopping movement")
-            self.query('stop_moving')
+            self.query("stop_moving")
 
-    @abstractmethod
-    def set_tracking_rate(self, direction='ra', delta=1.0):
-        """Sets the tracking rate for the mount """
-        raise NotImplementedError
-
-    def get_ms_offset(self, offset, axis='ra'):
-        """ Get offset in milliseconds at current speed
+    def get_ms_offset(self, offset, axis="ra"):
+        """Get offset in milliseconds at current speed
 
         Args:
             offset (astropy.units.Angle): Offset in arcseconds
@@ -702,8 +704,8 @@ class AbstractMount(PanBase):
         """
 
         rates = {
-            'ra': self.ra_guide_rate,
-            'dec': self.dec_guide_rate,
+            "ra": self.ra_guide_rate,
+            "dec": self.dec_guide_rate,
         }
 
         guide_rate = rates[axis]
@@ -711,68 +713,52 @@ class AbstractMount(PanBase):
         return (offset / (self.sidereal_rate * guide_rate)).to(u.ms)
 
     def query(self, cmd, params=None, **kwargs):
-        """Sends a query to the mount and returns response.
+        """Send a command to the mount and return the response.
 
-        Performs a send and then returns response. Will do a translate on cmd first. This should
-        be the major serial utility for commands. Accepts an additional args that is passed
-        along with the command. Checks for and only accepts one args param.
+        The command key is translated to a mount-specific serial command (using the loaded
+        commands YAML), written to the connection, and the response is read back.
 
         Args:
-            cmd (str): A command to send to the mount. This should be one of the
-                commands listed in the mount commands yaml file.
-            params (str, optional): Params to pass to serial connection
-
-        Examples:
-            >>> mount.query('set_local_time', '101503')  #doctest: +SKIP
-            '1'
-            >>> mount.query('get_local_time')            #doctest: +SKIP
-            '101503'
+            cmd (str): Logical command name defined in the mount commands YAML file.
+            params (str | None): Optional parameter string to include with the command.
+            **kwargs: Additional keyword arguments forwarded to the low-level `read()` call.
 
         Returns:
-            str: The response from the mount.
+            str: The raw response from the mount.
 
-        Deleted Parameters:
-            *args: Parameters to be sent with command if required.
+        Raises:
+            AssertionError: If the mount has not been initialized.
+            error.InvalidMountCommand: If the command key is not known.
+
+        Examples:
+            >>> from panoptes.pocs.mount import create_mount_from_config  # doctest: +SKIP
+            >>> mount = create_mount_from_config()                        # doctest: +SKIP
+            >>> mount.query('set_local_time', '101503')                   # doctest: +SKIP
+            '1'
+            >>> mount.query('get_local_time')                             # doctest: +SKIP
+            '101503'
         """
-        assert self.is_initialized, self.logger.warning('Mount has not been initialized')
+        assert self.is_initialized, self.logger.warning("Mount has not been initialized")
 
         full_command = self._get_command(cmd, params=params)
         self.write(full_command)
 
         response = self.read(**kwargs)
 
-        # TODO: Add in better checking of expected response.
-        # expected_response = self._get_expected_response(cmd)
-        # if str(response) != str(expected_response):
-        #     self.logger.warning(f"Expected: {expected_response} Got: {response}")
-
         return response
 
-    @abstractmethod
-    def write(self, cmd):
-        raise NotImplementedError
-
-    @abstractmethod
-    def read(self, *args, **kwargs):
-        raise NotImplementedError
-
     def _get_expected_response(self, cmd):
-        """ Looks up appropriate response for command for telescope """
+        """Looks up appropriate response for command for telescope"""
         # Get the actual command
         cmd_info = self.commands.get(cmd)
 
         if cmd_info is not None:
-            response = cmd_info.get('response')
-            self.logger.trace(f'Mount Command Response: {response}')
+            response = cmd_info.get("response")
+            self.logger.trace(f"Mount Command Response: {response}")
         else:
-            raise error.InvalidMountCommand(f'No result for command {cmd}')
+            raise error.InvalidMountCommand(f"No result for command {cmd}")
 
         return response
-
-    @abstractmethod
-    def _setup_location_for_mount(self):
-        """ Sets the current location details for the mount. """
-        raise NotImplementedError
 
     def _setup_commands(self, commands):
         """
@@ -781,19 +767,20 @@ class AbstractMount(PanBase):
         to make sure required commands are in fact available.
         """
         commands = commands or dict()
-        self.logger.debug('Setting up commands for mount.')
+        self.logger.debug("Setting up commands for mount.")
 
         if len(commands) == 0:
-            mount_dir = self.get_config('directories.mounts')
-            commands_file = self.get_config('mount.commands_file')
+            base_dir = Path(self.get_config("directories.base"))
+            mount_dir = base_dir / self.get_config("directories.mounts")
+            commands_file = self.get_config("mount.commands_file")
 
             if commands_file is None:
                 self.logger.debug('No "commands_file" key found, attempting to use brand and model')
-                brand = self.get_config('mount.brand')
-                model = self.get_config('mount.model')
-                commands_file = f'{brand}/{model}'
+                brand = self.get_config("mount.brand")
+                model = self.get_config("mount.model")
+                commands_file = f"{brand}/{model}"
 
-            commands_file = Path(f'{mount_dir}/{commands_file}.yaml')
+            commands_file = Path(f"{mount_dir}/{commands_file}.yaml")
 
             self.logger.info(f"Loading mount commands file: {commands_file}")
             try:
@@ -804,15 +791,54 @@ class AbstractMount(PanBase):
                 self.logger.warning(f"Error loading {commands_file=} {err!r}")
 
         # Get the pre- and post- commands
-        self._pre_cmd = commands.setdefault('cmd_pre', ':')
-        self._post_cmd = commands.setdefault('cmd_post', '#')
+        self._pre_cmd = commands.setdefault("cmd_pre", ":")
+        self._post_cmd = commands.setdefault("cmd_post", "#")
         self.commands = commands
 
-        self.logger.debug('Mount commands set up')
+        self.logger.debug("Mount commands set up")
+
+    def search_for_home(self):
+        """Search for the home position if supported."""
+        self.logger.warning(
+            "Searching for home position not supported."
+            "Please set the home position manually via the hand-controller."
+        )
+
+    @abstractmethod
+    def write(self, cmd):
+        """Low-level write to the mount connection.
+
+        Args:
+            cmd (str): Fully formatted command string to send to the device.
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def read(self, *args, **kwargs):
+        """Low-level read from the mount connection.
+
+        Args:
+            *args: Transport-specific positional options (e.g., size).
+            **kwargs: Transport-specific keyword options (e.g., timeout).
+
+        Returns:
+            str: Raw response string from the device.
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def set_tracking_rate(self, direction="ra", delta=1.0):
+        """Sets the tracking rate for the mount"""
+        raise NotImplementedError
+
+    @abstractmethod
+    def _setup_location_for_mount(self):
+        """Sets the current location details for the mount."""
+        raise NotImplementedError
 
     @abstractmethod
     def _set_zero_position(self):
-        """ Sets the current position as the zero (home) position. """
+        """Sets the current position as the zero (home) position."""
         raise NotImplementedError
 
     @abstractmethod

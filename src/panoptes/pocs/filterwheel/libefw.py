@@ -1,18 +1,34 @@
+"""ZWO EFW filter wheel SDK wrapper.
+
+Provides EFWDriver, a thin ctypes-based interface around libEFWFilter used by
+ZWO electronic filter wheels. Exposes helpers to enumerate devices, open/close,
+read properties/position, move, and set unidirectional mode.
+"""
+
 import ctypes
 import enum
 import threading
 import time
 
-from panoptes.pocs.camera.sdk import AbstractSDKDriver
 from panoptes.utils import error
 from panoptes.utils.library import load_c_library
 from panoptes.utils.time import CountdownTimer
 
+from panoptes.pocs.camera.sdk import AbstractSDKDriver
+
 
 class EFWDriver(AbstractSDKDriver):
+    """ctypes-based driver wrapper for ZWO EFW filter wheels.
+
+    Loads the vendor library, enumerates connected wheels, and exposes simple
+    helpers for opening/closing, reading properties/position, moving to a slot,
+    and toggling unidirectional mode. Intended for use by higher-level
+    AbstractFilterWheel implementations.
+    """
+
     # Because ZWO EFW library isn't linked properly have to manually load libudev
     # in global mode first, otherwise get undefined symbol errors.
-    _libudev = load_c_library('udev', mode=ctypes.RTLD_GLOBAL)
+    _libudev = load_c_library("udev", mode=ctypes.RTLD_GLOBAL)
 
     def __init__(self, library_path=None, **kwargs):
         """Main class representing the ZWO EFW library interface.
@@ -34,7 +50,7 @@ class EFWDriver(AbstractSDKDriver):
                 locate the library.
             `OSError`: raises if the ctypes.CDLL loader cannot load the library.
         """
-        super().__init__(name='EFWFilter', library_path=library_path, **kwargs)
+        super().__init__(name="EFWFilter", library_path=library_path, **kwargs)
 
     # Methods
 
@@ -101,25 +117,20 @@ class EFWDriver(AbstractSDKDriver):
     def get_ID(self, filterwheel_index):
         """Get integer ID of filterwheel with a given index."""
         filterwheel_ID = ctypes.c_int()
-        self._call_function('EFWGetID',
-                            filterwheel_index,
-                            ctypes.byref(filterwheel_ID))
+        self._call_function("EFWGetID", filterwheel_index, ctypes.byref(filterwheel_ID))
         filterwheel_ID = filterwheel_ID.value
         self.logger.debug(f"Got filterwheel ID {filterwheel_ID} for index {filterwheel_index}.")
         return filterwheel_ID
 
     def open(self, filterwheel_ID):
         """Open connection to filterwheel with given ID."""
-        self._call_function('EFWOpen',
-                            filterwheel_ID)
+        self._call_function("EFWOpen", filterwheel_ID)
         self.logger.debug(f"Connection to filterwheel {filterwheel_ID} opened.")
 
     def get_property(self, filterwheel_ID):
         """Get properties of filterwheel with given ID."""
         filterwheel_info = EFWInfo()
-        self._call_function('EFWGetProperty',
-                            filterwheel_ID,
-                            ctypes.byref(filterwheel_info))
+        self._call_function("EFWGetProperty", filterwheel_ID, ctypes.byref(filterwheel_info))
         filterwheel_properties = self._parse_info(filterwheel_info)
         self.logger.debug(f"Got properties from filterwheel {filterwheel_ID}.")
         return filterwheel_properties
@@ -127,9 +138,7 @@ class EFWDriver(AbstractSDKDriver):
     def get_position(self, filterwheel_ID):
         """Get current position of filterwheel with given ID."""
         position = ctypes.c_int()
-        self._call_function('EFWGetPosition',
-                            filterwheel_ID,
-                            ctypes.byref(position))
+        self._call_function("EFWGetPosition", filterwheel_ID, ctypes.byref(position))
         return position.value
 
     def set_position(self, filterwheel_ID, position, move_event=None, timeout=None):
@@ -153,41 +162,33 @@ class EFWDriver(AbstractSDKDriver):
         """
         self.logger.debug(f"Setting position {position} on filterwheel {filterwheel_ID}.")
         # This will raise errors if the filterwheel is already moving, or position is not valid.
-        self._call_function('EFWSetPosition',
-                            filterwheel_ID,
-                            ctypes.c_int(position))
-        poll_thread = threading.Thread(target=self._efw_poll,
-                                       args=(filterwheel_ID, position, move_event, timeout),
-                                       daemon=True)
+        self._call_function("EFWSetPosition", filterwheel_ID, ctypes.c_int(position))
+        poll_thread = threading.Thread(
+            target=self._efw_poll, args=(filterwheel_ID, position, move_event, timeout), daemon=True
+        )
         poll_thread.start()
 
     def get_direction(self, filterwheel_ID):
         """Get current unidirectional/bidirectional setting of filterwheel with given ID."""
         unidirectional = ctypes.c_bool()
-        self._call_function('EFWGetDirection',
-                            filterwheel_ID,
-                            ctypes.byref(unidirectional))
+        self._call_function("EFWGetDirection", filterwheel_ID, ctypes.byref(unidirectional))
         unidirectional = unidirectional.value
         self.logger.debug(f"Got unidirectional={unidirectional} from filterwheel {filterwheel_ID}.")
         return unidirectional
 
     def set_direction(self, filterwheel_ID, unidirectional):
         """Set unidrectional/bidirectional for filterwheel with given ID."""
-        self._call_function('EFWSetDirection',
-                            filterwheel_ID,
-                            ctypes.c_bool(unidirectional))
+        self._call_function("EFWSetDirection", filterwheel_ID, ctypes.c_bool(unidirectional))
         self.logger.debug(f"Set unidirectional={unidirectional} for filterwheel {filterwheel_ID}.")
 
     def calibrate(self, filterwheel_ID):
         """Calibrate filterwheel with given ID."""
-        self._call_function('EFWCalibrate',
-                            filterwheel_ID)
+        self._call_function("EFWCalibrate", filterwheel_ID)
         self.logger.debug(f"Calibrating filterwheel {filterwheel_ID}.")
 
     def close(self, filterwheel_ID):
         """Close connection to filterwheel with given ID."""
-        self._call_function('EFWClose',
-                            filterwheel_ID)
+        self._call_function("EFWClose", filterwheel_ID)
         self.logger.debug(f"Connection to filterwheel {filterwheel_ID} closed.")
 
     # Private methods
@@ -221,28 +222,29 @@ class EFWDriver(AbstractSDKDriver):
             # No status query function in the SDK. Only way to check on progress of move
             # is to keep issuing the same move command until we stop getting the MOVING
             # error code back.
-            error_code = self._CDLL.EFWSetPosition(ctypes.c_int(filterwheel_ID),
-                                                   ctypes.c_int(position))
+            error_code = self._CDLL.EFWSetPosition(ctypes.c_int(filterwheel_ID), ctypes.c_int(position))
             while error_code == ErrorCode.MOVING:
                 if timeout is not None and timer.expired():
-                    msg = "Timeout waiting for filterwheel {} to move to {}".format(
-                        filterwheel_ID, position)
+                    msg = f"Timeout waiting for filterwheel {filterwheel_ID} to move to {position}"
                     raise error.Timeout(msg)
                 time.sleep(0.1)
-                error_code = self._CDLL.EFWSetPosition(ctypes.c_int(filterwheel_ID),
-                                                       ctypes.c_int(position))
+                error_code = self._CDLL.EFWSetPosition(ctypes.c_int(filterwheel_ID), ctypes.c_int(position))
 
             if error_code != ErrorCode.SUCCESS:
                 # Got some sort of error while polling.
-                msg = "Error while moving filterwheel {} to {}: {}".format(
-                    filterwheel_ID, position, ErrorCode(error_code).name)
+                msg = (
+                    f"Error while moving filterwheel {filterwheel_ID} to {position}: "
+                    f"{ErrorCode(error_code).name}"
+                )
                 self.logger.error(msg)
                 raise error.PanError(msg)
 
             final_position = self.get_position(filterwheel_ID)
             if final_position != position:
-                msg = "Tried to move filterwheel {} to {}, but ended up at {}.".format(
-                    filterwheel_ID, position, final_position)
+                msg = (
+                    f"Tried to move filterwheel {filterwheel_ID} to {position}, "
+                    f"but ended up at {final_position}."
+                )
                 self.logger.error(msg)
                 raise error.PanError(msg)
 
@@ -257,28 +259,30 @@ class EFWDriver(AbstractSDKDriver):
         function = getattr(self._CDLL, function_name)
         error_code = function(ctypes.c_int(filterwheel_ID), *args)
         if error_code != ErrorCode.SUCCESS:
-            msg = "Error calling {}: {}".format(function_name, ErrorCode(error_code).name)
+            msg = f"Error calling {function_name}: {ErrorCode(error_code).name}"
             self.logger.error(msg)
             raise error.PanError(msg)
 
     def _parse_info(self, filterwheel_info):
         """Convert EFWInfo ctypes.Structure into a Pythonic dict."""
-        properties = {'id': filterwheel_info.id,
-                      'name': filterwheel_info.name.decode(),
-                      'slot_num': filterwheel_info.slot_num}
+        properties = {
+            "id": filterwheel_info.id,
+            "name": filterwheel_info.name.decode(),
+            "slot_num": filterwheel_info.slot_num,
+        }
         return properties
 
 
 class EFWInfo(ctypes.Structure):
     """Filterwheel info structure."""
 
-    _fields_ = [('id', ctypes.c_int),
-                ('name', ctypes.c_char * 64),
-                ('slot_num', ctypes.c_int)]
+    _fields_ = [("id", ctypes.c_int), ("name", ctypes.c_char * 64), ("slot_num", ctypes.c_int)]
 
 
 @enum.unique
 class ErrorCode(enum.IntEnum):
+    """Return codes from the ZWO EFW SDK functions."""
+
     SUCCESS = 0
     INVALID_INDEX = enum.auto()
     INVALID_ID = enum.auto()

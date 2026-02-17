@@ -145,8 +145,8 @@ void get_readings() {
 
   StaticJsonDocument<192> doc;
 
-  // Because the pinup is set to pullup we read high for off.
   doc["ac_ok"] = !digitalRead(AC_OK);
+  doc["battery_low"] = !digitalRead(BAT_LOW);
 
   JsonArray relays = doc.createNestedArray("relays");
   relays.add(is_relay_on(RELAY_0));

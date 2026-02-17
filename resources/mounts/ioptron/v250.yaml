@@ -6,13 +6,34 @@ command_version: 2.5
 cmd_pre: ':'
 cmd_post: '#'
 
+# Mount formatting
+location_units: arcsecond
+ra_coords_units: millisecond
+dec_coords_units: centiarcsecond
+latitude_format: '{:+07.0f}'
+longitude_format: '{:+07.0f}'
+ra_format: '{:08.0f}'
+dec_format: '{:+09.0f}'
+status_format: >-
+  (?P<longitude>[+\-]\d{6}) 
+  (?P<latitude>\d{6})
+  (?P<gps>[0-2])
+  (?P<state>[0-7]) 
+  (?P<tracking>[0-4]) 
+  (?P<movement_speed>[1-9]) 
+  (?P<time_source>[1-3])
+  (?P<hemisphere>[01])
+coords_format: >-
+  (?P<dec_sign>[\+\-])(?P<dec>\d{8}) 
+  (?P<ra>\d{8})
+
 # Telescope Information
 get_status:
   cmd: GLS
   response: sSSSSSSSSSSSSnnnnnn
-get_local_time:
+get_timestamp:
   cmd: GLT
-  response: sMMMYYMMDDHHMMSS
+  response: sMMMXYYMMDDHHMMSS
 get_coordinates:
   cmd: GEC
   response: sTTTTTTTTXXXXXXXX
@@ -210,4 +231,4 @@ firmware_radec:
   response: YYMMDDYYMMDD
 mount_info:
   cmd: MountInfo
-  response: '0030'
+  response: '0040'

@@ -1,82 +1,117 @@
-import os
+"""Scheduler package helpers.
 
-from astropy import units as u
-from astropy.utils.iers import Conf as iers_conf
+Provides factory functions to construct a Scheduler instance and its list of
+constraints from PANOPTES configuration. The module avoids importing concrete
+classes directly; instead it dynamically loads the configured scheduler and
+constraints using panoptes.utils.library.load_module.
+"""
 
-from panoptes.pocs.scheduler.constraint import Altitude
-from panoptes.pocs.scheduler.constraint import Duration
-from panoptes.pocs.scheduler.constraint import MoonAvoidance
+from pathlib import Path
 
-from panoptes.pocs.scheduler.scheduler import BaseScheduler  # noqa; needed for import
 from panoptes.utils import error
-from panoptes.utils import horizon as horizon_utils
-from panoptes.utils.library import load_module
-from panoptes.pocs.utils.logger import get_logger
 from panoptes.utils.config.client import get_config
+from panoptes.utils.library import load_module
 
-from panoptes.pocs.utils.location import create_location_from_config
+from panoptes.pocs.scheduler.constraint import BaseConstraint
+from panoptes.pocs.utils.location import create_location_from_config, download_iers_a_file
+from panoptes.pocs.utils.logger import get_logger
+
+logger = get_logger()
 
 
-def create_scheduler_from_config(observer=None, iers_url=None, *args, **kwargs):
-    """ Sets up the scheduler that will be used by the observatory """
+def create_scheduler_from_config(config=None, observer=None, iers_url=None, *args, **kwargs):
+    """Construct a Scheduler instance based on configuration.
 
-    logger = get_logger()
+    Reads the 'scheduler' section from the config, ensures IERS tables are
+    configured, resolves the observing site (Observer), and loads the configured
+    Scheduler class and fields file. Any configured constraints are built via
+    create_constraints_from_config and passed to the Scheduler constructor.
 
-    iers_url = iers_url or get_config('scheduler.iers_url')
-    if iers_url is not None:
-        logger.debug(f'Getting IERS data at {iers_url=}')
-        iers_conf.iers_auto_url.set(iers_url)
+    Args:
+        config (dict | None): Scheduler configuration; if None, fetched via get_config.
+        observer (astroplan.Observer | None): Existing Observer; if None, created from config.
+        iers_url (str | None): Optional override for the IERS A table URL.
+        *args: Additional positional args forwarded to the Scheduler constructor.
+        **kwargs: Additional keyword args forwarded to the Scheduler constructor.
 
-    scheduler_config = get_config('scheduler', default=None)
-    logger.info(f'scheduler_config: {scheduler_config!r}')
+    Returns:
+        panoptes.pocs.scheduler.dispatch.Scheduler: The constructed Scheduler instance.
+
+    Raises:
+        panoptes.utils.error.NotFound: If the fields file cannot be located or module not found.
+    """
+
+    scheduler_config = config or get_config("scheduler", default=None)
+    logger.info(f"scheduler_config: {scheduler_config!r}")
 
     if scheduler_config is None or len(scheduler_config) == 0:
         logger.info("No scheduler in config")
         return None
 
-    if not observer:
-        logger.debug(f'No Observer provided, creating from config.')
-        site_details = create_location_from_config()
-        observer = site_details['observer']
+    download_iers_a_file(iers_url=iers_url)
 
-    scheduler_type = scheduler_config.get('type', 'panoptes.pocs.scheduler.dispatch')
+    if not observer:
+        logger.debug("No Observer provided, creating location from config.")
+        site_details = create_location_from_config()
+        observer = site_details.observer
 
     # Read the targets from the file
-    fields_file = scheduler_config.get('fields_file', 'simple.yaml')
-    fields_dir = get_config('directories.fields', './conf_files/fields')
-    fields_path = os.path.join(fields_dir, fields_file)
-    logger.debug(f'Creating scheduler: {fields_path}')
+    fields_file = Path(scheduler_config.get("fields_file", "simple.yaml"))
+    base_dir = Path(str(get_config("directories.base", default=".")))
+    fields_dir = Path(str(get_config("directories.fields", default="./conf_files/fields")))
+    fields_path = base_dir / fields_dir / fields_file
+    logger.info(f"Creating fields from path: {fields_path}")
 
-    if os.path.exists(fields_path):
+    if fields_path.exists():
+        scheduler_type = scheduler_config.get("type", "panoptes.pocs.scheduler.dispatch")
 
         try:
             # Load the required module
-            module = load_module(f'{scheduler_type}')
+            module = load_module(f"{scheduler_type}")
 
-            obstruction_list = get_config('location.obstructions', default=[])
-            default_horizon = get_config('location.horizon', default=30 * u.degree)
-
-            horizon_line = horizon_utils.Horizon(
-                obstructions=obstruction_list,
-                default_horizon=default_horizon.value
-            )
-
-            # Simple constraint for now
-            constraints = [
-                Altitude(horizon=horizon_line),
-                MoonAvoidance(),
-                Duration(default_horizon, weight=5.)
-            ]
+            constraints = create_constraints_from_config(config=scheduler_config)
 
             # Create the Scheduler instance
-            scheduler = module.Scheduler(observer,
-                                         fields_file=fields_path,
-                                         constraints=constraints,
-                                         *args, **kwargs)
+            pocs_scheduler = module.Scheduler(
+                observer, fields_file=str(fields_path), constraints=constraints, *args, **kwargs
+            )
             logger.debug("Scheduler created")
         except error.NotFound as e:
             raise error.NotFound(msg=e)
     else:
         raise error.NotFound(msg=f"Fields file does not exist: {fields_path=!r}")
 
-    return scheduler
+    return pocs_scheduler
+
+
+def create_constraints_from_config(config=None) -> list[BaseConstraint]:
+    """Build a list of constraint instances from scheduler configuration.
+
+    Reads the 'scheduler.constraints' list from the provided config (or global
+    config if None), resolves each constraint's dotted Python path (falling back
+    to panoptes.pocs.scheduler.constraint.<Name> when a short name is given), and
+    instantiates the constraint with any provided options.
+
+    Args:
+        config (dict | None): Scheduler configuration dict; if None, use get_config('scheduler').
+
+    Returns:
+        list[BaseConstraint]: Instantiated constraint objects ready to pass to the Scheduler.
+    """
+    config = config or get_config("scheduler", default=dict())
+    constraints = list()
+    for constraint_config in config.get("constraints", list()):
+        name = constraint_config["name"]
+
+        if len(name.split(".")) < 2:
+            name = f"panoptes.pocs.scheduler.constraint.{name}"
+
+        try:
+            constraint_module = load_module(name)
+        except error.NotFound:
+            logger.warning(f"Invalid constraint config given: {constraint_config=}")
+        else:
+            options = constraint_config.get("options", dict())
+            constraints.append(constraint_module(**options))
+
+    return constraints

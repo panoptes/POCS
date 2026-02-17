@@ -1,23 +1,22 @@
 import time
 from contextlib import suppress
-
-import pytest
 from threading import Thread
 
-from panoptes.utils.config.helpers import load_config
+import pytest
 from panoptes.utils import error
+from panoptes.utils.config.helpers import load_config
 
-from panoptes.pocs.focuser.simulator import Focuser as SimFocuser
-from panoptes.pocs.focuser.birger import Focuser as BirgerFocuser
-from panoptes.pocs.focuser.astromechanics import Focuser as AstroMechanicsFocuser
-from panoptes.pocs.focuser.focuslynx import Focuser as FocusLynxFocuser
 from panoptes.pocs.camera.simulator.dslr import Camera
+from panoptes.pocs.focuser.astromechanics import Focuser as AstroMechanicsFocuser
+from panoptes.pocs.focuser.birger import Focuser as BirgerFocuser
+from panoptes.pocs.focuser.focuslynx import Focuser as FocusLynxFocuser
+from panoptes.pocs.focuser.simulator import Focuser as SimFocuser
 
 params = [SimFocuser, BirgerFocuser, FocusLynxFocuser, AstroMechanicsFocuser]
-ids = ['simulator', 'birger', 'focuslynx', 'astromechanics']
+ids = ["simulator", "birger", "focuslynx", "astromechanics"]
 
 
-@pytest.fixture(scope='function', params=zip(params, ids), ids=ids)
+@pytest.fixture(scope="function", params=zip(params, ids), ids=ids)
 def focuser(request):
     FocusClass = request.param[0]
     model_name = request.param[1]
@@ -27,12 +26,12 @@ def focuser(request):
     else:
         # Load the local config file and look for focuser configurations of the specified type
         focuser_configs = []
-        local_config = load_config('pocs_local', load_local=True)
+        local_config = load_config("pocs_local", load_local=True)
         with suppress(KeyError):
-            device_info = local_config['cameras']['devices']
+            device_info = local_config["cameras"]["devices"]
             for camera_config in device_info:
-                focuser_config = camera_config['focuser']
-                if 'model' in focuser_config and focuser_config['model'] == model_name:
+                focuser_config = camera_config["focuser"]
+                if "model" in focuser_config and focuser_config["model"] == model_name:
                     focuser_configs.append(focuser_config)
 
         if not focuser_configs:
@@ -42,7 +41,7 @@ def focuser(request):
         return FocusClass(**focuser_configs[0])
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope="function")
 def tolerance(focuser):
     """
     Tolerance for confirming focuser has moved to the requested position. The Birger may be
@@ -116,7 +115,7 @@ def test_move_above_max_position(focuser, tolerance):
 
 
 def test_camera_association(focuser):
-    """ Test association of Focuser with Camera after initialisation (getter, setter) """
+    """Test association of Focuser with Camera after initialisation (getter, setter)"""
     sim_camera_1 = Camera()
     sim_camera_2 = Camera()
     # Cameras in the fixture haven't been associated with a Camera yet, this should work
@@ -128,9 +127,10 @@ def test_camera_association(focuser):
 
 
 def test_camera_init():
-    """ Test focuser init via Camera constructor """
-    sim_camera = Camera(focuser={'model': 'panoptes.pocs.focuser.simulator.Focuser',
-                                 'focus_port': '/dev/ttyFAKE'})
+    """Test focuser init via Camera constructor"""
+    sim_camera = Camera(
+        focuser={"model": "panoptes.pocs.focuser.simulator.Focuser", "focus_port": "/dev/ttyFAKE"}
+    )
     assert isinstance(sim_camera.focuser, SimFocuser)
     assert sim_camera.focuser.is_connected
     assert sim_camera.focuser.uid
@@ -138,14 +138,14 @@ def test_camera_init():
 
 
 def test_camera_association_on_init():
-    """ Test association of Focuser with Camera during Focuser init """
+    """Test association of Focuser with Camera during Focuser init"""
     sim_camera = Camera()
     focuser = SimFocuser(camera=sim_camera)
     assert focuser.camera is sim_camera
 
 
 def test_astromechs_find_fail(focuser, tolerance, caplog):
-    v_id = 0xf00
-    p_id = 0xba2
+    v_id = 0xF00
+    p_id = 0xBA2
     with pytest.raises(error.NotFound):
         AstroMechanicsFocuser(vendor_id=v_id, product_id=p_id)

@@ -1,22 +1,30 @@
+"""State: parked.
+
+Indicates the mount is parked. Based on run_once, retry policy, scheduler
+state, safety, and darkness, decides whether to proceed to housekeeping,
+wait and retry, or return to ready.
+"""
+
+
 def on_enter(event_data):
-    """ """
+    """Handle transition into the parked state."""
     pocs = event_data.model
     pocs.say("I'm parked now.")
 
     if pocs.run_once is True:
         pocs.say("Done running loop, going to clean up and wait!")
-        pocs.next_state = 'housekeeping'
+        pocs.next_state = "housekeeping"
     elif pocs.should_retry is False:
         pocs.say("Done with retrying loop, going to clean up and wait!")
-        pocs.next_state = 'housekeeping'
+        pocs.next_state = "housekeeping"
     else:
         if pocs.observatory.scheduler.has_valid_observations:
             if pocs.is_safe():
                 pocs.say("Things look okay for now. I'm going to try again.")
-                pocs.next_state = 'ready'
+                pocs.next_state = "ready"
             else:  # Normal end of night
                 pocs.say("Cleaning up for the night!")
-                pocs.next_state = 'housekeeping'
+                pocs.next_state = "housekeeping"
         else:
             pocs.say("No observations found.")
             # TODO all of this should go away with better scheduling.
@@ -32,11 +40,11 @@ def on_enter(event_data):
                     break
                 elif pocs.is_safe():
                     pocs.reset_observing_run()
-                    pocs.next_state = 'ready'
+                    pocs.next_state = "ready"
                     break
                 elif pocs.is_dark() is False:
                     pocs.say("Looks like it's not dark anymore. Going to clean up.")
-                    pocs.next_state = 'housekeeping'
+                    pocs.next_state = "housekeeping"
                     break
                 else:
-                    pocs.say("Seems to be bad weather. I'll wait another 30 minutes.")
+                    pocs.say("Seems to be bad weather. I'll wait another 5 minutes.")

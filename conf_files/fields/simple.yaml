@@ -1,9 +1,23 @@
 ---
 - field:
+    name: "Blaze Star"
+    position: 239.876deg +25.916deg
+  observation:
+    priority: 1000
+    exptime: 30
+    min_nexp: 10
+    exp_set_size: 5
+    tags:
+      - recurrent_nova
+      - bright_star
+- field:
     name: "KIC 8462852"
     position: "20h06m15.4536s +44d27m24.75s"
   observation:
     priority: 100
+    tags:
+      - exoplanet
+      - tabby_star
 - field:
     name: "Wasp 77"
     position: "02h28m37.22s -07d03m38.45s"
@@ -14,22 +28,22 @@
     position: "05h35m17.2992s -05d23m27.996s"
   observation:
     exp_set_size: 5
-    type: "panoptes.pocs.scheduler.observation.compound.Observation"
-    exptime:
-      - 15
-      - 45
-      - 90
     min_nexp: 10
+    exptime: 30
     priority: 75
 - field:
     name: M45
     position: "03h47m24s +24d07m01.20s"
   observation:
     exp_set_size: 5
-    type: "panoptes.pocs.scheduler.observation.compound.Observation"
-    exptime:
-      - 15
-      - 45
-      - 90
+    exptime: 30
     min_nexp: 10
     priority: 100
+- field:
+    name: "Beehive Cluster"
+    position: 130.105deg +19.668deg
+  observation:
+    priority: 100
+    exptime: 30
+    min_nexp: 10
+    exp_set_size: 10

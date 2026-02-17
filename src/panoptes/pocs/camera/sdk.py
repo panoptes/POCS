@@ -1,11 +1,19 @@
+"""Base classes for SDK-backed camera drivers and cameras.
+
+Provides AbstractSDKDriver (ctypes loader + common helpers) and
+AbstractSDKCamera (shared orchestration for cameras controlled via SDKs).
+"""
+
 import time
 from abc import ABCMeta, abstractmethod
 from contextlib import suppress
 
-from panoptes.pocs.base import PanBase
-from panoptes.pocs.camera.camera import AbstractCamera
+from astropy.io import fits
 from panoptes.utils import error
 from panoptes.utils.library import load_c_library
+
+from panoptes.pocs.base import PanBase
+from panoptes.pocs.camera.camera import AbstractCamera
 from panoptes.pocs.utils.logger import get_logger
 
 # Would usually use self.logger but that won't exist until after calling super().__init__(),
@@ -17,6 +25,18 @@ logger = get_logger()
 
 
 class AbstractSDKDriver(PanBase, metaclass=ABCMeta):
+    """Abstract base for vendor SDK driver wrappers.
+
+    Loads the vendor's shared library and provides a common interface for
+    listing devices and retrieving SDK version information. Concrete driver
+    implementations should subclass this and implement get_SDK_version() and
+    get_devices().
+
+    Notes:
+        Instances of this class are typically used by AbstractSDKCamera
+        subclasses to manage a shared driver handle across multiple cameras.
+    """
+
     def __init__(self, name, library_path=None, *args, **kwargs):
         """Base class for all camera SDK interfaces.
 
@@ -28,31 +48,36 @@ class AbstractSDKDriver(PanBase, metaclass=ABCMeta):
 
         Args:
             name (str): name of the library (without 'lib' prefix or any suffixes, e.g. 'fli').
-            library_path (str, optional): path to the libary e.g. '/usr/local/lib/libASICamera2.so'
+            library_path (str, optional): path to the library e.g. '/usr/local/lib/libASICamera2.so'
 
         Raises:
-            panoptes.utils.error.NotFound: raised if library_path not given & find_libary fails to
+            panoptes.utils.error.NotFound: raised if library_path not given & find_library fails to
                 locate the library.
             OSError: raises if the ctypes.CDLL loader cannot load the library.
         """
         # Most SDK cameras can take internal darks so set to True by default.
-        kwargs['internal_darks'] = kwargs.get('internal_darks', True)
+        kwargs["internal_darks"] = kwargs.get("internal_darks", True)
         super().__init__(**kwargs)
         self._CDLL = load_c_library(name=name, path=library_path)
         self._version = self.get_SDK_version()
-        self.logger.debug("{} driver ({}) initialised.".format(name, self._version))
+        self.logger.debug(f"{name} driver ({self._version}) initialised.")
 
     # Properties
 
     @property
     def version(self):
+        """Version string of the loaded SDK library.
+
+        Returns:
+            str: Human-readable SDK version, as reported by the vendor library.
+        """
         return self._version
 
     # Methods
 
     @abstractmethod
     def get_SDK_version(self):
-        """ Get the version of the SDK """
+        """Get the version of the SDK"""
         raise NotImplementedError  # pragma: no cover
 
     @abstractmethod
@@ -62,22 +87,31 @@ class AbstractSDKDriver(PanBase, metaclass=ABCMeta):
 
 
 class AbstractSDKCamera(AbstractCamera):
+    """Common base for cameras controlled via a vendor SDK.
+
+    Handles driver lifetime, device discovery by serial_number, connection,
+    and common cooling/temperature settling behavior reused by concrete SDK
+    camera implementations (e.g., FLI, SBIG).
+    """
+
     _driver = None
     _cameras = dict()
     _assigned_cameras = set()
 
-    def __init__(self,
-                 name='Generic SDK camera',
-                 driver=AbstractSDKDriver,
-                 library_path=None,
-                 filter_type=None,
-                 target_temperature=None,
-                 *args, **kwargs):
-
+    def __init__(
+        self,
+        name="Generic SDK camera",
+        driver=AbstractSDKDriver,
+        library_path=None,
+        filter_type=None,
+        target_temperature=None,
+        *args,
+        **kwargs,
+    ):
         # The SDK cameras don't generally have a 'port', they are identified by a serial_number,
         # which is some form of unique ID readable via the camera SDK.
-        kwargs['port'] = None
-        serial_number = kwargs.get('serial_number')
+        kwargs["port"] = None
+        serial_number = kwargs.get("serial_number")
         if not serial_number:
             msg = f"Must specify serial_number for {name}."
             logger.error(msg)
@@ -100,10 +134,11 @@ class AbstractSDKCamera(AbstractCamera):
         logger.debug(f"Connected {name} devices: {my_class._cameras}")
 
         if serial_number in my_class._cameras:
-            logger.debug(f"Found {name} with UID serial_number={serial_number!r} at {my_class._cameras[serial_number]}.")
+            logger.debug(f"Found {name} with {serial_number=!r} at {my_class._cameras[serial_number]}.")
         else:
-            raise error.InvalidConfig(f"No config information found for "
-                                      f"name={name!r} with serial_number={serial_number!r} in {my_class._cameras}")
+            raise error.InvalidConfig(
+                f"No config information found for {name=!r} with {serial_number=!r} in {my_class._cameras}"
+            )
 
         if serial_number in my_class._assigned_cameras:
             raise error.PanError(f"{name} with UID serial_number={serial_number!r} already in use.")
@@ -136,29 +171,29 @@ class AbstractSDKCamera(AbstractCamera):
                 msg = f"Set target temperature {target_temperature} & enabled cooling on {self}."
                 self.logger.debug(msg)
             else:
-                msg = "Setting a target temperature on uncooled camera {}".format(self)
+                msg = f"Setting a target temperature on uncooled camera {self}"
                 self.logger.warning(msg)
 
     def __del__(self):
-        """ Attempt some clean up. """
-        if hasattr(self, 'uid'):
-            logger.trace(f'Removing {self.uid} from: {type(self)._assigned_cameras}')
+        """Attempt some clean up."""
+        if hasattr(self, "uid"):
+            logger.debug(f"Removing {self.uid} from: {type(self)._assigned_cameras}")
             type(self)._assigned_cameras.discard(self.uid)
 
-        logger.trace(f'Assigned cameras after removing: {type(self)._assigned_cameras}')
+        logger.debug(f"Assigned cameras after removing: {type(self)._assigned_cameras}")
 
     # Properties
 
     @property
     def properties(self):
-        """ A collection of camera properties as read from the camera """
+        """A collection of camera properties as read from the camera"""
         return self._info
 
     # Methods
 
-    def _create_fits_header(self, seconds, dark=None):
+    def _create_fits_header(self, seconds, dark=None, metadata=None) -> fits.Header:
         header = super()._create_fits_header(seconds, dark=dark)
-        header.set('CAM-SDK', type(self)._driver.version, 'Camera SDK version')
+        header.set("CAM-SDK", type(self)._driver.version, "Camera SDK version")
         return header
 
     def __str__(self):
@@ -168,12 +203,12 @@ class AbstractSDKCamera(AbstractCamera):
 
         with suppress(AttributeError):
             if self.focuser:
-                s += f' with {self.focuser.name}'
+                s += f" with {self.focuser.name}"
                 if self.filterwheel:
-                    s += f' & {self.filterwheel.name}'
+                    s += f" & {self.filterwheel.name}"
 
         with suppress(AttributeError):
             if self.filterwheel:
-                s += f' with {self.filterwheel.name}'
+                s += f" with {self.filterwheel.name}"
 
         return s

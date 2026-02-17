@@ -1,0 +1,24 @@
+channels:
+  - https://conda.anaconda.org/conda-forge
+dependencies:
+  - astroplan
+  - astropy
+  - astroquery
+  - docopt
+  - fastapi
+  - google-cloud-firestore
+  - google-cloud-logging
+  - google-cloud-storage
+  - gsutil
+  - ipython
+  - jupyterlab
+  - matplotlib-base
+  - numpy
+  - pandas
+  - pip
+  - pynacl
+  - pyrsistent
+  - typer[all]
+  - uvicorn[standard]
+  - pip:
+      - -e ".[google,sensors,weather]"

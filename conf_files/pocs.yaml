@@ -29,6 +29,7 @@ location:
 directories:
   base: .
   images: images
+  resources: resources
   mounts: resources/mounts
   fields: conf_files/fields
 
@@ -45,31 +46,41 @@ state_machine: panoptes
 
 scheduler:
   type: panoptes.pocs.scheduler.dispatch
-  fields_file: simple.yaml
-  check_file: False
-  iers_url: "https://storage.googleapis.com/panoptes-resources/iers/ser7.dat"
+  fields_file: tess_sectors_north.yaml
+  check_file: True
+  iers_url: "https://storage.googleapis.com/panoptes-assets/iers/ser7.dat"
+  iers_auto: True
+  constraints:
+    - name: panoptes.pocs.scheduler.constraint.Altitude
+    - name: panoptes.pocs.scheduler.constraint.MoonAvoidance
+      options:
+        separation: 15
+    - name: panoptes.pocs.scheduler.constraint.Duration
 
 mount:
   brand: ioptron
-  model: ieq30pro  #  cem40
-  driver: panoptes.pocs.mount.ioptron.ieq30pro
+  model: cem40 # ieq30pro
+  driver: panoptes.pocs.mount.ioptron.cem40
   # Load a specific commands file relative to "mounts" dir.
-  commands_file: ioptron/v250
+  commands_file: ioptron/v310
   serial:
     port: /dev/ttyUSB0
     timeout: 0.
-    baudrate: 9600  #  115200 for cem40
+    baudrate: 115200  # 9600 for iEQ30Pro
   settings:
     non_sidereal_available: True
     min_tracking_threshold: 100 # ms
     max_tracking_threshold: 99999 # ms
     update_tracking: False
-    # After moving to hardware park position, move Dec axis so cameras point down.
-    park_direction: north
-    park_seconds: 15
+    # Park the mount via the button movements.
+    park:
+      ra_direction: west
+      ra_seconds: 15
+      dec_direction: north
+      dec_seconds: 15
 
 pointing:
-  max_iterations: 5  # Set to 0 to disable
+  max_attempts: 0  # Set to 0 to disable
   auto_correct: True
   threshold: 100 # arcseconds ~ 10 pixels
   exptime: 30 # seconds
@@ -77,20 +88,20 @@ pointing:
 cameras:
   defaults:
     primary: None
-    auto_detect: False
+    auto_detect: True
     compress_fits: True
     make_pretty_images: True
     keep_jpgs: True
-    readout_time: 1.0  # seconds
-    timeout: 10  # seconds
+    readout_time: 5.0  # seconds
+    timeout: 60  # seconds
     filter_type: RGGB
+    file_extension: cr2
+    endpoint:  # Used for remote cameras
   devices:
-    - model: panoptes.pocs.camera.simulator.dslr.Camera
-      name: dslr.sim.00
-      file_extension: cr2
-    - model: panoptes.pocs.camera.simulator.dslr.Camera
-      name: dslr.sim.01
-      file_extension: cr2
+    - model: panoptes.pocs.camera.gphoto.canon.Camera
+      name: Cam00
+    - model: panoptes.pocs.camera.gphoto.canon.Camera
+      name: Cam01
       primary: True
 
 ######################### Environmental Sensors ################################
@@ -101,7 +112,7 @@ environment:
   power:
     name: Trucker Power
     arduino_board_name: power_board
-    record_interval: 5  # seconds
+    record_interval: 60  # seconds
     mean_interval: 5  # seconds
     port: /dev/ttyACM0
     relays:
@@ -113,7 +124,7 @@ environment:
         default_state: off
       RELAY_2:
         label: fans
-        default_state: off
+        default_state: on
       RELAY_3:
         label: unused3
         default_state: off
@@ -121,7 +132,20 @@ environment:
         label: mount
         default_state: on
   weather:
-    url: http://localhost:5000/latest.json
+    auto_detect: False
+    serial_port: /dev/weather
+    safety_delay: 15  # minutes from bad reading until safe again
+    capture_delay: 60  # seconds between taking measurements
+    num_readings: 5  # number of readings to average for each measurement
+    thresholds:
+      cloudy: -25  # Cloudy threshold in delta degrees C
+      very_cloudy: -15  # Very cloudy threshold in delta degrees C
+      windy: 50  # Windy threshold in km/h
+      very_windy: 75  # Very windy threshold in km/h
+      gusty: 100  # Gusty threshold in km/h
+      very_gusty: 125  # Very gusty threshold in km/h
+      wet: 2200  # Ohms of resistance in rain sensor (lower is wetter)
+      rainy: 1800  # Ohms of resistance in rain sensor (lower is wetter)
 
 
 ########################## Observations ########################################
@@ -140,11 +164,13 @@ environment:
 # TODO: Add options for cleaning up old data (e.g. >30 days)
 ################################################################################
 observations:
-  make_timelapse: True
+  make_timelapse: False
   compress_fits: True
   record_observations: True
   make_pretty_images: True
-  keep_jpgs: True
+  keep_jpgs: False
+  plate_solve: False
+  upload_image: False
 
 ######################## Google Network ########################################
 # By default all images are stored on googlecloud servers and we also
@@ -157,19 +183,20 @@ observations:
 #   service_account_key: Location of the JSON service account key.
 ################################################################################
 panoptes_network:
-  image_storage: False
+  use_firestore: False
+  cloud_logging_level:
   service_account_key: # Location of JSON account key
-  project_id: panoptes-exp
+  project_id: panoptes-project-01
   buckets:
-    images: panoptes-exp
+    upload: panoptes-images-incoming
 
 ############################### pocs ##################################
 # POCS status flags. The values below represent initial values but
 # they can be switched at run-time if needed.
 #######################################################################
 pocs:
-  INITIALIZED: false
-  INTERRUPTED: false
-  KEEP_RUNNING: true
-  DO_STATES: true
-  RUN_ONCE: false
+  INITIALIZED: False
+  INTERRUPTED: False
+  KEEP_RUNNING: True
+  DO_STATES: True
+  RUN_ONCE: False

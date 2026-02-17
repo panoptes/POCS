@@ -1,21 +1,30 @@
+"""Observation base classes and types for the scheduler.
+
+Defines the Exposure record and the Observation class used by the scheduler to
+represent an observing block (target field, exposure timing/sets, and progress).
+"""
+
 import os
 from collections import OrderedDict, defaultdict
 from contextlib import suppress
 from pathlib import Path
-from typing import Dict, List, Optional
 
 from astropy import units as u
+from astropy.units import s as Second
+from panoptes.utils import error
 from panoptes.utils.library import load_module
+from panoptes.utils.utils import get_quantity_value, listify
 from pydantic.dataclasses import dataclass
 
-from panoptes.utils.utils import get_quantity_value, listify
-from panoptes.utils import error
 from panoptes.pocs.base import PanBase
+from panoptes.pocs.scheduler import create_constraints_from_config
 from panoptes.pocs.scheduler.field import Field
 
 
 @dataclass
 class Exposure:
+    """Metadata for a single exposure produced during an observation."""
+
     image_id: str
     path: Path
     metadata: dict
@@ -23,10 +32,28 @@ class Exposure:
 
 
 class Observation(PanBase):
+    """Represents a scheduled observing block for a specific field.
 
-    def __init__(self, field, exptime=120 * u.second, min_nexp=60, exp_set_size=10, priority=100,
-                 filter_name=None, dark=False, *args, **kwargs):
-        """ An observation of a given `panoptes.pocs.scheduler.field.Field`.
+    Tracks exposure configuration (exptime, set size, counts), progress, and
+    metadata such as priority and filter. Provides helpers for status, paths,
+    and serialization used by the scheduler and cameras.
+    """
+
+    def __init__(
+        self,
+        field: Field,
+        exptime: Second = 120 * u.second,
+        min_nexp: int = 60,
+        exp_set_size: int = 10,
+        priority: int | float = 100,
+        filter_name: str | None = None,
+        dark: bool = False,
+        constraints: list | None = None,
+        tags: list[str] | None = None,
+        *args,
+        **kwargs,
+    ):
+        """An observation of a given `panoptes.pocs.scheduler.field.Field`.
 
         An observation consists of a minimum number of exposures (`min_nexp`) that
         must be taken at a set exposure time (`exptime`). These exposures come
@@ -57,6 +84,10 @@ class Observation(PanBase):
                 will override the default filter name (default: {None}).
             dark (bool, optional): If True, exposures should be taken with the shutter closed.
                 Default: False.
+            constraints (list, optional): List of `Constraints` to apply to this observation.
+                These constraints will be applied in addition to any global constraints.
+            tags (list[str], optional): List of string tags to associate with this observation
+                for metadata and searching purposes. Default: empty list.
         """
         super().__init__(*args, **kwargs)
 
@@ -69,8 +100,10 @@ class Observation(PanBase):
             raise ValueError(f"Exposure time must be greater than or equal to 0, got {exptime}.")
 
         if not min_nexp % exp_set_size == 0:
-            raise ValueError(f"Minimum number of exposures (min_nexp={min_nexp}) must be "
-                             f"a multiple of set size (exp_set_size={exp_set_size}).")
+            raise ValueError(
+                f"Minimum number of exposures (min_nexp={min_nexp}) must be "
+                f"a multiple of set size (exp_set_size={exp_set_size})."
+            )
 
         if not float(priority) > 0.0:
             raise ValueError("Priority must be larger than 0.")
@@ -82,8 +115,8 @@ class Observation(PanBase):
         self.min_nexp = min_nexp
         self.exp_set_size = exp_set_size
 
-        self.exposure_list: Dict[str, List[Exposure]] = defaultdict(list)
-        self.pointing_images: Dict[str, Path] = OrderedDict()
+        self.exposure_list: dict[str, list[Exposure]] = defaultdict(list)
+        self.pointing_images: dict[str, Path] = OrderedDict()
 
         self.priority = float(priority)
 
@@ -92,11 +125,14 @@ class Observation(PanBase):
         self._min_duration = self.exptime * self.min_nexp
         self._set_duration = self.exptime * self.exp_set_size
 
-        self._image_dir = self.get_config('directories.images')
+        self._image_dir = self.get_config("directories.images")
         self._directory = None
         self._seq_time = None
 
         self.merit = 0.0
+
+        self.constraints = constraints or []
+        self.tags = tags or []
 
         self.reset()
 
@@ -107,46 +143,40 @@ class Observation(PanBase):
     ################################################################################################
 
     @property
-    def status(self) -> Dict:
-        """ Observation status.
+    def status(self) -> dict:
+        """Observation status.
 
         Returns:
             dict: Dictionary containing current status of observation.
         """
-
-        equinox = 'J2000'
-        try:
-            equinox = self.field.coord.equinox.value
-        except AttributeError:  # pragma: no cover
-            equinox = self.field.coord.equinox
-
         status = {
-            'current_exp': self.current_exp_num,
-            'dec_mnt': self.field.coord.dec.value,
-            'equinox': equinox,
-            'exp_set_size': self.exp_set_size,
-            'exptime': self.exptime.value,
-            'field_dec': self.field.coord.dec.value,
-            'field_name': self.name,
-            'field_ra': self.field.coord.ra.value,
-            'merit': self.merit,
-            'min_nexp': self.min_nexp,
-            'minimum_duration': self.minimum_duration.value,
-            'priority': self.priority,
-            'ra_mnt': self.field.coord.ra.value,
-            'seq_time': self.seq_time,
-            'set_duration': self.set_duration.value,
-            'dark': self.dark
+            "current_exp": self.current_exp_num,
+            "dec_mnt": get_quantity_value(self.field.coord.dec),
+            "equinox": get_quantity_value(self.field.coord.equinox, unit="jyear_str"),
+            "exp_set_size": self.exp_set_size,
+            "exptime": get_quantity_value(self.exptime),
+            "field_name": self.name,
+            "merit": self.merit,
+            "min_nexp": self.min_nexp,
+            "minimum_duration": get_quantity_value(self.minimum_duration),
+            "priority": self.priority,
+            "ra_mnt": get_quantity_value(self.field.coord.ra),
+            "seq_time": self.seq_time,
+            "set_duration": get_quantity_value(self.set_duration),
+            "dark": self.dark,
+            "tags": self.tags,
         }
 
         return status
 
     @property
     def exptime(self):
+        """Exposure time per image for this observation (Quantity in seconds)."""
         return self._exptime
 
     @exptime.setter
     def exptime(self, value):
+        """Set the exposure time (Quantity or seconds)."""
         self._exptime = get_quantity_value(value, u.second) * u.second
 
     @property
@@ -156,22 +186,22 @@ class Observation(PanBase):
 
     @property
     def minimum_duration(self):
-        """ Minimum amount of time to complete the observation """
+        """Minimum amount of time to complete the observation"""
         return self._min_duration
 
     @property
     def set_duration(self):
-        """ Amount of time per set of exposures."""
+        """Amount of time per set of exposures."""
         return self._set_duration
 
     @property
     def name(self):
-        """ Name of the `~pocs.scheduler.field.Field` associated with the observation."""
+        """Name of the `~pocs.scheduler.field.Field` associated with the observation."""
         return self.field.name
 
     @property
     def seq_time(self):
-        """ The time at which the observation was selected by the scheduler.
+        """The time at which the observation was selected by the scheduler.
 
         This is used for path name construction.
         """
@@ -179,6 +209,7 @@ class Observation(PanBase):
 
     @seq_time.setter
     def seq_time(self, time):
+        """Set the scheduler selection time stamp (usually an ISO string)."""
         self._seq_time = time
 
     @property
@@ -193,13 +224,13 @@ class Observation(PanBase):
         """
         if self._directory is None:
             self._directory = os.path.join(self._image_dir, self.field.field_name)
-            self.logger.warning(f'Observation directory set to {self._directory}')
+            self.logger.info(f"Observation directory set to {self._directory}")
 
         return self._directory
 
     @property
     def current_exp_num(self) -> int:
-        """ Return the current number of exposures.
+        """Return the current number of exposures.
 
         Returns the maximum size of the exposure list from each camera.
 
@@ -212,8 +243,8 @@ class Observation(PanBase):
             return 0
 
     @property
-    def first_exposure(self) -> Optional[List[Dict[str, Exposure]]]:
-        """ Return the first exposure information.
+    def first_exposure(self) -> list[dict[str, Exposure]] | None:
+        """Return the first exposure information.
 
         Returns:
             tuple: `image_id` and full path of the first exposure from the primary camera.
@@ -221,15 +252,15 @@ class Observation(PanBase):
         return self.get_exposure(0)
 
     @property
-    def last_exposure(self) -> Optional[List[Dict[str, Exposure]]]:
-        """ Return the latest exposure information.
+    def last_exposure(self) -> list[dict[str, Exposure]] | None:
+        """Return the latest exposure information.
 
         Returns:
             tuple: `image_id` and full path of most recent exposure from the primary camera
         """
         return self.get_exposure(number=-1)
 
-    def get_exposure(self, number: int = 0) -> Optional[List[Dict[str, Exposure]]]:
+    def get_exposure(self, number: int = 0) -> list[dict[str, Exposure]] | None:
         """Returns the given exposure number."""
         exposure = list()
         try:
@@ -238,7 +269,7 @@ class Observation(PanBase):
                     with suppress(IndexError):
                         exposure.append({cam_name: exposure_list[number]})
         except Exception:
-            self.logger.debug(f'No exposures available.')
+            self.logger.debug("No exposures available.")
         finally:
             return exposure
 
@@ -257,7 +288,7 @@ class Observation(PanBase):
 
     @property
     def set_is_finished(self):
-        """ Check if the current observing block has finished, which is True when the minimum
+        """Check if the current observing block has finished, which is True when the minimum
         number of exposures have been obtained and and integer number of sets have been completed.
         Returns:
             bool: True if finished, False if not.
@@ -279,32 +310,59 @@ class Observation(PanBase):
         self.exposure_list[cam_name].append(exposure)
 
     def reset(self):
-        """Resets the exposure information for the observation """
+        """Resets the exposure information for the observation"""
         self.logger.debug(f"Resetting observation {self}")
 
         self.exposure_list.clear()
         self.merit = 0.0
         self.seq_time = None
 
+    def to_dict(self):
+        """Serialize the object to a dict."""
+        return dict(
+            field=self.field.to_dict(),
+            exptime=get_quantity_value(self.exptime),
+            min_nexp=self.min_nexp,
+            exp_set_size=self.exp_set_size,
+            priority=self.priority,
+            filter_name=self.filter_name,
+            dark=self.dark,
+            tags=self.tags,
+        )
+
     ################################################################################################
     # Private Methods
     ################################################################################################
 
     def __str__(self):
-        return f"{self.field}: {self.exptime} exposures " \
-               f"in blocks of {self.exp_set_size}, " \
-               f"minimum {self.min_nexp}, " \
-               f"priority {self.priority:.0f}"
+        return (
+            f"{self.field}: {self.exptime} exposures "
+            f"in blocks of {self.exp_set_size}, "
+            f"minimum {self.min_nexp}, "
+            f"priority {self.priority:.0f}"
+        )
+
+    def __repr__(self):
+        return (
+            f"<Observation: {self.name} "
+            f"exptime={self.exptime}, "
+            f"min_nexp={self.min_nexp}, "
+            f"exp_set_size={self.exp_set_size}, "
+            f"priority={self.priority}, "
+            f"constraints={self.constraints}>"
+        )
 
     ################################################################################################
     # Class Methods
     ################################################################################################
 
     @classmethod
-    def from_dict(cls,
-                  observation_config: Dict,
-                  field_class='panoptes.pocs.scheduler.field.Field',
-                  observation_class='panoptes.pocs.scheduler.observation.base.Observation'):
+    def from_dict(
+        cls,
+        observation_config: dict,
+        field_class="panoptes.pocs.scheduler.field.Field",
+        observation_class="panoptes.pocs.scheduler.observation.base.Observation",
+    ):
         """Creates an `Observation` object from config dict.
 
         Args:
@@ -320,17 +378,20 @@ class Observation(PanBase):
         """
         observation_config = observation_config.copy()
 
-        field_config = observation_config.get("field", {})
+        field_config = observation_config.get("field", {}).copy()
         field_type_name = field_config.pop("type", field_class)
 
-        obs_config = observation_config.get("observation", {})
+        obs_config = observation_config.get("observation", {}).copy()
         obs_type_name = obs_config.pop("type", observation_class)
 
         try:
             # Make the field
             field = load_module(field_type_name)(**field_config)
 
-            # Make the observation
+            # If the observation has constraints, make those first.
+            if "constraints" in obs_config:
+                obs_config["constraints"] = create_constraints_from_config(obs_config)
+
             obs = load_module(obs_type_name)(field=field, **obs_config)
         except Exception as e:
             raise error.InvalidObservation(f"Invalid field: {observation_config!r} {e!r}")

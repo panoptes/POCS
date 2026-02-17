@@ -48,7 +48,7 @@ set_local_date:
   cmd: SC
   params: YYMMDD
   response: 1
-get_local_time:
+get_timestamp:
   cmd: GLT
   response: sMMMYYMMDDHHMMSS
 # Telescope Motion

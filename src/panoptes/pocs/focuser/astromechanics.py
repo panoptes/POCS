@@ -1,4 +1,11 @@
+"""Astromechanics Canon EF/EF-S electronic focuser driver.
+
+Controls Canon EF/EF-S lenses via the Astromechanics adapter over a serial
+connection, implementing the AbstractSerialFocuser interface.
+"""
+
 from panoptes.utils.serial.device import find_serial_port
+
 from panoptes.pocs.focuser.serial import AbstractSerialFocuser
 
 
@@ -17,8 +24,17 @@ class Focuser(AbstractSerialFocuser):
     current position in memory.
     """
 
-    def __init__(self, name='Astromechanics Focuser', model='Canon EF-232', vendor_id=0x0403,
-                 product_id=0x6001, zero_position=-25000, baudrate=38400, *args, **kwargs):
+    def __init__(
+        self,
+        name="Astromechanics Focuser",
+        model="Canon EF-232",
+        vendor_id=0x0403,
+        product_id=0x6001,
+        zero_position=-25000,
+        baudrate=38400,
+        *args,
+        **kwargs,
+    ):
         """
         Args:
             name (str, optional): default 'Astromechanics Focuser'
@@ -47,6 +63,11 @@ class Focuser(AbstractSerialFocuser):
 
     @AbstractSerialFocuser.position.getter
     def position(self):
+        """Current encoder position of the focuser (cached).
+
+        Returns:
+            int | None: The last commanded position, or None if unknown.
+        """
         return self._position
 
     @property
@@ -66,7 +87,7 @@ class Focuser(AbstractSerialFocuser):
     # Public Methods
 
     def move_to(self, position):
-        """ Moves focuser to a new position.
+        """Moves focuser to a new position.
         Does not do any checking of the requested position but will warn if the lens reports
         hitting a stop.
         Args:
@@ -76,7 +97,7 @@ class Focuser(AbstractSerialFocuser):
         """
         self._is_moving = True
         try:
-            self._send_command(f'M{int(position):d}#')
+            self._send_command(f"M{int(position):d}#")
             self._position = position
         finally:
             # Focuser move commands block until the move is finished, so if the command has
@@ -87,7 +108,7 @@ class Focuser(AbstractSerialFocuser):
         return self.position
 
     def move_by(self, increment):
-        """ Move focuser by a given amount.
+        """Move focuser by a given amount.
         Does not do any checking of the requested increment but will warn if the lens reports
         hitting a stop.
         Args:
@@ -107,7 +128,7 @@ class Focuser(AbstractSerialFocuser):
         # Calibrate near stop of the astromechanics focuser.
         self._move_zero()
 
-    def _send_command(self, command, pre_cmd='', post_cmd='#'):
+    def _send_command(self, command, pre_cmd="", post_cmd="#"):
         """
         Sends a command to the focuser adaptor and retrieves the response.
         Args:
@@ -125,22 +146,22 @@ class Focuser(AbstractSerialFocuser):
         self._serial.reset_input_buffer()
 
         # Send command
-        self._serial.write(f'{pre_cmd}{command}{post_cmd}\r')
+        self._serial.write(f"{pre_cmd}{command}{post_cmd}\r")
 
         return self._serial.read()
 
     def _initialise_aperture(self):
-        """ Initialise the aperture motor. """
-        self.logger.debug('Initialising aperture motor')
+        """Initialise the aperture motor."""
+        self.logger.debug("Initialising aperture motor")
         self._is_moving = True
         try:
-            self._send_command('A00')
-            self.logger.debug('Aperture initialised')
+            self._send_command("A00")
+            self.logger.debug("Aperture initialised")
         finally:
             self._is_moving = False
 
     def _move_zero(self):
-        """ Move the focuser to its zero position and set the current position to zero. """
+        """Move the focuser to its zero position and set the current position to zero."""
         self.logger.debug(f"Setting focus encoder zero point at position={self._zero_position}")
         self._is_moving = True
         try:

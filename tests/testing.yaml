@@ -17,6 +17,7 @@ pocs:
   INITIALIZED: false
   CONNECTED: false
   INTERRUPTED: false
+
 location:
   name: Mauna Loa Observatory
   latitude: 19.54 deg
@@ -26,10 +27,11 @@ location:
   flat_horizon: -6 deg # Flats when sun between this and focus horizon.
   focus_horizon: -12 deg # Dark enough to focus on stars.
   observe_horizon: -18 deg # Sun below this limit to observe.
-  obstructions: [ ]
+  obstructions: [ [ [ 30, 30 ], [ 30, 45 ] ] ]
   timezone: US/Hawaii
   gmt_offset: -600 # Offset in minutes from GMT during.
   # standard time (not daylight saving).
+
 directories:
   base: .
   images: images
@@ -37,17 +39,28 @@ directories:
   resources: resources/
   fields: conf_files/fields
   mounts: resources/mounts
+
 db:
   name: panoptes_testing
   type: file
+
 scheduler:
   type: panoptes.pocs.scheduler.dispatch
   fields_file: simulator.yaml
   check_file: False
+  iers_url: "https://storage.googleapis.com/panoptes-assets/iers/ser7.dat"
+  constraints:
+    - name: panoptes.pocs.scheduler.constraint.Altitude
+    - name: panoptes.pocs.scheduler.constraint.MoonAvoidance
+      options:
+        separation: 15
+    - name: panoptes.pocs.scheduler.constraint.Duration
+
 mount:
   brand: ioptron
   model: cem40   #  ieq30pro
-  driver: panoptes.pocs.mount.ioptron.cem40  # Driver for mount
+  driver: panoptes.pocs.mount.simulator
+  commands_file: ioptron/v310
   serial:
     port: /dev/ttyUSB0
     timeout: 0.

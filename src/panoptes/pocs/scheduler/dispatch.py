@@ -1,12 +1,22 @@
-from panoptes.pocs.scheduler import BaseScheduler
+"""Dispatch-style scheduler implementation.
+
+Implements a simple greedy/dispatch scheduler that evaluates all configured
+observations against the active constraints and selects the best candidate by
+weighted score. Favors the current observation when still viable to reduce
+excessive switching.
+"""
+
 from panoptes.utils.time import current_time
 from panoptes.utils.utils import listify
 
+from panoptes.pocs.scheduler.scheduler import BaseScheduler
+
 
 class Scheduler(BaseScheduler):
+    """Greedy scheduler that ranks observations by constraint scores."""
 
     def __init__(self, *args, **kwargs):
-        """ Inherit from the `BaseScheduler` """
+        """Initialize the Scheduler, delegating to BaseScheduler."""
         BaseScheduler.__init__(self, *args, **kwargs)
 
     def get_observation(self, time=None, show_all=False, constraints=None, read_file=False):
@@ -15,6 +25,8 @@ class Scheduler(BaseScheduler):
         Args:
             time (astropy.time.Time, optional): Time at which scheduler applies,
                 defaults to time called
+            constraints (list of panoptes.pocs.scheduler.constraint.Constraint, optional): The
+                constraints to check. If `None` (the default), use the `scheduler.constraints`.
             show_all (bool, optional): Return all valid observations along with
                 merit value, defaults to False to only get top value
             constraints (list of panoptes.pocs.scheduler.constraint.Constraint, optional): The
@@ -37,56 +49,68 @@ class Scheduler(BaseScheduler):
 
         self.set_common_properties(time)
 
-        constraints = constraints or self.constraints
-        for constraint in listify(constraints):
-            self.logger.info(f"Checking Constraint: {constraint}")
-            for obs_name, observation in self.observations.items():
+        self.logger.info("Applying constraints to observations:")
+        for obs_name, observation in self.observations.items():
+            self.logger.info(f"{obs_name}")
+            # Get the global constraints.
+            all_constraints = constraints or self.constraints.copy()
+
+            # Add the observation specific constraints.
+            if observation.constraints is not None:
+                all_constraints += observation.constraints
+
+            for constraint in listify(all_constraints):
                 if obs_name in valid_obs:
-                    current_score = valid_obs[obs_name]
-                    self.logger.debug(f"\t{obs_name}\tCurrent score: {current_score:.03f}")
+                    # Add a special case where we skip the Moon Avoidance constraint if
+                    # the observation name is "Moon".
+                    if constraint.name == "MoonAvoidance" and obs_name.lower() == "moon":
+                        self.logger.info(f"Skipping Moon Avoidance constraint for {obs_name}")
+                        continue
 
-                    veto, score = constraint.get_score(time,
-                                                       self.observer,
-                                                       observation,
-                                                       **self.common_properties)
-
-                    self.logger.debug(f"\t\tConstraint Score: {score:.03f}\tVeto: {veto}")
+                    veto, score = constraint.get_score(
+                        time, self.observer, observation, **self.common_properties
+                    )
 
                     if veto:
-                        self.logger.debug(f"\t\tVetoed by {constraint}")
+                        self.logger.info(f"\tVetoed by {constraint}")
                         del valid_obs[obs_name]
                         continue
 
                     valid_obs[obs_name] += score
-                    self.logger.debug(f"\t\tTotal score: {valid_obs[obs_name]:.03f}")
+                    self.logger.info(
+                        f"\t{str(constraint):30s}Constraint score: {score:10.02f}\t"
+                        f"Total score: {valid_obs[obs_name]:10.02f}"
+                    )
 
         if len(valid_obs) > 0:
-            self.logger.debug(f'Multiplying final scores by priority')
-
+            self.logger.info("Multiplying final scores by observation priority")
             for obs_name, score in valid_obs.items():
                 priority = self.observations[obs_name].priority
                 new_score = score * priority
-                self.logger.debug(f'{obs_name}: {priority:7.2f} *{score:7.2f} = {new_score:7.2f}')
+                self.logger.info(
+                    f"\t{obs_name:30s}Total score:      {score:10.02f}\t"
+                    f"Priority:    {priority:10.3f} = {new_score:10.02f}"
+                )
                 valid_obs[obs_name] = new_score
 
             # Sort the list by highest score (reverse puts in correct order)
             best_obs = sorted(valid_obs.items(), key=lambda x: x[1])[::-1]
 
             top_obs_name, top_obs_score = best_obs[0]
-            self.logger.info(f'Best observation: {top_obs_name}\tScore: {top_obs_score:.02f}')
+            self.logger.info(f"Best observation: {top_obs_name}\tScore: {top_obs_score:.02f}")
 
             # Check new best against current_observation
-            if self.current_observation is not None \
-                    and top_obs_name != self.current_observation.name:
+            if self.current_observation is not None and top_obs_name != self.current_observation.name:
+                self.logger.info(f"Checking if {self.current_observation} is still valid")
 
                 # Favor the current observation if still available
                 end_of_next_set = time + self.current_observation.set_duration
                 if self.observation_available(self.current_observation, end_of_next_set):
-
                     # If current is better or equal to top, use it
+                    self.logger.debug(f"{self.current_observation.merit=}")
+                    self.logger.debug(f"{top_obs_score=}")
                     if self.current_observation.merit >= top_obs_score:
-                        best_obs.insert(0, (self.current_observation,
-                                            self.current_observation.merit))
+                        best_obs.insert(0, (self.current_observation, self.current_observation.merit))
 
             # Set the current
             self.current_observation = self.observations[top_obs_name]
@@ -95,10 +119,10 @@ class Scheduler(BaseScheduler):
             if self.current_observation is not None:
                 # Favor the current observation if still available
                 end_of_next_set = time + self.current_observation.set_duration
-                if end_of_next_set < self.common_properties['end_of_night'] and \
-                        self.observation_available(self.current_observation, end_of_next_set):
-
-                    self.logger.debug(f"Reusing {self.current_observation}")
+                if end_of_next_set < self.common_properties["end_of_night"] and self.observation_available(
+                    self.current_observation, end_of_next_set
+                ):
+                    self.logger.info(f"Reusing {self.current_observation}")
                     best_obs = [(self.current_observation.name, self.current_observation.merit)]
                 else:
                     self.logger.warning("No valid observations found")

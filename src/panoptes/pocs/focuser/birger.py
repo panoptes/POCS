@@ -1,43 +1,53 @@
-import re
-import serial
+"""Birger Engineering Canon EF-232 focuser driver.
+
+Provides a Focuser implementation that controls Canon EF/EF-S lenses via the
+Birger EF-232 adapter over a serial connection, implementing the
+AbstractSerialFocuser protocol used by POCS.
+"""
+
 import glob
+import re
 from contextlib import suppress
 
-from panoptes.pocs.focuser.serial import AbstractSerialFocuser
+import serial
 from panoptes.utils import error
 
+from panoptes.pocs.focuser.serial import AbstractSerialFocuser
+
 # Birger adaptor serial numbers should be 5 digits
-SERIAL_NUMBER_PATTERN = re.compile(r'^\d{5}$')
+SERIAL_NUMBER_PATTERN = re.compile(r"^\d{5}$")
 
 # Error codes should be 'ERR' followed by 1-2 digits
-error_pattern = re.compile(r'(?<=ERR)\d{1,2}')
+error_pattern = re.compile(r"(?<=ERR)\d{1,2}")
 
-error_messages = ('No error',
-                  'Unrecognised command',
-                  'Lens is in manual focus mode',
-                  'No lens connected',
-                  'Lens distance stop error',
-                  'Aperture not initialised',
-                  'Invalid baud rate specified',
-                  'Reserved',
-                  'Reserved',
-                  'A bad parameter was supplied to the command',
-                  'XModem timeout',
-                  'XModem error',
-                  'XModem unlock code incorrect',
-                  'Not used',
-                  'Invalid port',
-                  'Licence unlock failure',
-                  'Invalid licence file',
-                  'Invalid library file',
-                  'Reserved',
-                  'Reserved',
-                  'Not used',
-                  'Library not ready for lens communications',
-                  'Library not ready for commands',
-                  'Command not licensed',
-                  'Invalid focus range in memory. Try relearning the range',
-                  'Distance stops not supported by the lens')
+error_messages = (
+    "No error",
+    "Unrecognised command",
+    "Lens is in manual focus mode",
+    "No lens connected",
+    "Lens distance stop error",
+    "Aperture not initialised",
+    "Invalid baud rate specified",
+    "Reserved",
+    "Reserved",
+    "A bad parameter was supplied to the command",
+    "XModem timeout",
+    "XModem error",
+    "XModem unlock code incorrect",
+    "Not used",
+    "Invalid port",
+    "Licence unlock failure",
+    "Invalid licence file",
+    "Invalid library file",
+    "Reserved",
+    "Reserved",
+    "Not used",
+    "Library not ready for lens communications",
+    "Library not ready for commands",
+    "Command not licensed",
+    "Invalid focus range in memory. Try relearning the range",
+    "Distance stops not supported by the lens",
+)
 
 
 class Focuser(AbstractSerialFocuser):
@@ -45,8 +55,14 @@ class Focuser(AbstractSerialFocuser):
     Focuser class for control of a Canon DSLR lens via a Birger Engineering Canon EF-232 adapter.
     """
 
-    def __init__(self, name='Birger Focuser', model='Canon EF-232', max_command_retries=5,
-                 baudrate=115200, **kwargs):
+    def __init__(
+        self,
+        name="Birger Focuser",
+        model="Canon EF-232",
+        max_command_retries=5,
+        baudrate=115200,
+        **kwargs,
+    ):
         """
         Args:
             name (str, optional): default 'Birger Focuser'
@@ -66,7 +82,7 @@ class Focuser(AbstractSerialFocuser):
         """
         Returns current focus position in the lens focus encoder units.
         """
-        response = self._send_command('pf', response_length=1)
+        response = self._send_command("pf", response_length=1)
         self._position = int(response[0].rstrip())
         return self._position
 
@@ -108,21 +124,19 @@ class Focuser(AbstractSerialFocuser):
     # Public Methods
 
     def connect(self, port, baudrate, **kwargs):
-        """ Connect to the Birger focuser.
+        """Connect to the Birger focuser.
         Args:
             port (int): The serial port.
             baudrate (int): The baudrate of the serial device.
             **kwargs: Parsed to super().connect
         """
         if SERIAL_NUMBER_PATTERN.match(port):
-
             # Have been given a serial number
             self.logger.debug(f"Looking for {self.name} ({port})")
 
             if self._adaptor_nodes is None:
-
                 # No cached device nodes scanning results, need to scan.
-                self.logger.debug('Getting serial numbers for all connected Birger focusers')
+                self.logger.debug("Getting serial numbers for all connected Birger focusers")
                 self._adaptor_nodes = {}
 
                 # Find nodes matching pattern
@@ -140,7 +154,7 @@ class Focuser(AbstractSerialFocuser):
                     self.logger.error("No Birger focuser devices found!")
                     return
                 else:
-                    self.logger.debug(f'Connected Birger focusers: {Focuser._adaptor_nodes}')
+                    self.logger.debug(f"Connected Birger focusers: {Focuser._adaptor_nodes}")
 
             # Search in cached device node scanning results for serial number
             try:
@@ -148,7 +162,7 @@ class Focuser(AbstractSerialFocuser):
             except KeyError:
                 self.logger.error(f"Could not find {self.name} ({port})")
                 return
-            self.logger.debug(f'Found {self.name} ({port}) on {device_node}')
+            self.logger.debug(f"Found {self.name} ({port}) on {device_node}")
             self.port = device_node
 
         super().connect(port=self.port, baudrate=baudrate, **kwargs)
@@ -165,7 +179,7 @@ class Focuser(AbstractSerialFocuser):
         """
         self._is_moving = True
         try:
-            response = self._send_command('fa{:d}'.format(int(position)), response_length=1)
+            response = self._send_command(f"fa{int(position):d}", response_length=1)
             new_position = self._parse_move_response(response)
         finally:
             # Birger move commands block until the move is finished, so if the command has
@@ -187,7 +201,7 @@ class Focuser(AbstractSerialFocuser):
         """
         self._is_moving = True
         try:
-            response = self._send_command('mf{:d}'.format(int(increment)), response_length=1)
+            response = self._send_command(f"mf{int(increment):d}", response_length=1)
             moved_by = self._parse_move_response(response)
         finally:
             # Birger move commands block until the move is finished, so if the command has
@@ -200,10 +214,10 @@ class Focuser(AbstractSerialFocuser):
     # Private Methods
 
     def _initialize(self):
-        """ Initialize the Birger focuser. """
+        """Initialize the Birger focuser."""
         # Set 'verbose' and 'legacy' response modes. The response from this depends on
         # what the current mode is... but after a power cycle it should be 'rm1,0', 'OK'
-        self._send_command('rm1,0', response_length=0)
+        self._send_command("rm1,0", response_length=0)
 
         # Set the serial number
         self._serial_number = self._get_serial_number()
@@ -244,7 +258,7 @@ class Focuser(AbstractSerialFocuser):
                 adaptor.
         """
         if not self.is_connected:
-            self.logger.critical("Attempt to send command to {} when not connected!".format(self))
+            self.logger.critical(f"Attempt to send command to {self} when not connected!")
             return
 
         for i in range(self._max_command_retries):
@@ -252,19 +266,19 @@ class Focuser(AbstractSerialFocuser):
             self._serial.reset_input_buffer()
 
             # Send the command
-            self._serial.write(command + '\r')
+            self._serial.write(command + "\r")
             raw_response = self._serial.read().rstrip().split("\r")
 
             try:
                 # In verbose mode adaptor will first echo the command
                 echo = raw_response[0]
                 if echo != command:
-                    self.logger.warning(f'echo != command: {echo!r} != {command!r}. Retrying.')
+                    self.logger.warning(f"echo != command: {echo!r} != {command!r}. Retrying.")
                     continue
 
                 # Adaptor should then send 'OK', even if there was an error.
                 ok = raw_response[1]
-                if ok != 'OK':
+                if ok != "OK":
                     self.logger.warning(f"ok != 'OK': {ok!r} != 'OK'. Retrying command.")
                     continue
 
@@ -273,8 +287,10 @@ class Focuser(AbstractSerialFocuser):
                 break
 
             except Exception as err:
-                msg = (f"Command {command} failed on {self} on attempt {i + 1} of"
-                       f" {self._max_command_retries}: {err!r}")
+                msg = (
+                    f"Command {command} failed on {self} on attempt {i + 1} of"
+                    f" {self._max_command_retries}: {err!r}"
+                )
 
                 if i == self._max_command_retries - 1:
                     raise error.PanError(msg)
@@ -303,48 +319,41 @@ class Focuser(AbstractSerialFocuser):
             hit_limit = bool(int(response[-1]))
             assert reply == "DONE"
         except (IndexError, AssertionError):
-            raise error.PanError("{} got response '{}', expected 'DONENNNNN,N'!".format(self,
-                                                                                        response))
+            raise error.PanError(f"{self} got response '{response}', expected 'DONENNNNN,N'!")
         if hit_limit:
-            self.logger.warning('{} reported hitting a focus stop'.format(self))
+            self.logger.warning(f"{self} reported hitting a focus stop")
 
         return amount
 
     def _get_serial_number(self):
-        """ Get the Birger Focuser's serial number. """
-        response = self._send_command('sn', response_length=1)
+        """Get the Birger Focuser's serial number."""
+        response = self._send_command("sn", response_length=1)
         return response[0].rstrip()
 
     def _get_library_version(self):
-        response = self._send_command('lv', response_length=1)
+        response = self._send_command("lv", response_length=1)
         self._library_version = response[0].rstrip()
-        self.logger.debug("Got library version '{}' for {} on {}".format(self._library_version,
-                                                                         self.name,
-                                                                         self.port))
+        self.logger.debug(f"Got library version '{self._library_version}' for {self.name} on {self.port}")
 
     def _get_hardware_version(self):
-        response = self._send_command('hv', response_length=1)
+        response = self._send_command("hv", response_length=1)
         self._hardware_version = response[0].rstrip()
-        self.logger.debug("Got hardware version {} for {} on {}".format(self._hardware_version,
-                                                                        self.name,
-                                                                        self.port))
+        self.logger.debug(f"Got hardware version {self._hardware_version} for {self.name} on {self.port}")
 
     def _get_lens_info(self):
-        response = self._send_command('id', response_length=1)
+        response = self._send_command("id", response_length=1)
         self._lens_info = response[0].rstrip()
-        self.logger.debug("Got lens info '{}' for {} on {}".format(self._lens_info,
-                                                                   self.name,
-                                                                   self.port))
+        self.logger.debug(f"Got lens info '{self._lens_info}' for {self.name} on {self.port}")
 
     def _initialise_aperture(self):
-        self.logger.debug('Initialising aperture motor')
-        response = self._send_command('in', response_length=1)[0].rstrip()
-        if response != 'DONE':
+        self.logger.debug("Initialising aperture motor")
+        response = self._send_command("in", response_length=1)[0].rstrip()
+        if response != "DONE":
             self.logger.error(f"{self} got response={response!r}, expected 'DONE'!")
 
     def _move_zero(self):
-        response = self._send_command('mz', response_length=1)[0].rstrip()
-        if response[:4] != 'DONE':
+        response = self._send_command("mz", response_length=1)[0].rstrip()
+        if response[:4] != "DONE":
             self.logger.error(f"{self} got response={response!r}, expected 'DONENNNNN,1'!")
         else:
             r = response[4:].rstrip()
@@ -352,18 +361,18 @@ class Focuser(AbstractSerialFocuser):
             return int(r[:-2])
 
     def _zero_encoder(self):
-        self.logger.debug('Setting focus encoder zero point')
-        self._send_command('sf0', response_length=0)
+        self.logger.debug("Setting focus encoder zero point")
+        self._send_command("sf0", response_length=0)
 
     def _learn_focus_range(self):
-        self.logger.debug('Learning absolute focus range')
-        response = self._send_command('la', response_length=1)[0].rstrip()
-        if response != 'DONE:LA':
+        self.logger.debug("Learning absolute focus range")
+        response = self._send_command("la", response_length=1)[0].rstrip()
+        if response != "DONE:LA":
             self.logger.error(f"{self} got response={response!r}, expected 'DONE:LA'!")
 
     def _move_inf(self):
-        response = self._send_command('mi', response_length=1)[0].rstrip()
-        if response[:4] != 'DONE':
+        response = self._send_command("mi", response_length=1)[0].rstrip()
+        if response[:4] != "DONE":
             self.logger.error(f"{self} got response={response!r}, expected 'DONENNNNN,1'!")
         else:
             r = response[4:].rstrip()
@@ -372,7 +381,7 @@ class Focuser(AbstractSerialFocuser):
 
     def _add_fits_keywords(self, header):
         header = super()._add_fits_keywords(header)
-        header.set('FOC-HW', self.hardware_version, 'Focuser hardware version')
-        header.set('FOC-FW', self.firmware_version, 'Focuser firmware version')
-        header.set('LENSINFO', self.lens_info, 'Attached lens')
+        header.set("FOC-HW", self.hardware_version, "Focuser hardware version")
+        header.set("FOC-FW", self.firmware_version, "Focuser firmware version")
+        header.set("LENSINFO", self.lens_info, "Attached lens")
         return header

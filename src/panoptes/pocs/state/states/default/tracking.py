@@ -1,20 +1,27 @@
-def on_enter(event_data):
-    """ The unit is tracking the target. Proceed to observations. """
-    pocs = event_data.model
-    pocs.next_state = 'parking'
+"""State: tracking.
 
-    if pocs.get_config('mount.settings.update_tracking', False):
-        pocs.next_state = 'observing'
+Fine-tune tracking (if configured) after slewing/pointing, then transition to
+'observing'. If tracking update is disabled, proceed directly to observing.
+"""
+
+
+def on_enter(event_data):
+    """The unit is tracking the target. Proceed to observations."""
+    pocs = event_data.model
+    pocs.next_state = "parking"
+
+    if pocs.get_config("mount.settings.update_tracking", False):
+        pocs.next_state = "observing"
         return
 
     # If we came from pointing then don't try to adjust
-    if event_data.transition.source != 'pointing':
+    if event_data.transition.source != "pointing":
         pocs.say("Checking our tracking")
         try:
             pocs.observatory.update_tracking()
             pocs.say("Done with tracking adjustment, going to observe")
-            pocs.next_state = 'observing'
+            pocs.next_state = "observing"
         except Exception as e:
-            pocs.logger.warning("Problem adjusting tracking: {}".format(e))
+            pocs.logger.warning(f"Problem adjusting tracking: {e}")
     else:
-        pocs.next_state = 'observing'
+        pocs.next_state = "observing"

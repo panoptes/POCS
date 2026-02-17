@@ -1,10 +1,17 @@
+"""Filter wheel simulator used for development and tests.
+
+Implements a simple timing-based filter wheel that moves between indexed
+positions and optionally enforces unidirectional motion, matching the
+AbstractFilterWheel protocol without requiring hardware.
+"""
+
 import math
 import random
 import threading
 
 from astropy import units as u
-
 from panoptes.utils import error
+
 from panoptes.pocs.filterwheel import AbstractFilterWheel
 
 
@@ -28,65 +35,76 @@ class FilterWheel(AbstractFilterWheel):
             shortest path. Default is True.
     """
 
-    def __init__(self,
-                 name='Simulated Filter Wheel',
-                 model='panoptes.pocs.filterwheel.simulator.FilterWheel',
-                 camera=None,
-                 filter_names=None,
-                 timeout=10 * u.second,
-                 serial_number=None,
-                 move_time=1 * u.second,
-                 unidirectional=True,
-                 *args, **kwargs):
-        super().__init__(name=name,
-                         model=model,
-                         camera=camera,
-                         filter_names=filter_names,
-                         timeout=timeout,
-                         serial_number=serial_number,
-                         *args, **kwargs)
+    def __init__(
+        self,
+        name="Simulated Filter Wheel",
+        model="panoptes.pocs.filterwheel.simulator.FilterWheel",
+        camera=None,
+        filter_names=None,
+        timeout=10 * u.second,
+        serial_number=None,
+        move_time=1 * u.second,
+        unidirectional=True,
+        *args,
+        **kwargs,
+    ):
+        super().__init__(
+            name=name,
+            model=model,
+            camera=camera,
+            filter_names=filter_names,
+            timeout=timeout,
+            serial_number=serial_number,
+            *args,
+            **kwargs,
+        )
         if isinstance(move_time, u.Quantity):
             self._move_time = move_time.to(u.second).value
         else:
             self._move_time = move_time
         self._unidirectional = bool(unidirectional)
         self.connect()
-        self.logger.info("Filter wheel {} initialised".format(self))
+        self.logger.info(f"Filter wheel {self} initialised")
 
-##################################################################################################
-# Properties
-##################################################################################################
+    ##################################################################################################
+    # Properties
+    ##################################################################################################
 
     @AbstractFilterWheel.position.getter
     def position(self):
-        """ Current integer position of the filter wheel """
+        """Current integer position of the filter wheel"""
         if math.isnan(self._position):
             self.logger.warning("Filter wheel position unknown, returning NaN")
         return self._position
 
     @property
     def is_moving(self):
-        """ Is the filterwheel currently moving """
+        """Is the filterwheel currently moving"""
         return self._moving
 
     @property
     def is_unidirectional(self):
+        """Whether the simulator constrains motion to a single direction.
+
+        Returns:
+            bool: True if only forward rotation is allowed.
+        """
         return self._unidirectional
 
-##################################################################################################
-# Methods
-##################################################################################################
+    ##################################################################################################
+    # Methods
+    ##################################################################################################
 
     def connect(self):
-        """ Connect to the filter wheel """
-        self._serial_number = 'SW{:04d}'.format(random.randint(0, 9999))
+        """Connect to the filter wheel"""
+        self._serial_number = f"SW{random.randint(0, 9999):04d}"
         self._position = 1
         self._moving = False
         self._connected = True
 
-##################################################################################################
-# Private methods
-##################################################################################################
+    ##################################################################################################
+    # Private methods
+    ##################################################################################################
 
     def _move_to(self, position):
         if self._moving:
@@ -104,10 +122,8 @@ class FilterWheel(AbstractFilterWheel):
             move_distance = abs(move_distance)
         move_duration = move_distance * self._move_time
 
-        move = threading.Timer(interval=move_duration,
-                               function=self._complete_move,
-                               args=(position,))
-        self._position = float('nan')
+        move = threading.Timer(interval=move_duration, function=self._complete_move, args=(position,))
+        self._position = float("nan")
         self._moving = True
         move.start()
 

@@ -5,10 +5,9 @@ import tempfile
 import pytest
 from astropy import units as u
 from astropy.coordinates import SkyCoord
-from panoptes.pocs.images import Image
-from panoptes.pocs.images import OffsetError
-from panoptes.utils.error import SolveError
-from panoptes.utils.error import Timeout
+from panoptes.utils.error import SolveError, Timeout
+
+from panoptes.pocs.images import Image, OffsetError
 
 
 def copy_file_to_dir(to_dir, file):
@@ -22,12 +21,12 @@ def copy_file_to_dir(to_dir, file):
 
 def test_fits_exists(unsolved_fits_file):
     with pytest.raises(AssertionError):
-        Image(unsolved_fits_file.replace('.fits', '.fit'))
+        Image(unsolved_fits_file.replace(".fits", ".fit"))
 
 
 def test_fits_extension():
     with pytest.raises(AssertionError):
-        Image(os.path.join(os.environ['POCS'], 'pocs', 'images.py'))
+        Image(os.path.join(".", "pocs", "images.py"))
 
 
 def test_fits_noheader(noheader_fits_file):
@@ -35,7 +34,7 @@ def test_fits_noheader(noheader_fits_file):
         Image(noheader_fits_file)
 
 
-@pytest.mark.skip('Need to fix timeout buffer in panoptes-utils')
+@pytest.mark.skip("Need to fix timeout buffer in panoptes-utils")
 def test_solve_timeout(tiny_fits_file):
     with tempfile.TemporaryDirectory() as tmpdir:
         tiny_fits_file = copy_file_to_dir(tmpdir, tiny_fits_file)
@@ -45,6 +44,7 @@ def test_solve_timeout(tiny_fits_file):
             im0.solve_field(verbose=True, replace=False, radius=4, timeout=0)
 
 
+@pytest.mark.plate_solve
 def test_fail_solve(tiny_fits_file):
     with tempfile.TemporaryDirectory() as tmpdir:
         tiny_fits_file = copy_file_to_dir(tmpdir, tiny_fits_file)
@@ -54,8 +54,8 @@ def test_fail_solve(tiny_fits_file):
             im0.solve_field(verbose=True, replace=False, radius=4)
 
 
-def test_solve_field_unsolved(unsolved_fits_file,
-                              solved_fits_file):
+@pytest.mark.plate_solve
+def test_solve_field_unsolved(unsolved_fits_file, solved_fits_file):
     # We place the input images into a temp directory so that output images
     # are also in the temp directory.
     with tempfile.TemporaryDirectory() as tmpdir:
@@ -104,13 +104,13 @@ def test_pointing_error_no_wcs(unsolved_fits_file):
         im0.pointing_error
 
 
-def test_pointing_error_passed_wcs(unsolved_fits_file,
-                                   solved_fits_file):
+def test_pointing_error_passed_wcs(unsolved_fits_file, solved_fits_file):
     im0 = Image(unsolved_fits_file, wcs_file=solved_fits_file)
 
     assert isinstance(im0.pointing_error, OffsetError)
 
 
+@pytest.mark.plate_solve
 def test_pointing_error(solved_fits_file):
     im0 = Image(solved_fits_file)
 

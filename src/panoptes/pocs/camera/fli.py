@@ -1,37 +1,45 @@
+"""FLI camera driver implementation for POCS.
+
+Provides a Camera class backed by the libfli SDK via FLIDriver, implementing the
+AbstractSDKCamera interface for cooled FLI CCD/CMOS cameras.
+"""
+
 from contextlib import suppress
 
 import numpy as np
-
 from astropy import units as u
-
-from panoptes.pocs.camera.sdk import AbstractSDKCamera
-from panoptes.pocs.camera.libfli import FLIDriver
-from panoptes.pocs.camera import libfliconstants as c
-from panoptes.utils.images import fits as fits_utils
+from astropy.io import fits
 from panoptes.utils import error
+
+from panoptes.pocs.camera import libfliconstants as c
+from panoptes.pocs.camera.libfli import FLIDriver
+from panoptes.pocs.camera.sdk import AbstractSDKCamera
 
 
 class Camera(AbstractSDKCamera):
+    """FLI camera implementation backed by the libfli SDK.
+
+    This class wraps FLIDriver calls to provide cooling, exposure, and readout
+    control consistent with the AbstractSDKCamera interface.
+    """
+
     _driver = None
     _cameras = {}
     _assigned_cameras = set()
 
-    def __init__(self,
-                 name='FLI Camera',
-                 target_temperature=25 * u.Celsius,
-                 *args, **kwargs):
-        kwargs['target_temperature'] = target_temperature
+    def __init__(self, name="FLI Camera", target_temperature=25 * u.Celsius, *args, **kwargs):
+        kwargs["target_temperature"] = target_temperature
         super().__init__(name, FLIDriver, *args, **kwargs)
-        self.logger.info('{} initialised'.format(self))
+        self.logger.info(f"{self} initialised")
 
     def __del__(self):
         with suppress(AttributeError):
             handle = self._handle
             self._driver.FLIClose(handle)
-            self.logger.debug('Closed FLI camera handle {}'.format(handle.value))
+            self.logger.debug(f"Closed FLI camera handle {handle.value}")
         super().__del__()
 
-# Properties
+    # Properties
 
     @property
     def temperature(self):
@@ -51,18 +59,26 @@ class Camera(AbstractSDKCamera):
 
     @property
     def cooling_enabled(self):
-        """
-        Current status of the camera's image sensor cooling system (enabled/disabled).
+        """Whether the camera's cooling is enabled.
 
-        Note: For FLI cameras this is always True, and cannot be set.
+        Returns:
+            bool: Always True for FLI cameras; cooling cannot be disabled.
         """
         return True
 
     @cooling_enabled.setter
     def cooling_enabled(self, enable):
+        """Attempt to enable/disable cooling (not supported).
+
+        Args:
+            enable (bool): Desired cooling state. Only True is supported for FLI.
+
+        Raises:
+            panoptes.utils.error.NotSupported: If attempting to disable cooling.
+        """
         # Cooling is always enabled on FLI cameras
         if not enable:
-            raise error.NotSupported("Cannot disable cooling on {}".format(self.name))
+            raise error.NotSupported(f"Cannot disable cooling on {self.name}")
 
     @property
     def cooling_power(self):
@@ -74,10 +90,10 @@ class Camera(AbstractSDKCamera):
 
     @property
     def is_exposing(self):
-        """ True if an exposure is currently under way, otherwise False """
+        """True if an exposure is currently under way, otherwise False"""
         return bool(self._driver.FLIGetExposureStatus(self._handle).value)
 
-# Methods
+    # Methods
 
     def connect(self):
         """
@@ -85,25 +101,33 @@ class Camera(AbstractSDKCamera):
 
         Gets a 'handle', serial number and specs/capabilities from the driver
         """
-        self.logger.debug('Connecting to {}'.format(self))
+        self.logger.debug(f"Connecting to {self}")
         self._handle = self._driver.FLIOpen(port=self._address)
         if self._handle == c.FLI_INVALID_DEVICE:
-            message = 'Could not connect to {} on {}!'.format(self.name, self._camera_address)
+            message = f"Could not connect to {self.name} on {self._camera_address}!"
             raise error.PanError(message)
         self._get_camera_info()
-        self.model = self.properties['camera model']
+        self.model = self.properties["camera model"]
         # All FLI camera models are cooled
         self._is_cooled_camera = True
         self._connected = True
 
-# Private Methods
+    # Private Methods
 
     def _set_target_temperature(self, target):
         self._driver.FLISetTemperature(self._handle, target)
         # Check for success?
         self._target_temperature = target
 
-    def _set_cooling_enabled():
+    def _set_cooling_enabled(self, enable):
+        """Enable or disable cooling (not supported).
+
+        Args:
+            enable (bool): Desired state; FLI cameras always have cooling enabled.
+
+        Raises:
+            NotImplementedError: Cooling state cannot be changed for FLI cameras.
+        """
         raise NotImplementedError
 
     def _start_exposure(self, seconds, filename, dark, header, *args, **kwargs):
@@ -117,9 +141,11 @@ class Camera(AbstractSDKCamera):
 
         # For now set to 'visible' (i.e. light sensitive) area of image sensor.
         # Can later use this for windowed exposures.
-        self._driver.FLISetImageArea(self._handle,
-                                     self.properties['visible corners'][0],
-                                     self.properties['visible corners'][1])
+        self._driver.FLISetImageArea(
+            self._handle,
+            self.properties["visible corners"][0],
+            self.properties["visible corners"][1],
+        )
 
         # No on chip binning for now.
         self._driver.FLISetHBin(self._handle, bin_factor=1)
@@ -133,10 +159,12 @@ class Camera(AbstractSDKCamera):
         # Start exposure
         self._driver.FLIExposeFrame(self._handle)
 
-        readout_args = (filename,
-                        self.properties['visible width'],
-                        self.properties['visible height'],
-                        header)
+        readout_args = (
+            filename,
+            self.properties["visible width"],
+            self.properties["visible height"],
+            header,
+        )
         return readout_args
 
     def _readout(self, filename, width, height, header):
@@ -149,26 +177,22 @@ class Camera(AbstractSDKCamera):
                 image_data[i] = self._driver.FLIGrabRow(self._handle, image_data.shape[1])
                 rows_got += 1
         except RuntimeError as err:
-            message = 'Readout error on {}, expected {} rows, got {}: {}'.format(
-                self, image_data.shape[0], rows_got, err)
+            message = f"Readout error on {self}, expected {image_data.shape[0]} rows, got {rows_got}: {err}"
             raise error.PanError(message)
         else:
-            fits_utils.write_fits(data=image_data,
-                                  header=header,
-                                  filename=filename)
+            self.write_fits(data=image_data, header=header, filename=filename)
 
-    def _create_fits_header(self, seconds, dark):
+    def _create_fits_header(self, seconds, dark=None, metadata=None) -> fits.Header:
         header = super()._create_fits_header(seconds, dark)
 
-        header.set('CAM-HW', self.properties['hardware version'], 'Camera hardware version')
-        header.set('CAM-FW', self.properties['firmware version'], 'Camera firmware version')
-        header.set('XPIXSZ', self.properties['pixel width'].value, 'Microns')
-        header.set('YPIXSZ', self.properties['pixel height'].value, 'Microns')
+        header.set("CAM-HW", self.properties["hardware version"], "Camera hardware version")
+        header.set("CAM-FW", self.properties["firmware version"], "Camera firmware version")
+        header.set("XPIXSZ", self.properties["pixel width"].value, "Microns")
+        header.set("YPIXSZ", self.properties["pixel height"].value, "Microns")
 
         return header
 
     def _get_camera_info(self):
-
         serial_number = self._driver.FLIGetSerialString(self._handle)
         camera_model = self._driver.FLIGetModel(self._handle)
         hardware_version = self._driver.FLIGetHWRevision(self._handle)
@@ -179,16 +203,16 @@ class Camera(AbstractSDKCamera):
         visible_corners = self._driver.FLIGetVisibleArea(self._handle)
 
         self._info = {
-            'serial number': serial_number,
-            'camera model': camera_model,
-            'hardware version': hardware_version,
-            'firmware version': firmware_version,
-            'pixel width': pixel_width,
-            'pixel height': pixel_height,
-            'array corners': ccd_corners,
-            'array height': ccd_corners[1][1] - ccd_corners[0][1],
-            'array width': ccd_corners[1][0] - ccd_corners[0][0],
-            'visible corners': visible_corners,
-            'visible height': visible_corners[1][1] - visible_corners[0][1],
-            'visible width': visible_corners[1][0] - visible_corners[0][0]
+            "serial number": serial_number,
+            "camera model": camera_model,
+            "hardware version": hardware_version,
+            "firmware version": firmware_version,
+            "pixel width": pixel_width,
+            "pixel height": pixel_height,
+            "array corners": ccd_corners,
+            "array height": ccd_corners[1][1] - ccd_corners[0][1],
+            "array width": ccd_corners[1][0] - ccd_corners[0][0],
+            "visible corners": visible_corners,
+            "visible height": visible_corners[1][1] - visible_corners[0][1],
+            "visible width": visible_corners[1][0] - visible_corners[0][0],
         }

@@ -4,14 +4,14 @@ import pycodestyle
 import pytest
 
 
-@pytest.fixture(scope='module', params=['pocs'])
+@pytest.fixture(scope="module", params=["pocs"])
 def dirs_to_check(request):
     return request.param
 
 
 def test_conformance(dirs_to_check):
     """Test that we conform to PEP-8."""
-    config_file = os.path.join(os.environ['POCS'], 'setup.cfg')
+    config_file = os.path.join(".", "setup.cfg")
     style = pycodestyle.StyleGuide(quiet=False, config_file=config_file)
 
     print(dirs_to_check)

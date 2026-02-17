@@ -1,22 +1,28 @@
+"""Base classes and helpers for DSLR cameras controlled via gphoto2.
+
+Provides AbstractGPhotoCamera, a concrete AbstractCamera subclass that shells out
+to the system gphoto2 binary for exposure control and property management. This
+module is used by gphoto-based DSLR drivers.
+"""
+
 import re
-import shutil
 import subprocess
+import time
 from abc import ABC
-from threading import Event
-from threading import Timer
-from typing import List, Dict, Union
+from pathlib import Path
 
 from panoptes.utils import error
-from panoptes.utils.utils import listify
-from panoptes.utils.serializers import from_yaml
 from panoptes.utils.images import cr2 as cr2_utils
-from panoptes.utils.time import CountdownTimer
-from panoptes.pocs.camera import AbstractCamera
+from panoptes.utils.serializers import from_yaml
+from panoptes.utils.utils import listify
+
+from panoptes.pocs.camera import AbstractCamera, get_gphoto2_cmd
+
+file_save_re = re.compile(r"Saving file as (.*)")
 
 
 class AbstractGPhotoCamera(AbstractCamera, ABC):  # pragma: no cover
-
-    """ Abstract camera class that uses gphoto2 interaction.
+    """Abstract camera class that uses gphoto2 interaction.
 
     Args:
         config(Dict):   Config key/value pairs, defaults to empty dict.
@@ -25,91 +31,114 @@ class AbstractGPhotoCamera(AbstractCamera, ABC):  # pragma: no cover
     def __init__(self, *arg, **kwargs):
         super().__init__(*arg, **kwargs)
 
-        # Setup a holder for the exposure process.
+        # Set up a holder for the exposure process.
         self._command_proc = None
 
-        self.logger.info(f'GPhoto2 camera {self.name} created on {self.port}')
+        self.logger.info(f"GPhoto2 camera {self.name} created on {self.port}")
 
     @property
     def temperature(self):
+        """Current sensor temperature if available (not typical for DSLRs).
+
+        Returns:
+            None: gphoto2-controlled DSLRs generally do not report sensor temperature.
+        """
         return None
 
     @property
     def target_temperature(self):
+        """Target temperature for DSLR sensors (not applicable).
+
+        Returns:
+            None: DSLRs controlled via gphoto2 generally lack regulated cooling.
+        """
         return None
 
     @property
     def cooling_power(self):
+        """Cooling power level for the camera, if available.
+
+        Returns:
+            None: DSLRs via gphoto2 typically do not expose cooling power metrics.
+        """
         return None
 
     @AbstractCamera.uid.getter
     def uid(self) -> str:
-        """ A six-digit serial number for the camera """
+        """A six-digit serial number for the camera.
+
+        Returns:
+            str: The first six characters of the camera's serial number.
+        """
         return self._serial_number[0:6]
 
     def connect(self):
+        """Connect to the DSLR via gphoto2.
+
+        Implementations should validate communication to the camera (e.g., by
+        listing capabilities) and set internal flags required by AbstractCamera.
+
+        Raises:
+            NotImplementedError: This base class does not implement device-specific logic.
+        """
         raise NotImplementedError
 
-    def take_observation(self, observation, headers=None, filename=None, *args, **kwargs):
-        """Take an observation.
-
-        Gathers various header information, sets the file path, and calls
-        `take_exposure`. Also creates a `threading.Event` object and a
-        `threading.Timer` object. The timer calls `process_exposure` after the
-        set amount of time is expired (`observation.exptime + self.readout_time`).
-
-        Note:
-            If a `filename` is passed in it can either be a full path that includes
-            the extension, or the basename of the file, in which case the directory
-            path and extension will be added to the `filename` for output
-
-        Args:
-            observation (~pocs.scheduler.observation.Observation): Object
-                describing the observation
-            headers (dict): Header data to be saved along with the file
-            filename (str, optional): Filename for saving, defaults to ISOT time stamp
-            **kwargs (dict): Optional keyword arguments (`exptime`)
+    @property
+    def is_exposing(self):
+        """Whether a gphoto2 command (exposure) is still running.
 
         Returns:
-            threading.Event: An event to be set when the image is done processing
+            bool: True if the current exposure subprocess is active.
         """
-        # To be used for marking when exposure is complete (see `process_exposure`)
-        observation_event = Event()
+        if self._command_proc is not None and self._command_proc.poll() is not None:
+            self._is_exposing_event.clear()
 
-        exptime, file_path, image_id, metadata = self._setup_observation(observation,
-                                                                         headers,
-                                                                         filename,
-                                                                         **kwargs)
+        return self._is_exposing_event.is_set()
 
-        self.take_exposure(seconds=exptime, filename=file_path)
+    def process_exposure(self, metadata, **kwargs):
+        """Convert the CR2 to FITS and pass to common processing.
 
-        # Add most recent exposure to list
-        if self.is_primary:
-            if 'POINTING' in headers:
-                observation.pointing_images[image_id] = file_path.replace('.cr2', '.fits')
-            else:
-                observation.exposure_list[image_id] = file_path.replace('.cr2', '.fits')
+        Args:
+            metadata (dict): Header metadata saved for the image.
+            **kwargs: Forwarded to AbstractCamera.process_exposure.
 
-        # Process the image after a set amount of time
-        wait_time = exptime + self.readout_time
+        Returns:
+            None
+        """
+        # Wait for exposure to complete. Timeout handled by exposure thread.
+        while self.is_exposing:
+            time.sleep(0.5)
 
-        t = Timer(wait_time, self.process_exposure, (metadata, observation_event))
-        t.name = f'{self.name}Thread'
-        t.start()
+        metadata["filepath"] = metadata["filepath"].replace(".cr2", ".fits")
+        super().process_exposure(metadata, **kwargs)
+        self._command_proc = None
 
-        return observation_event
+    def command(self, cmd: list[str] | str, check_exposing: bool = True):
+        """Run a gphoto2 command and start tracking the subprocess.
 
-    def command(self, cmd: Union[List[str], str]):
-        """ Run gphoto2 command. """
+        Args:
+            cmd (list[str] | str): The gphoto2 arguments to run, e.g.,
+                ["--capture-image-and-download"] or a single string.
+            check_exposing (bool): If True, prevent starting a new command while an
+                exposure command is still running. Defaults to True.
+
+        Raises:
+            panoptes.utils.error.InvalidCommand: If a command is already in progress or
+                parameters are invalid for gphoto2.
+            panoptes.utils.error.PanError: For unexpected errors starting the subprocess.
+
+        Returns:
+            None
+        """
 
         # Test to see if there is a running command already
-        if self._command_proc and self._command_proc.poll():
+        if self.is_exposing and check_exposing:
             raise error.InvalidCommand("Command already running")
         else:
             # Build the command.
-            run_cmd = [shutil.which('gphoto2')]
+            run_cmd = [get_gphoto2_cmd()]
             if self.port is not None:
-                run_cmd.extend(['--port', self.port])
+                run_cmd.extend(["--port", self.port])
             run_cmd.extend(listify(cmd))
 
             self.logger.debug(f"gphoto2 command: {run_cmd!r}")
@@ -121,6 +150,7 @@ class AbstractGPhotoCamera(AbstractCamera, ABC):  # pragma: no cover
                     stderr=subprocess.PIPE,
                     universal_newlines=True,
                 )
+                self.logger.debug(f"Started command on proc={self._command_proc.pid}")
             except OSError as e:
                 raise error.InvalidCommand(f"Can't send command to gphoto2. {e} \t {run_cmd}")
             except ValueError as e:
@@ -128,13 +158,16 @@ class AbstractGPhotoCamera(AbstractCamera, ABC):  # pragma: no cover
             except Exception as e:
                 raise error.PanError(e)
 
-    def get_command_result(self, timeout: float = 10) -> Union[List[str], None]:
-        """ Get the output from the command.
+    def get_command_result(self, timeout: float = 10) -> list[str] | None:
+        """Retrieve stdout lines from the last gphoto2 subprocess.
 
-        Accepts a `timeout` param for communicating with the process.
+        Args:
+            timeout (float): Seconds to wait for the subprocess to finish before
+                killing it and collecting output. Defaults to 10.
 
-        Returns a list of strings corresponding to the output from the gphoto2
-        camera or `None` if no command has been specified.
+        Returns:
+            list[str] | None: Lines of stdout from gphoto2, or None if no command
+                has been initiated.
         """
         if self._command_proc is None:
             return None
@@ -148,28 +181,44 @@ class AbstractGPhotoCamera(AbstractCamera, ABC):  # pragma: no cover
             self._command_proc.kill()
             outs, errs = self._command_proc.communicate()
 
-        self.logger.trace(f'gphoto2 output: {outs=!r}')
-        if errs != '':
-            self.logger.error(f'gphoto2 error: {errs!r}')
+        self.logger.trace(f"gphoto2 output: {outs=!r}")
+        if errs != "":
+            self.logger.warning(f"gphoto2 error: {errs!r}")
 
         if isinstance(outs, str):
-            outs = outs.split('\n')
+            outs = outs.split("\n")
 
         self._command_proc = None
 
         return outs
 
-    def set_property(self, prop: str, val: Union[str, int]):
-        """ Set a property on the camera """
-        set_cmd = ['--set-config', f'{prop}={val}']
+    def set_property(self, prop: str, val: str | int, is_value: bool = False, is_index: bool = False):
+        """Set a property on the camera.
+
+        Args:
+            prop (str): The property to set.
+            val (str, int): The value to set the property to.
+            is_value (bool): If True, then the value is a literal value. Default False.
+            is_index (bool): If True, then the value is an index. Default False.
+
+        Raises:
+            ValueError: If the property is not found.
+        """
+        self.logger.debug(f"Setting {prop=} to {val=}")
+        if is_index:
+            set_cmd = ["--set-config-index", f"{prop}={val}"]
+        elif is_value:
+            set_cmd = ["--set-config-value", f"{prop}={val}"]
+        else:
+            set_cmd = ["--set-config", f'{prop}="{val}"']
 
         self.command(set_cmd)
 
         # Forces the command to wait
         self.get_command_result()
 
-    def set_properties(self, prop2index: Dict[str, int] = None, prop2value: Dict[str, str] = None):
-        """ Sets a number of properties all at once, by index or value.
+    def set_properties(self, prop2index: dict[str, int] = None, prop2value: dict[str, str] = None):
+        """Sets a number of properties all at once, by index or value.
 
         Args:
             prop2index (dict or None): A dict with keys corresponding to the property to
@@ -177,131 +226,212 @@ class AbstractGPhotoCamera(AbstractCamera, ABC):  # pragma: no cover
             prop2value (dict or None): A dict with keys corresponding to the property to
                 be set and values corresponding to the literal value.
         """
-        set_cmd = list()
         if prop2index:
             for prop, val in prop2index.items():
-                set_cmd.extend(['--set-config-index', f'{prop}={val}'])
+                try:
+                    self.set_property(prop, val, is_index=True)
+                except Exception:
+                    self.logger.debug(f"Skipping {prop=} {val=}")
 
         if prop2value:
             for prop, val in prop2value.items():
-                set_cmd.extend(['--set-config-value', f'{prop}={val}'])
-
-        self.command(set_cmd)
-
-        # Forces the command to wait
-        self.get_command_result()
+                try:
+                    self.set_property(prop, val, is_value=True)
+                except Exception:
+                    self.logger.debug(f"Skipping {prop=} {val=}")
 
     def get_property(self, prop: str) -> str:
-        """ Gets a property from the camera """
-        set_cmd = ['--get-config', f'{prop}']
+        """Get a configuration property value from the camera.
+
+        Args:
+            prop (str): The gphoto2 property identifier or label to query.
+
+        Returns:
+            str: The current value of the requested property (as reported by gphoto2).
+        """
+        set_cmd = ["--get-config", f"{prop}"]
 
         self.command(set_cmd)
         result = self.get_command_result()
 
-        output = ''
+        output = ""
         for line in result:
-            match = re.match(r'Current:\s*(.*)', line)
+            match = re.match(r"Current:\s*(.*)", line)
             if match:
                 output = match.group(1)
 
         return output
 
     def load_properties(self) -> dict:
-        """ Load properties from the camera.
+        """Load properties from the camera.
 
         Reads all the configuration properties available via gphoto2 and returns
         as dictionary.
+
+        Returns:
+            dict: A mapping of property labels to their detailed descriptors as
+                parsed from gphoto2 output.
         """
-        self.logger.debug('Getting all properties for gphoto2 camera')
-        self.command(['--list-all-config'])
+        self.logger.debug("Getting all properties for gphoto2 camera")
+        self.command(["--list-all-config"])
         lines = self.get_command_result()
 
         properties = {}
-        yaml_string = ''
+        yaml_string = ""
 
         for line in lines:
-            is_id = len(line.split('/')) > 1
-            is_label = re.match(r'^Label:\s*(.*)', line)
-            is_type = re.match(r'^Type:\s*(.*)', line)
-            is_readonly = re.match(r'^Readonly:\s*(.*)', line)
-            is_current = re.match(r'^Current:\s*(.*)', line)
-            is_choice = re.match(r'^Choice:\s*(\d+)\s*(.*)', line)
-            is_printable = re.match(r'^Printable:\s*(.*)', line)
-            is_help = re.match(r'^Help:\s*(.*)', line)
+            is_id = len(line.split("/")) > 1
+            is_label = re.match(r"^Label:\s*(.*)", line)
+            is_type = re.match(r"^Type:\s*(.*)", line)
+            is_readonly = re.match(r"^Readonly:\s*(.*)", line)
+            is_current = re.match(r"^Current:\s*(.*)", line)
+            is_choice = re.match(r"^Choice:\s*(\d+)\s*(.*)", line)
+            is_printable = re.match(r"^Printable:\s*(.*)", line)
+            is_help = re.match(r"^Help:\s*(.*)", line)
 
             if is_label or is_type or is_current or is_readonly:
-                line = f'  {line}'
+                line = f"  {line}"
             elif is_choice:
                 if int(is_choice.group(1)) == 0:
-                    line = f'  Choices:\n    {int(is_choice.group(1)):d}: {is_choice.group(2)}'
+                    line = f"  Choices:\n    {int(is_choice.group(1)):d}: {is_choice.group(2)}"
                 else:
-                    line = f'    {int(is_choice.group(1)):d}: {is_choice.group(2)}'
+                    line = f"    {int(is_choice.group(1)):d}: {is_choice.group(2)}"
             elif is_printable:
-                line = f'  {line}'
+                line = f"  {line}"
             elif is_help:
-                line = f'  {line}'
+                line = f"  {line}"
             elif is_id:
-                line = f'- ID: {line}'
-            elif line == '' or line == 'END':
+                line = f"- ID: {line}"
+            elif line == "" or line == "END":
                 continue
             else:
-                self.logger.debug(f'Line not parsed: {line}')
+                self.logger.debug(f"Line not parsed: {line}")
 
-            yaml_string += f'{line}\n'
+            yaml_string += f"{line}\n"
 
         self.logger.debug(yaml_string)
         properties_list = from_yaml(yaml_string)
 
         if isinstance(properties_list, list):
             for prop in properties_list:
-                if prop['Label']:
-                    properties[prop['Label']] = prop
+                if prop["Label"]:
+                    properties[prop["Label"]] = prop
         else:
             properties = properties_list
 
         return properties
 
-    def _poll_exposure(self, readout_args, *args, **kwargs):
-        timer = CountdownTimer(duration=self._timeout)
+    def _poll_exposure(self, readout_args, exposure_time, timeout=None, interval=0.01):
+        """Check the command output from gphoto2 for polling.
+
+        This will essentially block until the camera is done exposing, which means
+        the super call should not have to wait.
+        """
+        # Wait for and clear the _command_proc.
         try:
-            try:
-                # See if the command has finished.
-                while self._command_proc.poll() is None:
-                    # Sleep if not done yet.
-                    timer.sleep(max_sleep=1, log_level='TRACE')
-            except subprocess.TimeoutExpired:
-                self.logger.warning(f'Timeout on exposure process for {self.name}')
-                self._command_proc.kill()
-                outs, errs = self._command_proc.communicate(timeout=10)
-                if errs is not None and errs > '':
-                    self.logger.error(f'Camera exposure errors: {errs}')
-        except (RuntimeError, error.PanError) as err:
-            # Error returned by driver at some point while polling
-            self.logger.error(f'Error while waiting for exposure on {self}: {err}')
-            self._command_proc = None
-            raise err
-        else:
-            # Camera type specific readout function
+            self.logger.debug(f"Calling get_command_result from base gphoto2 for {self}")
+            # Wait for the exposure to complete, this blocks in gphoto2.
+            outs = self.get_command_result(timeout)
+            self.logger.debug(f"Exposure complete for {self}, getting readout")
             self._readout(*readout_args)
+        except Exception as err:
+            self.logger.error(f"Error during readout on {self}: {err!r}")
+            self._exposure_error = repr(err)
+            raise err
         finally:
-            self.logger.debug(f'Setting exposure event for {self.name}')
-            self._is_exposing_event.clear()  # Make sure this gets set regardless of readout errors
+            self.logger.debug(f"Camera response for {self}: {outs}")
+            self._is_exposing_event.clear()
+            self.logger.debug(f"Exposing event cleared for {self}")
 
-    def _readout(self, cr2_path=None, info=None):
-        """Reads out the image as a CR2 and converts to FITS"""
-        self.logger.debug(f"Converting CR2 -> FITS: {cr2_path}")
-        fits_path = cr2_utils.cr2_to_fits(cr2_path, headers=info, remove_cr2=False)
-        return fits_path
+    def _readout(self, filename, headers, *args, **kwargs):
+        self.logger.debug(f"Reading Canon DSLR exposure for {filename=}")
 
-    def _process_fits(self, file_path, info):
-        """
-        Add FITS headers from info the same as images.cr2_to_fits()
-        """
-        file_path = file_path.replace('.cr2', '.fits')
-        return super()._process_fits(file_path, info)
+        try:
+            if Path(filename).exists():
+                self.logger.debug(f"Converting CR2 -> FITS: {filename}")
+                cr2_utils.cr2_to_fits(filename, headers=headers, remove_cr2=False)
+            else:
+                self.logger.warning(f"File {filename!r} not found, cannot process.")
+        except Exception as err:
+            self.logger.error(f"Error processing exposure for {filename} on {self}: {err!r}")
+        finally:
+            self._readout_complete = True
 
     def _set_target_temperature(self, target):
         return None
 
     def _set_cooling_enabled(self, enable):
         return None
+
+    @classmethod
+    def start_tether(cls, port, filename_pattern: str = "%Y%m%dT%H%M%S.%C"):
+        """Start a gphoto2 tethering session for auto-download.
+
+        Args:
+            port (str): The gphoto2 port identifier, e.g., "usb:001,005".
+            filename_pattern (str): The gphoto2 filename pattern to use when saving files
+                (e.g., "%Y%m%dT%H%M%S.%C"). Defaults to that timestamp-based pattern.
+
+        Returns:
+            None
+        """
+        print(f"Starting gphoto2 tether for {port=} using {filename_pattern=}")
+
+        full_command = [
+            get_gphoto2_cmd(),
+            "--port",
+            port,
+            "--filename",
+            filename_pattern,
+            "--capture-tethered",
+        ]
+
+        # Start tether process.
+        process = subprocess.Popen(full_command, stderr=subprocess.STDOUT, stdout=subprocess.PIPE)
+        print(f"gphoto2 tether started on {port=} on {process.pid=}")
+
+        try:
+            process.wait()
+        except KeyboardInterrupt:
+            print(f"Stopping tether on {port=}")
+
+    @classmethod
+    def gphoto_file_download(cls, port: str, filename_pattern: str, only_new: bool = True):
+        """Download files from the camera using gphoto2.
+
+        Args:
+            port (str): The gphoto2 port identifier (e.g., "usb:001,005").
+            filename_pattern (str): Pattern for naming downloaded files.
+            only_new (bool): If True, only fetch files not previously downloaded. Defaults to True.
+
+        Returns:
+            list[str]: The list of file paths reported as saved by gphoto2.
+        """
+        print(f"Starting gphoto2 download for {port=} using {filename_pattern=}")
+        command = [
+            get_gphoto2_cmd(),
+            "--port",
+            port,
+            "--filename",
+            filename_pattern,
+            "--get-all-files",
+            "--recurse",
+        ]
+        if only_new:
+            command.append("--new")
+
+        completed_proc = subprocess.run(command, capture_output=True)
+        success = completed_proc.returncode >= 0
+
+        filenames = list()
+        if success:
+            output = completed_proc.stdout.decode("utf-8").split("\n")
+
+            for line in output:
+                file_match = file_save_re.match(line)
+                if file_match is not None:
+                    fn = file_match.group(1).strip()
+                    print(f"Found match {fn}")
+                    filenames.append(fn)
+
+        return filenames
