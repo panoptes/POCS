@@ -386,10 +386,19 @@ def run_quick_alignment(
     print("[bold red]MOUNT IS STILL AT HOME POSITION[/bold red]")
 
 
+def validate_which(value: str) -> str:
+    """Validate the 'which' parameter for take-flats command."""
+    if value not in ["evening", "morning"]:
+        raise typer.BadParameter("--which must be either 'evening' or 'morning'")
+    return value
+
+
 @app.command(name="take-flats")
 def run_take_flats(
     context: typer.Context,
-    which: str = typer.Option("evening", "--which", "-w", help="Either 'evening' or 'morning'"),
+    which: str = typer.Option(
+        "evening", "--which", "-w", help="Either 'evening' or 'morning'", callback=validate_which
+    ),
     alt: float = typer.Option(None, "--alt", "-a", help="Altitude for flats in degrees (default: 70)"),
     az: float = typer.Option(
         None, "--az", "-z", help="Azimuth for flats in degrees (default: 180° opposite sun)"
