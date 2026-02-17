@@ -121,6 +121,45 @@ pocs run alignment
 
 Helps align your mount to the celestial pole for better tracking.
 
+### `pocs run take-flats`
+
+Take flat field calibration images.
+
+```bash
+# Take evening flats (default)
+pocs run take-flats
+
+# Take morning flats
+pocs run take-flats --which morning
+
+# Custom altitude/azimuth coordinates
+pocs run take-flats --alt 45.0 --az 270.0
+
+# Adjust exposure settings
+pocs run take-flats --initial-exptime 5.0 --max-exposures 15
+```
+
+Options:
+- `--which, -w`: Either 'evening' or 'morning' (default: evening)
+- `--alt, -a`: Altitude for flats in degrees (overrides config)
+- `--az, -z`: Azimuth for flats in degrees (overrides config)
+- `--min-counts`: Minimum ADU count (default: 1000)
+- `--max-counts`: Maximum ADU count (default: 12000)
+- `--target-adu`: Target ADU as percentage of (min + max) (default: 0.5)
+- `--initial-exptime, -e`: Initial exposure time in seconds (default: 3.0)
+- `--min-exptime`: Minimum exposure time in seconds (default: 0.0)
+- `--max-exptime`: Maximum exposure time in seconds (default: 60.0)
+- `--max-exposures, -n`: Maximum number of flats to take (default: 10)
+- `--no-tracking/--tracking`: Stop tracking for drift flats (default: --no-tracking)
+
+What it does:
+1. Slews mount to specified altitude/azimuth (or uses config for evening/morning)
+2. Stops tracking (for drift flats)
+3. Takes series of flat field images
+4. Automatically adjusts exposure time to achieve target ADU counts
+
+**For beginners:** Flat fields are important calibration images taken of a uniformly illuminated surface (like the twilight sky) to correct for dust, vignetting, and variations in pixel sensitivity.
+
 ---
 
 ## Mount Commands
