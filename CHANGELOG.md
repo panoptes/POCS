@@ -2,7 +2,9 @@
 
 # Unreleased
 
-## Added
+## 0.8.0 - 2026-02-17
+
+### Added
 
 - Tags support for observations: observations can now be tagged with arbitrary string labels for metadata searching and
   filtering. Tags are specified in field YAML files under the `observation` key and are included in observation status,
@@ -14,7 +16,7 @@
 - Automated udev rule creation and installation for iOptron mounts in `pocs mount setup` #1320
 - `uv.lock` file for reproducible dependency installations
 
-## Changed
+### Changed
 
 - **Breaking**: Migrated from Hatch to UV package manager with setuptools build backend
     - Replaced Hatch build system with setuptools + setuptools-scm for versioning
