@@ -141,8 +141,8 @@ pocs run take-flats --initial-exptime 5.0 --max-exposures 15
 
 Options:
 - `--which, -w`: Either 'evening' or 'morning' (default: evening)
-- `--alt, -a`: Altitude for flats in degrees (overrides config)
-- `--az, -z`: Azimuth for flats in degrees (overrides config)
+- `--alt, -a`: Altitude for flats in degrees (default: 70 if not specified)
+- `--az, -z`: Azimuth for flats in degrees (default: 180° opposite the sun position if not specified)
 - `--min-counts`: Minimum ADU count (default: 1000)
 - `--max-counts`: Maximum ADU count (default: 12000)
 - `--target-adu`: Target ADU as percentage of (min + max) (default: 0.5)
@@ -153,7 +153,7 @@ Options:
 - `--no-tracking/--tracking`: Control tracking during flats. Use `--no-tracking` (default) to stop tracking for drift flats, or `--tracking` to keep tracking enabled
 
 What it does:
-1. Slews mount to specified altitude/azimuth (or uses config for evening/morning)
+1. Slews mount to specified altitude/azimuth, or defaults (70° altitude, 180° opposite sun azimuth)
 2. Stops tracking by default (for drift flats), unless `--tracking` is used
 3. Takes series of flat field images
 4. Automatically adjusts exposure time to achieve target ADU counts

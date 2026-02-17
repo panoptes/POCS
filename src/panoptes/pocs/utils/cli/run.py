@@ -390,8 +390,8 @@ def run_quick_alignment(
 def run_take_flats(
     context: typer.Context,
     which: str = typer.Option("evening", "--which", "-w", help="Either 'evening' or 'morning'"),
-    alt: float = typer.Option(None, "--alt", "-a", help="Altitude for flats in degrees"),
-    az: float = typer.Option(None, "--az", "-z", help="Azimuth for flats in degrees"),
+    alt: float = typer.Option(None, "--alt", "-a", help="Altitude for flats in degrees (default: 70)"),
+    az: float = typer.Option(None, "--az", "-z", help="Azimuth for flats in degrees (default: 180° opposite sun position)"),
     min_counts: int = typer.Option(1000, "--min-counts", help="Minimum ADU count"),
     max_counts: int = typer.Option(12000, "--max-counts", help="Maximum ADU count"),
     target_adu_percentage: float = typer.Option(0.5, "--target-adu", help="Target ADU as percentage of (min + max)"),
@@ -413,8 +413,9 @@ def run_take_flats(
     Args:
         context: Typer context carrying shared options.
         which: Either 'evening' or 'morning' to lookup coordinates in config.
-        alt: Optional altitude for flats in degrees. Overrides config lookup.
-        az: Optional azimuth for flats in degrees. Overrides config lookup.
+        alt: Optional altitude for flats in degrees. If None, defaults to 70 degrees.
+        az: Optional azimuth for flats in degrees. If None, defaults to 180 degrees 
+            opposite the sun position at the time of observation.
         min_counts: Minimum acceptable ADU count for flats.
         max_counts: Maximum acceptable ADU count for flats.
         target_adu_percentage: Target ADU as percentage of (min_counts + max_counts).
