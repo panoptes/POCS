@@ -80,11 +80,13 @@ print_step 3 $TOTAL_STEPS "Installing system dependencies"
 run_with_log_tail ./install-system-deps.sh
 print_success "System dependencies installed"
 
-# Fetch the wallpaper image and set using pcmanfm
-wget -qO /tmp/pocs_wallpaper.png "$WALLPAPER_URL"
-if [ -f "/tmp/pocs_wallpaper.png" ]; then
-    mv /tmp/pocs_wallpaper.png "${HOME}/.wallpaper.png"
-    pcmanfm --set-wallpaper="${HOME}/.wallpaper.png" --wallpaper-mode=stretch
+# Fetch the wallpaper image and set using pcmanfm if available.
+if command -v pcmanfm &> /dev/null; then
+    wget -qO /tmp/pocs_wallpaper.png "$WALLPAPER_URL"
+    if [ -f "/tmp/pocs_wallpaper.png" ]; then
+      mv /tmp/pocs_wallpaper.png "${HOME}/.wallpaper.png"
+      pcmanfm --set-wallpaper="${HOME}/.wallpaper.png" --wallpaper-mode=stretch
+    fi
 fi
 
 print_step 4 $TOTAL_STEPS "Installing ZSH for a better shell"
