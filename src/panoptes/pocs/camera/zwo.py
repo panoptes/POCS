@@ -9,7 +9,6 @@ import threading
 import time
 from contextlib import suppress
 
-import numpy as np
 from astropy import units as u
 from astropy.io import fits
 from astropy.time import Time
@@ -34,9 +33,9 @@ class Camera(AbstractSDKCamera):
     def __init__(
         self,
         name: str = "ZWO ASI Camera",
-        gain: int | None = 100,
-        image_type: str | None = None,
-        bandwidthoverload: float = 99,
+        gain: int | None = 120,
+        image_type: str | None = "RAW16",
+        bandwidthoverload: float = 50,
         binning: int = 2,
         *args,
         **kwargs,
@@ -160,6 +159,21 @@ class Camera(AbstractSDKCamera):
 
         try:
             self._driver.set_roi_format(self._handle, **roi_format)
+
+            # Enable hardware binning for better image quality
+            if new_binning > 1:
+                if "HARDWARE_BIN" in self._control_info:
+                    self._control_setter("HARDWARE_BIN", 1)
+                    self.logger.debug(f"Enabled HARDWARE_BIN on {self.model}")
+                else:
+                    self.logger.debug(f"Camera {self.model} does not support HARDWARE_BIN control")
+
+                # For color cameras, enable mono binning to reduce grid artifacts
+                if self.properties["is_color_camera"] and "MONO_BIN" in self._control_info:
+                    self._control_setter("MONO_BIN", 1)
+                    self.logger.debug(f"Enabled MONO_BIN on {self.model}")
+
+            self._refresh_info()  # Refresh camera properties after ROI change
         except Exception as e:
             self.logger.error(f"Failed to set binning '{new_binning}': {e}")
 
@@ -238,6 +252,28 @@ class Camera(AbstractSDKCamera):
         return self._driver.get_exposure_status(self._handle) == "WORKING"
 
     @property
+    def hardware_bin(self):
+        """Current status of hardware binning mode (enabled/disabled).
+
+        Returns:
+            bool: True if hardware binning is enabled, False otherwise.
+        """
+        if "HARDWARE_BIN" in self._control_info:
+            return self._control_getter("HARDWARE_BIN")[0]
+        return False
+
+    @property
+    def mono_bin(self):
+        """Current status of mono binning mode (enabled/disabled).
+
+        Returns:
+            bool: True if mono binning is enabled, False otherwise.
+        """
+        if "MONO_BIN" in self._control_info:
+            return self._control_getter("MONO_BIN")[0]
+        return False
+
+    @property
     def bandwidthoverload(self):
         """USB bandwidth usage limit as a percentage.
 
@@ -282,6 +318,67 @@ class Camera(AbstractSDKCamera):
         self._info["control_info"] = self._control_info  # control info accessible via properties
         self._driver.disable_dark_subtract(self._handle)
         self._connected = True
+
+    def take_exposure(
+        self,
+        seconds=1.0 * u.second,
+        filename=None,
+        metadata=None,
+        dark=False,
+        blocking=False,
+        timeout=10 * u.second,
+        *args,
+        **kwargs,
+    ) -> threading.Thread:
+        """Take an exposure, clipping exposure time to camera's valid range.
+
+        Ensures the exposure time is within the camera's valid range before
+        taking the exposure. This prevents issues where setting an exposure time
+        below the minimum (e.g., zero) would not be properly handled.
+
+        Args:
+            seconds: Length of exposure (will be clipped to valid range)
+            filename: Image filename
+            metadata: FITS header metadata
+            dark: Whether this is a dark frame
+            blocking: Whether to block until exposure completes
+            timeout: Additional timeout beyond exposure + readout time
+            *args, **kwargs: Additional arguments passed to parent class
+
+        Returns:
+            threading.Thread: The readout thread
+        """
+        # Ensure seconds is a Quantity
+        if not isinstance(seconds, u.Quantity):
+            seconds = seconds * u.second
+
+        # Clip exposure time to valid range before proceeding
+        exposure_info = self._control_info.get("EXPOSURE")
+        if exposure_info:
+            min_exposure = exposure_info["min_value"]
+            max_exposure = exposure_info["max_value"]
+            if seconds < min_exposure:
+                self.logger.debug(
+                    f"Exposure time {seconds} is below minimum {min_exposure}, clipping to minimum"
+                )
+                seconds = min_exposure
+            elif seconds > max_exposure:
+                self.logger.debug(
+                    f"Exposure time {seconds} is above maximum {max_exposure}, clipping to maximum"
+                )
+                seconds = max_exposure
+
+        # Call parent class with clipped exposure time
+        return super().take_exposure(
+            seconds=seconds,
+            filename=filename,
+            metadata=metadata,
+            dark=dark,
+            blocking=blocking,
+            timeout=timeout,
+            *args,
+            **kwargs,
+        )
 
     def start_video(self, seconds, filename_root, max_frames, image_type=None):
         """Start video capture and write frames to FITS files.
@@ -344,12 +441,6 @@ class Camera(AbstractSDKCamera):
         good_frames = 0
         bad_frames = 0
 
-        # Calculate number of bits that have been used to pad the raw data to RAW16 format.
-        if self.image_type == "RAW16":
-            pad_bits = 16 - int(get_quantity_value(self.bit_depth, u.bit))
-        else:
-            pad_bits = 0
-
         for frame_number in range(max_frames):
             if self._video_event.is_set():
                 break
@@ -359,9 +450,6 @@ class Camera(AbstractSDKCamera):
                 now = Time.now()
                 header.set("DATE-OBS", now.fits, "End of exposure + readout")
                 filename = f"{filename_root}_{frame_number:06d}.{file_extension}"
-                # Fix 'raw' data scaling by changing from zero padding of LSBs
-                # to zero padding of MSBs.
-                video_data = np.right_shift(video_data, pad_bits)
                 self.write_fits(video_data, header, filename)
                 good_frames += 1
             else:
@@ -393,12 +481,6 @@ class Camera(AbstractSDKCamera):
             except RuntimeError as err:
                 raise error.PanError(f"Error getting image data from {self}: {err}")
             else:
-                # Fix 'raw' data scaling by changing from zero padding of LSBs
-                # to zero padding of MSBs.
-                if self.image_type == "RAW16":
-                    pad_bits = 16 - int(get_quantity_value(self.bit_depth, u.bit))
-                    image_data = np.right_shift(image_data, pad_bits)
-
                 self.write_fits(data=image_data, header=header, filename=filename)
         elif exposure_status == "FAILED":
             raise error.PanError(f"Exposure failed on {self}")
