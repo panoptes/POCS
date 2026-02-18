@@ -1048,7 +1048,7 @@ class Observatory(PanBase):
                 self.logger.debug(f"Checking counts for {img_file}")
 
                 # Get the bias subtracted data.
-                data = fits_utils.getdata(img_file) - bias
+                data = fits_utils.getdata(img_file).astype(float) - bias
 
                 # Simple mean works just as well as sigma_clipping and is quicker for RGB.
                 # TODO(wtgee) verify this.
@@ -1072,18 +1072,19 @@ class Observatory(PanBase):
                 previous_exptime = exptimes[cam_name][-1].value
 
                 # TODO(wtgee) Document this better.
-                suggested_exptime = int(
+                suggested_exptime = float(
                     previous_exptime
                     * (target_adu / counts)
                     * (2.0 ** (sun_direction * (elapsed_time / 180.0)))
                     + 0.5
                 )
+                suggested_exptime = max(suggested_exptime, min_exptime)
 
                 self.logger.info(f"Suggested exptime for {cam_name}: {suggested_exptime:.02f}")
 
                 # Stop flats if we are going on too long.
                 self.logger.debug(f"Checking for too many exposures on {cam_name}")
-                if len(exptimes) == max_num_exposures:
+                if len(exptimes[cam_name]) >= max_num_exposures:
                     self.logger.info(f"Have ({max_num_exposures=}), stopping {cam_name}.")
                     camera_list.remove(cam_name)
 
