@@ -9,6 +9,7 @@ import threading
 import time
 from contextlib import suppress
 
+import numpy as np
 from astropy import units as u
 from astropy.io import fits
 from astropy.time import Time
@@ -36,7 +37,7 @@ class Camera(AbstractSDKCamera):
         gain: int | None = 120,
         image_type: str | None = "RAW16",
         bandwidthoverload: float = 50,
-        binning: int = 2,
+        binning: int = 1,
         *args,
         **kwargs,
     ):
@@ -44,7 +45,7 @@ class Camera(AbstractSDKCamera):
         ZWO ASI Camera class
 
         Args:
-            serial_number (str): camera serial number or user set ID (up to 8 bytes). See notes.
+            name (str): camera serial number or user set ID (up to 8 bytes). See notes.
             gain (int, optional): gain setting, using camera's internal units. If not given
                 the camera will use its current or default setting.
             image_type (str, optional): image format to use (one of 'RAW8', 'RAW16', 'RGB24'
@@ -52,8 +53,8 @@ class Camera(AbstractSDKCamera):
                 the camera's own default will be used.
             bandwidthoverload (int, optional): bandwidth overload setting in percent,
                 default is 99.
-            binning (int, optional): binning factor to use for the camera, default is 2,
-                which is quad binning.
+            binning (int, optional): binning factor to use for the camera, default is 1,
+                which is no binning.
             *args, **kwargs: additional arguments to be passed to the parent classes.
 
         Notes:
@@ -441,6 +442,12 @@ class Camera(AbstractSDKCamera):
         good_frames = 0
         bad_frames = 0
 
+        # Calculate number of bits that have been used to pad the raw data to RAW16 format.
+        if self.image_type == "RAW16":
+            pad_bits = 16 - int(get_quantity_value(self.bit_depth, u.bit))
+        else:
+            pad_bits = 0
+
         for frame_number in range(max_frames):
             if self._video_event.is_set():
                 break
@@ -450,6 +457,11 @@ class Camera(AbstractSDKCamera):
                 now = Time.now()
                 header.set("DATE-OBS", now.fits, "End of exposure + readout")
                 filename = f"{filename_root}_{frame_number:06d}.{file_extension}"
+
+                # Fix 'raw' data scaling by changing from zero padding of LSBs
+                # to zero padding of MSBs.
+                video_data = np.right_shift(video_data, pad_bits)
+
                 self.write_fits(video_data, header, filename)
                 good_frames += 1
             else:
@@ -481,6 +493,13 @@ class Camera(AbstractSDKCamera):
             except RuntimeError as err:
                 raise error.PanError(f"Error getting image data from {self}: {err}")
             else:
+
+                # Fix 'raw' data scaling by changing from zero padding of LSBs
+                # to zero padding of MSBs.
+                if self.image_type == "RAW16":
+                    pad_bits = 16 - int(get_quantity_value(self.bit_depth, u.bit))
+                    image_data = np.right_shift(image_data, pad_bits)
+
                 self.write_fits(data=image_data, header=header, filename=filename)
         elif exposure_status == "FAILED":
             raise error.PanError(f"Exposure failed on {self}")
