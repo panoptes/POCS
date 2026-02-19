@@ -11,9 +11,10 @@ function fix_time() {
   sudo timedatectl set-ntp true
 
   # Add crontab entries for reboot and every hour.
+  # Use a 60 second delay on reboot to ensure network is available.
   (
     sudo crontab -l 2>/dev/null || true
-    echo "@reboot /usr/sbin/htpdate -as ${TIME_SERVER}"
+    echo "@reboot sleep 60 && /usr/sbin/htpdate -as ${TIME_SERVER}"
     echo "13 * * * * /usr/sbin/htpdate -s ${TIME_SERVER}"
   ) | sudo crontab -
 

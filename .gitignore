@@ -54,3 +54,4 @@ logs
 conf_files/*_local.yaml
 
 temp*
+src/panoptes/pocs/_version.py
