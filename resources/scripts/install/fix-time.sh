@@ -12,11 +12,8 @@ function fix_time() {
 
   # Add crontab entries for reboot and every hour.
   (
-    sudo crontab -l
+    sudo crontab -l 2>/dev/null || true
     echo "@reboot /usr/sbin/htpdate -as ${TIME_SERVER}"
-  ) | sudo crontab -
-  (
-    sudo crontab -l
     echo "13 * * * * /usr/sbin/htpdate -s ${TIME_SERVER}"
   ) | sudo crontab -
 
