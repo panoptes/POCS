@@ -1016,7 +1016,7 @@ class Observatory(PanBase):
                 fits_headers["exptime"] = exptime
 
                 # Take picture and get filename.
-                self.logger.info(f"Flat #{flat_obs.current_exp_num} on {cam_name=} with {exptime=}")
+                self.logger.info(f"Flat #{flat_obs.current_exp_num} on {cam_name=} with {exptime=:.02f}s")
                 camera = self.cameras[cam_name]
                 metadata = camera.take_observation(flat_obs, headers=fits_headers, exptime=exptime)
                 camera_filename[cam_name] = metadata["filepath"]
