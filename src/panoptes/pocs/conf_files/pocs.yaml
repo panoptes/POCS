@@ -1,0 +1,202 @@
+---
+######################### PANOPTES UNIT ########################################
+# name:   Can be anything you want it to be. This name is displayed in several
+#         places and should be a "personal" name for the unit.
+#
+# pan_id: This is an identification number assigned by the PANOPTES team and is
+#         the official designator for your unit. This id is used to store image
+#         files and communicate with the Google Cloud network.
+#
+#         Leave the pan_id at `PAN000` for testing until you have been assigned
+#         an official id. Update pocs_local.yaml with official name once received.
+################################################################################
+name: Generic PANOPTES Unit
+pan_id: PAN000
+
+location:
+  name: Mauna Loa Observatory
+  latitude: 19.54 deg
+  longitude: -155.58 deg
+  elevation: 3400.0 m
+  horizon: 30 deg # targets must be above this to be considered valid.
+  flat_horizon: -6 deg # Flats when sun between this and focus horizon.
+  focus_horizon: -12 deg # Dark enough to focus on stars.
+  observe_horizon: -18 deg # Sun below this limit to observe.
+  obstructions: [ ]
+  timezone: US/Hawaii
+  gmt_offset: -600 # Offset in minutes from GMT during.
+
+directories:
+  base: .
+  images: images
+  resources: resources
+  mounts: resources/mounts
+  fields: conf_files/fields
+
+db:
+  name: panoptes
+  type: file
+  folder: json_store
+
+wait_delay: 180 # time in seconds before checking safety/etc while waiting.
+max_transition_attempts: 5  # number of transitions attempts.
+status_check_interval: 60 # periodic status check.
+
+state_machine: panoptes
+
+scheduler:
+  type: panoptes.pocs.scheduler.dispatch
+  fields_file: tess_sectors_north.yaml
+  check_file: True
+  iers_url: "https://storage.googleapis.com/panoptes-assets/iers/ser7.dat"
+  iers_auto: True
+  constraints:
+    - name: panoptes.pocs.scheduler.constraint.Altitude
+    - name: panoptes.pocs.scheduler.constraint.MoonAvoidance
+      options:
+        separation: 15
+    - name: panoptes.pocs.scheduler.constraint.Duration
+
+mount:
+  brand: ioptron
+  model: cem40 # ieq30pro
+  driver: panoptes.pocs.mount.ioptron.cem40
+  # Load a specific commands file relative to "mounts" dir.
+  commands_file: ioptron/v310
+  serial:
+    port: /dev/ttyUSB0
+    timeout: 0.
+    baudrate: 115200  # 9600 for iEQ30Pro
+  settings:
+    non_sidereal_available: True
+    min_tracking_threshold: 100 # ms
+    max_tracking_threshold: 99999 # ms
+    update_tracking: False
+    # Park the mount via the button movements.
+    park:
+      ra_direction: west
+      ra_seconds: 15
+      dec_direction: north
+      dec_seconds: 15
+
+pointing:
+  max_attempts: 0  # Set to 0 to disable
+  auto_correct: True
+  threshold: 100 # arcseconds ~ 10 pixels
+  exptime: 30 # seconds
+
+cameras:
+  defaults:
+    primary: None
+    auto_detect: True
+    compress_fits: True
+    make_pretty_images: True
+    keep_jpgs: True
+    readout_time: 5.0  # seconds
+    timeout: 60  # seconds
+    filter_type: RGGB
+    file_extension: cr2
+    endpoint:  # Used for remote cameras
+  devices:
+    - model: panoptes.pocs.camera.gphoto.canon.Camera
+      name: Cam00
+    - model: panoptes.pocs.camera.gphoto.canon.Camera
+      name: Cam01
+      primary: True
+
+######################### Environmental Sensors ################################
+# Configuration for the power distribution board and other environmental sensors.
+################################################################################
+environment:
+  # Arduino Uno + Infineon "trucker" shield. Labels correspond to Infineon docs.
+  power:
+    name: Trucker Power
+    arduino_board_name: power_board
+    record_interval: 60  # seconds
+    mean_interval: 5  # seconds
+    port: /dev/ttyACM0
+    relays:
+      RELAY_0:
+        label: weather_station
+        default_state: on
+      RELAY_1:
+        label: unused1
+        default_state: off
+      RELAY_2:
+        label: fans
+        default_state: on
+      RELAY_3:
+        label: unused3
+        default_state: off
+      RELAY_4:
+        label: mount
+        default_state: on
+  weather:
+    auto_detect: False
+    serial_port: /dev/weather
+    safety_delay: 15  # minutes from bad reading until safe again
+    capture_delay: 60  # seconds between taking measurements
+    num_readings: 5  # number of readings to average for each measurement
+    thresholds:
+      cloudy: -25  # Cloudy threshold in delta degrees C
+      very_cloudy: -15  # Very cloudy threshold in delta degrees C
+      windy: 50  # Windy threshold in km/h
+      very_windy: 75  # Very windy threshold in km/h
+      gusty: 100  # Gusty threshold in km/h
+      very_gusty: 125  # Very gusty threshold in km/h
+      wet: 2200  # Ohms of resistance in rain sensor (lower is wetter)
+      rainy: 1800  # Ohms of resistance in rain sensor (lower is wetter)
+
+
+########################## Observations ########################################
+# An observation folder contains a contiguous sequence of images of a target/field
+# recorded by a single camera, with no slewing of the mount during the sequence;
+# there may be tracking adjustments during the observation.
+#
+# An example folder structure would be:
+#
+#   $PANDIR/images/fields/Hd189733/14d3bd/20180901T120001/
+#
+# In this folder will be stored JPG and FITS images. A timelapse of the
+# observation can be made (one per camera) and the JPGs optionally removed
+# afterward.
+#
+# TODO: Add options for cleaning up old data (e.g. >30 days)
+################################################################################
+observations:
+  make_timelapse: False
+  compress_fits: True
+  record_observations: True
+  make_pretty_images: True
+  keep_jpgs: False
+  plate_solve: False
+  upload_image: False
+
+######################## Google Network ########################################
+# By default all images are stored on googlecloud servers and we also
+# use a few google services to store metadata, communicate with servers, etc.
+#
+# See $PANDIR/panoptes/utils/google/README.md for details about authentication.
+#
+# Options to change:
+#   image_storage: If images should be uploaded to Google Cloud Storage.
+#   service_account_key: Location of the JSON service account key.
+################################################################################
+panoptes_network:
+  use_firestore: False
+  cloud_logging_level:
+  service_account_key: # Location of JSON account key
+  project_id: panoptes-project-01
+  buckets:
+    upload: panoptes-images-incoming
+
+############################### pocs ##################################
+# POCS status flags. The values below represent initial values but
+# they can be switched at run-time if needed.
+#######################################################################
+pocs:
+  INITIALIZED: False
+  INTERRUPTED: False
+  KEEP_RUNNING: True
+  DO_STATES: True
+  RUN_ONCE: False

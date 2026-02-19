@@ -1,0 +1,9 @@
+-
+  field:
+    name: Wasp 33
+    position: 02h26m51.0582s +37d33m01.733s
+  observation:
+    priority: 100
+    exptime: 2
+    min_nexp: 2
+    exp_set_size: 2
