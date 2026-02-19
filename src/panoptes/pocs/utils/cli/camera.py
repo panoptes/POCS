@@ -212,7 +212,7 @@ def take_pictures_cmd(
 @app.command(name="take-bias")
 def take_bias_cmd(
     num_images: int = typer.Option(
-        100, '--num-images', '-n',
+        10, '--num-images', '-n',
         help="Number of bias frames to capture."
         ),
     output_dir: Path = typer.Option(Path("/home/panoptes/images/bias"), help="Output directory for bias frames."),
