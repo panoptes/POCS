@@ -18,6 +18,7 @@ function install_zsh() {
 
     # Configure starship if available
     if command -v starship &>/dev/null; then
+      mkdir -p ~/.config
       starship preset plain-text-symbols -o ~/.config/starship.toml
     fi
   fi
