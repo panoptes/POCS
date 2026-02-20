@@ -190,7 +190,7 @@ def test_observation_from_dict_without_tags():
 
 def test_default_exptime_from_config(field):
     """Test that default exptime comes from camera config when not specified."""
-    # The testing.yaml config has cameras.defaults.exptime not set, so should use fallback of 120
+    # The testing.yaml config sets cameras.defaults.exptime to 120, so the configured default is used
     obs = Observation(field)
     assert obs.exptime == 120 * u.second
 
