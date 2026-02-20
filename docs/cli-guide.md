@@ -240,6 +240,34 @@ pocs camera take-pics --camera Cam00
 
 **For beginners:** Great for testing your camera setup!
 
+### `pocs camera take-bias`
+
+Take bias calibration frames (zero exposure time).
+
+```bash
+# Take 10 bias frames (default)
+pocs camera take-bias
+
+# Take more bias frames for better statistics
+pocs camera take-bias --num-images 20
+
+# Specify output directory
+pocs camera take-bias --output-dir /path/to/bias/frames
+```
+
+Options:
+- `--num-images/-n`: Number of bias frames to capture (default: 10)
+- `--output-dir`: Output directory for bias frames (default: `/home/panoptes/images/bias`)
+- `--convert`: Convert to FITS if needed (default: True)
+- `--verbose`: Print detailed processing output (default: False)
+
+What it does:
+1. Takes bias frames with zero exposure time
+2. Stacks them into a master bias frame
+3. Reports statistics (sigma-clipped mean, median, std, min, max)
+
+**For beginners:** Bias frames are calibration images taken with zero exposure time to measure the baseline signal from your camera's electronics. They're essential for image processing and noise reduction.
+
 ### `pocs camera setup`
 
 Initialize and configure cameras.

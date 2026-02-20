@@ -456,7 +456,6 @@ class Camera(AbstractSDKCamera):
             except RuntimeError as err:
                 raise error.PanError(f"Error getting image data from {self}: {err}")
             else:
-
                 # Fix 'raw' data scaling by changing from zero padding of LSBs
                 # to zero padding of MSBs.
                 if self.image_type == "RAW16":
@@ -474,8 +473,16 @@ class Camera(AbstractSDKCamera):
     def _create_fits_header(self, seconds, dark=None, metadata=None) -> fits.Header:
         header = super()._create_fits_header(seconds, dark)
         header.set("CAM-GAIN", self.gain, "Internal units")
-        header.set("XPIXSZ", get_quantity_value(self.properties["pixel_size"] * self.binning, u.um), "Microns")
-        header.set("YPIXSZ", get_quantity_value(self.properties["pixel_size"] * self.binning, u.um), "Microns")
+        header.set(
+            "XPIXSZ",
+            get_quantity_value(self.properties["pixel_size"] * self.binning, u.um),
+            "Microns",
+        )
+        header.set(
+            "YPIXSZ",
+            get_quantity_value(self.properties["pixel_size"] * self.binning, u.um),
+            "Microns",
+        )
         return header
 
     def _refresh_info(self):

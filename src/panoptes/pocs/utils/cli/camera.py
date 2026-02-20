@@ -18,8 +18,8 @@ from astropy.io import fits
 from astropy.stats import sigma_clipped_stats
 from panoptes.utils.config.client import get_config, set_config
 from panoptes.utils.error import PanError
-
-from panoptes.utils.images import cr2 as cr2_utils, make_pretty_image
+from panoptes.utils.images import cr2 as cr2_utils
+from panoptes.utils.images import make_pretty_image
 from panoptes.utils.images.fits import fpack, get_solve_field, getdata
 from panoptes.utils.time import current_time
 from rich import print
@@ -66,7 +66,7 @@ class RecentFilesRenderable:
             yield Text("  (none yet)", style="dim")
             return
         # Show the last `show_max` entries so the most recent appears at the bottom
-        for name in self._recent_files[-self.show_max:]:
+        for name in self._recent_files[-self.show_max :]:
             # Fold long paths so they wrap within the panel instead of forcing wide columns
             yield Text(f"  - {name}", overflow="fold", no_wrap=False)
 
@@ -212,10 +212,14 @@ def take_pictures_cmd(
 @app.command(name="take-bias")
 def take_bias_cmd(
     num_images: int = typer.Option(
-        10, '--num-images', '-n',
-        help="Number of bias frames to capture."
-        ),
-    output_dir: Path = typer.Option(Path("/home/panoptes/images/bias"), help="Output directory for bias frames."),
+        10,
+        "--num-images",
+        "-n",
+        help="Number of bias frames to capture.",
+    ),
+    output_dir: Path = typer.Option(
+        Path("/home/panoptes/images/bias"), help="Output directory for bias frames."
+    ),
     convert: bool = typer.Option(True, help="Convert to FITS if needed."),
     verbose: bool = typer.Option(False, help="Print detailed processing output."),
 ) -> None:
@@ -259,9 +263,9 @@ def take_bias_cmd(
 
         if len(bias_files) < num_images:
             print(
-                f"[yellow]Warning: Only found {len(bias_files)} bias frames for {cam_name}, expected {num_images}["
-                f"/yellow]"
-                )
+                f"[yellow]Warning: Only found {len(bias_files)} bias frames for {cam_name}, "
+                f"expected {num_images}[/yellow]"
+            )
 
         print(f"\n[bold]Processing {len(bias_files)} bias frames for {cam_name}[/bold]")
 
@@ -306,9 +310,9 @@ def take_bias_cmd(
             # Use the first bias frame as a template for the header
             with fits.open(bias_files[0]) as hdul:
                 header = hdul[0].header.copy()
-                header['IMAGETYP'] = 'Master Bias'
-                header['NCOMBINE'] = len(bias_stack)
-                header['COMMENT'] = f'Master bias created from {len(bias_stack)} frames'
+                header["IMAGETYP"] = "Master Bias"
+                header["NCOMBINE"] = len(bias_stack)
+                header["COMMENT"] = f"Master bias created from {len(bias_stack)} frames"
 
                 # Create new HDU with master bias
                 hdu = fits.PrimaryHDU(data=master_bias.astype(np.float32), header=header)
