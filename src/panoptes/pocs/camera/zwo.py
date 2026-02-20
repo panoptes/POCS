@@ -37,7 +37,7 @@ class Camera(AbstractSDKCamera):
         gain: int | None = 120,
         image_type: str | None = "RAW16",
         bandwidthoverload: float = 50,
-        binning: int = 1,
+        binning: int = 2,
         *args,
         **kwargs,
     ):
@@ -53,8 +53,8 @@ class Camera(AbstractSDKCamera):
                 the camera's own default will be used.
             bandwidthoverload (int, optional): bandwidth overload setting in percent,
                 default is 99.
-            binning (int, optional): binning factor to use for the camera, default is 1,
-                which is no binning.
+            binning (int, optional): binning factor to use for the camera, default is 2,
+                which is quad binning.
             *args, **kwargs: additional arguments to be passed to the parent classes.
 
         Notes:
@@ -160,21 +160,6 @@ class Camera(AbstractSDKCamera):
 
         try:
             self._driver.set_roi_format(self._handle, **roi_format)
-
-            # Enable hardware binning for better image quality
-            if new_binning > 1:
-                if "HARDWARE_BIN" in self._control_info:
-                    self._control_setter("HARDWARE_BIN", 1)
-                    self.logger.debug(f"Enabled HARDWARE_BIN on {self.model}")
-                else:
-                    self.logger.debug(f"Camera {self.model} does not support HARDWARE_BIN control")
-
-                # For color cameras, enable mono binning to reduce grid artifacts
-                if self.properties["is_color_camera"] and "MONO_BIN" in self._control_info:
-                    self._control_setter("MONO_BIN", 1)
-                    self.logger.debug(f"Enabled MONO_BIN on {self.model}")
-
-            self._refresh_info()  # Refresh camera properties after ROI change
         except Exception as e:
             self.logger.error(f"Failed to set binning '{new_binning}': {e}")
 
@@ -251,28 +236,6 @@ class Camera(AbstractSDKCamera):
     def is_exposing(self):
         """True if an exposure is currently under way, otherwise False"""
         return self._driver.get_exposure_status(self._handle) == "WORKING"
-
-    @property
-    def hardware_bin(self):
-        """Current status of hardware binning mode (enabled/disabled).
-
-        Returns:
-            bool: True if hardware binning is enabled, False otherwise.
-        """
-        if "HARDWARE_BIN" in self._control_info:
-            return self._control_getter("HARDWARE_BIN")[0]
-        return False
-
-    @property
-    def mono_bin(self):
-        """Current status of mono binning mode (enabled/disabled).
-
-        Returns:
-            bool: True if mono binning is enabled, False otherwise.
-        """
-        if "MONO_BIN" in self._control_info:
-            return self._control_getter("MONO_BIN")[0]
-        return False
 
     @property
     def bandwidthoverload(self):
@@ -511,8 +474,8 @@ class Camera(AbstractSDKCamera):
     def _create_fits_header(self, seconds, dark=None, metadata=None) -> fits.Header:
         header = super()._create_fits_header(seconds, dark)
         header.set("CAM-GAIN", self.gain, "Internal units")
-        header.set("XPIXSZ", get_quantity_value(self.properties["pixel_size"], u.um), "Microns")
-        header.set("YPIXSZ", get_quantity_value(self.properties["pixel_size"], u.um), "Microns")
+        header.set("XPIXSZ", get_quantity_value(self.properties["pixel_size"] * self.binning, u.um), "Microns")
+        header.set("YPIXSZ", get_quantity_value(self.properties["pixel_size"] * self.binning, u.um), "Microns")
         return header
 
     def _refresh_info(self):
