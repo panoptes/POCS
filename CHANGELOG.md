@@ -10,6 +10,13 @@
 - ZWO cameras now have a `fix_bit_padding` option: `True` means restore raw data to native
       resolution of camera, `False` (default) will keep the data driver-padded 16-bits.
 
+### Changed
+
+- Observation exposure time defaults: when `exptime` is not specified in field files, observations now use the 
+  `cameras.defaults.exptime` configuration value instead of a hardcoded 120 seconds. This allows setting 
+  camera-specific defaults (e.g., 30s for ZWO cameras, 120s for DSLRs) in the config without needing to 
+  specify exposure time for every field. The fallback remains 120 seconds if not configured. #XXXX
+
 ## 0.8.0 - 2026-02-17
 
 ### Added

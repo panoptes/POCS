@@ -94,6 +94,8 @@ cameras:
     keep_jpgs: True
     readout_time: 5.0  # seconds
     timeout: 60  # seconds
+    exptime: 120  # Default exposure time in seconds (used when not specified in field files)
+                  # For ZWO cameras, you may want to use shorter exposures, e.g., 30 seconds
     filter_type: RGGB
     file_extension: cr2
     endpoint:  # Used for remote cameras

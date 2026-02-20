@@ -1,4 +1,10 @@
 ---
+# Example field configurations for POCS scheduler
+#
+# Note: If 'exptime' is not specified in the observation section,
+# the default exposure time from 'cameras.defaults.exptime' in the
+# configuration will be used (default: 120 seconds).
+#
 - field:
     name: "Blaze Star"
     position: 239.876deg +25.916deg
