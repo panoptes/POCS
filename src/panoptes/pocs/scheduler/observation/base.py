@@ -41,7 +41,7 @@ class Observation(PanBase):
     def __init__(
         self,
         field: Field,
-        exptime: float | None = None,
+        exptime: float | u.Quantity | None = None,
         min_nexp: int = 60,
         exp_set_size: int = 10,
         priority: int | float = 100,
