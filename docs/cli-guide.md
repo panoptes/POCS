@@ -121,6 +121,45 @@ pocs run alignment
 
 Helps align your mount to the celestial pole for better tracking.
 
+### `pocs run take-flats`
+
+Take flat field calibration images.
+
+```bash
+# Take evening flats (default)
+pocs run take-flats
+
+# Take morning flats
+pocs run take-flats --which morning
+
+# Custom altitude/azimuth coordinates
+pocs run take-flats --alt 45.0 --az 270.0
+
+# Adjust exposure settings
+pocs run take-flats --initial-exptime 5.0 --max-exposures 15
+```
+
+Options:
+- `--which, -w`: Either 'evening' or 'morning' (default: evening)
+- `--alt, -a`: Altitude for flats in degrees (default: 70 if not specified)
+- `--az, -z`: Azimuth for flats in degrees (default: 180° opposite the sun position if not specified)
+- `--min-counts`: Minimum ADU count (default: 1000)
+- `--max-counts`: Maximum ADU count (default: 12000)
+- `--target-adu`: Target ADU as percentage of (min + max) (default: 0.5)
+- `--initial-exptime, -e`: Initial exposure time in seconds (default: 3.0)
+- `--min-exptime`: Minimum exposure time in seconds (default: 0.0)
+- `--max-exptime`: Maximum exposure time in seconds (default: 60.0)
+- `--max-exposures, -n`: Maximum number of flats to take (default: 10)
+- `--no-tracking/--tracking`: Control tracking during flats. Use `--no-tracking` (default) to stop tracking for drift flats, or `--tracking` to keep tracking enabled
+
+What it does:
+1. Slews mount to specified altitude/azimuth, or defaults (70° altitude, 180° opposite sun azimuth)
+2. Stops tracking by default (for drift flats), unless `--tracking` is used
+3. Takes series of flat field images
+4. Automatically adjusts exposure time to achieve target ADU counts
+
+**For Beginners:** Flat fields are important calibration images taken of a uniformly illuminated surface (like the twilight sky) to correct for dust, vignetting, and variations in pixel sensitivity.
+
 ---
 
 ## Mount Commands
@@ -200,6 +239,34 @@ pocs camera take-pics --camera Cam00
 ```
 
 **For beginners:** Great for testing your camera setup!
+
+### `pocs camera take-bias`
+
+Take bias calibration frames (zero exposure time).
+
+```bash
+# Take 10 bias frames (default)
+pocs camera take-bias
+
+# Take more bias frames for better statistics
+pocs camera take-bias --num-images 20
+
+# Specify output directory
+pocs camera take-bias --output-dir /path/to/bias/frames
+```
+
+Options:
+- `--num-images/-n`: Number of bias frames to capture (default: 10)
+- `--output-dir`: Output directory for bias frames (default: `/home/panoptes/images/bias`)
+- `--convert`: Convert to FITS if needed (default: True)
+- `--verbose`: Print detailed processing output (default: False)
+
+What it does:
+1. Takes bias frames with zero exposure time
+2. Stacks them into a master bias frame
+3. Reports statistics (sigma-clipped mean, median, std, min, max)
+
+**For beginners:** Bias frames are calibration images taken with zero exposure time to measure the baseline signal from your camera's electronics. They're essential for image processing and noise reduction.
 
 ### `pocs camera setup`
 

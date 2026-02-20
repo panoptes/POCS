@@ -12,14 +12,15 @@ import time
 from pathlib import Path
 from platform import uname
 
+import numpy as np
 import typer
+from astropy.io import fits
+from astropy.stats import sigma_clipped_stats
 from panoptes.utils.config.client import get_config, set_config
 from panoptes.utils.error import PanError
-
-# Import panoptes-utils image processing
 from panoptes.utils.images import cr2 as cr2_utils
 from panoptes.utils.images import make_pretty_image
-from panoptes.utils.images.fits import fpack, get_solve_field
+from panoptes.utils.images.fits import fpack, get_solve_field, getdata
 from panoptes.utils.time import current_time
 from rich import print
 from rich.console import Group
@@ -206,6 +207,120 @@ def take_pictures_cmd(
         pretty=pretty,
         verbose=verbose,
     )
+
+
+@app.command(name="take-bias")
+def take_bias_cmd(
+    num_images: int = typer.Option(
+        10,
+        "--num-images",
+        "-n",
+        help="Number of bias frames to capture.",
+    ),
+    output_dir: Path = typer.Option(
+        Path("/home/panoptes/images/bias"), help="Output directory for bias frames."
+    ),
+    convert: bool = typer.Option(True, help="Convert to FITS if needed."),
+    verbose: bool = typer.Option(False, help="Print detailed processing output."),
+) -> None:
+    """Take bias frames (zero exposure time), stack them, and report statistics.
+
+    Takes n bias frames with zero exposure time, stacks them into a master bias,
+    and reports sigma-clipped mean, median, std, min, and max values.
+    """
+    cameras = create_cameras_from_config()
+
+    if len(cameras) == 0:
+        print("[red]No cameras found, exiting.[/red]")
+        raise typer.Abort()
+
+    print(f"Taking {num_images} bias frames with {len(cameras)} cameras.")
+
+    # Take the bias frames
+    take_pictures(
+        cameras=cameras,
+        num_images=num_images,
+        exptime=0.0,  # Zero exposure time for bias frames
+        output_dir=output_dir.as_posix(),
+        delay=0.0,
+        convert=convert,
+        compress=False,  # Don't compress for processing
+        solve=False,
+        pretty=False,
+        verbose=verbose,
+    )
+
+    print("\n[bold cyan]Processing bias frames...[/bold cyan]")
+
+    # Process each camera's bias frames
+    for cam_name in cameras.keys():
+        # Find all bias frames for this camera
+        bias_files = sorted(output_dir.glob(f"**/{cam_name}-*.fits"))
+
+        if not bias_files:
+            print(f"[yellow]No bias frames found for {cam_name}[/yellow]")
+            continue
+
+        if len(bias_files) < num_images:
+            print(
+                f"[yellow]Warning: Only found {len(bias_files)} bias frames for {cam_name}, "
+                f"expected {num_images}[/yellow]"
+            )
+
+        print(f"\n[bold]Processing {len(bias_files)} bias frames for {cam_name}[/bold]")
+
+        # Stack the bias frames
+        bias_stack = []
+        for bias_file in bias_files:
+            try:
+                data = getdata(bias_file)
+                if data is not None:
+                    bias_stack.append(data)
+            except Exception as e:
+                if verbose:
+                    print(f"[red]Error reading {bias_file}: {e}[/red]")
+                continue
+
+        if not bias_stack:
+            print(f"[red]No valid bias frames could be read for {cam_name}[/red]")
+            continue
+
+        # Convert to numpy array and stack
+        bias_stack = np.array(bias_stack)
+
+        # Create master bias by taking the median
+        master_bias = np.median(bias_stack, axis=0)
+
+        # Calculate statistics with sigma clipping
+        mean, median, std = sigma_clipped_stats(master_bias, sigma=3.0)
+        min_val = np.min(master_bias)
+        max_val = np.max(master_bias)
+
+        # Display results
+        print(f"\n[bold green]Statistics for {cam_name}:[/bold green]")
+        print(f"  Sigma-clipped Mean:   {mean:.4f}")
+        print(f"  Sigma-clipped Median: {median:.4f}")
+        print(f"  Sigma-clipped Std:    {std:.4f}")
+        print(f"  Min value:            {min_val:.4f}")
+        print(f"  Max value:            {max_val:.4f}")
+
+        # Save the master bias frame
+        master_bias_path = output_dir / f"{cam_name}-master-bias.fits"
+        try:
+            # Use the first bias frame as a template for the header
+            with fits.open(bias_files[0]) as hdul:
+                header = hdul[0].header.copy()
+                header["IMAGETYP"] = "Master Bias"
+                header["NCOMBINE"] = len(bias_stack)
+                header["COMMENT"] = f"Master bias created from {len(bias_stack)} frames"
+
+                # Create new HDU with master bias
+                hdu = fits.PrimaryHDU(data=master_bias.astype(np.float32), header=header)
+                hdu.writeto(master_bias_path, overwrite=True)
+
+            print(f"[bold cyan]Master bias saved to:[/bold cyan] {master_bias_path}")
+        except Exception as e:
+            print(f"[red]Error saving master bias: {e}[/red]")
 
 
 def take_pictures(

@@ -18,7 +18,7 @@ from panoptes.utils import error
 from panoptes.utils import images as img_utils
 from panoptes.utils.images import fits as fits_utils
 from panoptes.utils.time import CountdownTimer, current_time, flatten_time
-from panoptes.utils.utils import get_quantity_value
+from panoptes.utils.utils import get_quantity_value, listify
 
 import panoptes.pocs.camera.fli
 from panoptes.pocs.base import PanBase
@@ -897,21 +897,21 @@ class Observatory(PanBase):
 
     def take_flat_fields(
         self,
-        which="evening",
-        alt=None,
-        az=None,
-        min_counts=1000,
-        max_counts=12000,
-        target_adu_percentage=0.5,
-        initial_exptime=3.0,
-        min_exptime=0.0,
-        max_exptime=60.0,
-        readout=5.0,
-        camera_list=None,
-        bias=2048,
-        max_num_exposures=10,
-        no_tracking=True,
-    ):  # pragma: no cover
+        which: str = "evening",
+        alt: float | None = None,
+        az: float | None = None,
+        min_counts: int = 1000,
+        max_counts: int = 12000,
+        target_adu_percentage: float = 0.5,
+        initial_exptime: float = 3.0,
+        min_exptime: float = 0.0,
+        max_exptime: float = 60.0,
+        readout: float = 5.0,
+        camera_list: list[str] | None = None,
+        bias: int = 2048,
+        max_num_exposures: int = 10,
+        no_tracking: bool = True,
+    ) -> None:  # pragma: no cover
         """Take flat fields.
         This method will slew the mount to the given AltAz coordinates(which
         should be roughly opposite of the setting sun) and then begin the flat-field
@@ -948,14 +948,18 @@ class Observatory(PanBase):
                 to 0.5.
             initial_exptime (float, optional): Start the flat fields with this exposure
                 time, default 3 seconds.
+            min_exptime (float, optional): Minimum exposure time to use, default 0 seconds.
             max_exptime (float, optional): Maximum exposure time before stopping.
-            camera_list (list, optional): List of cameras to use for flat-fielding.
+            readout (float, optional): Time to wait for readout after exposure, default 5 seconds.
+            camera_list (list, optional): List of cameras to use for flat-fielding. If None
+                (the default), use all cameras.
             bias (int, optional): Default bias for the cameras.
             max_num_exposures (int, optional): Maximum number of flats to take.
             no_tracking (bool, optional): If tracking should be stopped for drift flats,
                 default True.
         """
-        if camera_list is None:
+        camera_list = listify(camera_list)
+        if not camera_list:
             camera_list = list(self.cameras.keys())
 
         target_adu = target_adu_percentage * (min_counts + max_counts)
@@ -1012,7 +1016,7 @@ class Observatory(PanBase):
                 fits_headers["exptime"] = exptime
 
                 # Take picture and get filename.
-                self.logger.info(f"Flat #{flat_obs.current_exp_num} on {cam_name=} with {exptime=}")
+                self.logger.info(f"Flat #{flat_obs.current_exp_num} on {cam_name=} with {exptime=:.02f}s")
                 camera = self.cameras[cam_name]
                 metadata = camera.take_observation(flat_obs, headers=fits_headers, exptime=exptime)
                 camera_filename[cam_name] = metadata["filepath"]
@@ -1044,7 +1048,7 @@ class Observatory(PanBase):
                 self.logger.debug(f"Checking counts for {img_file}")
 
                 # Get the bias subtracted data.
-                data = fits_utils.getdata(img_file) - bias
+                data = fits_utils.getdata(img_file).astype(float) - bias
 
                 # Simple mean works just as well as sigma_clipping and is quicker for RGB.
                 # TODO(wtgee) verify this.
@@ -1068,18 +1072,19 @@ class Observatory(PanBase):
                 previous_exptime = exptimes[cam_name][-1].value
 
                 # TODO(wtgee) Document this better.
-                suggested_exptime = int(
+                suggested_exptime = float(
                     previous_exptime
                     * (target_adu / counts)
                     * (2.0 ** (sun_direction * (elapsed_time / 180.0)))
                     + 0.5
                 )
+                suggested_exptime = max(suggested_exptime, min_exptime)
 
                 self.logger.info(f"Suggested exptime for {cam_name}: {suggested_exptime:.02f}")
 
                 # Stop flats if we are going on too long.
                 self.logger.debug(f"Checking for too many exposures on {cam_name}")
-                if len(exptimes) == max_num_exposures:
+                if len(exptimes[cam_name]) >= max_num_exposures:
                     self.logger.info(f"Have ({max_num_exposures=}), stopping {cam_name}.")
                     camera_list.remove(cam_name)
 

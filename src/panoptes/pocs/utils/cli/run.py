@@ -384,3 +384,105 @@ def run_quick_alignment(
 
     print("Done with quick alignment test")
     print("[bold red]MOUNT IS STILL AT HOME POSITION[/bold red]")
+
+
+def validate_which(value: str) -> str:
+    """Validate the 'which' parameter for take-flats command."""
+    if value not in ["evening", "morning"]:
+        raise typer.BadParameter("--which must be either 'evening' or 'morning'")
+    return value
+
+
+@app.command(name="take-flats")
+def run_take_flats(
+    context: typer.Context,
+    which: str = typer.Option(
+        "evening", "--which", "-w", help="Either 'evening' or 'morning'", callback=validate_which
+    ),
+    alt: float = typer.Option(70.0, "--alt", "-a", help="Altitude for flats in degrees (default: 70)"),
+    az: float = typer.Option(
+        None, "--az", "-z", help="Azimuth for flats in degrees (default: None computes 180° opposite sun)"
+    ),
+    min_counts: int = typer.Option(1000, "--min-counts", help="Minimum ADU count"),
+    max_counts: int = typer.Option(12000, "--max-counts", help="Maximum ADU count"),
+    target_adu_percentage: float = typer.Option(
+        0.5, "--target-adu", help="Target ADU as percentage of (min + max)"
+    ),
+    initial_exptime: float = typer.Option(
+        3.0, "--initial-exptime", "-e", help="Initial exposure time in seconds"
+    ),
+    min_exptime: float = typer.Option(0.0, "--min-exptime", help="Minimum exposure time in seconds"),
+    max_exptime: float = typer.Option(60.0, "--max-exptime", help="Maximum exposure time in seconds"),
+    readout: float = typer.Option(5.0, "--readout", help="Camera readout time in seconds"),
+    bias: int = typer.Option(2048, "--bias", help="Default bias for cameras"),
+    max_num_exposures: int = typer.Option(
+        10, "--max-exposures", "-n", help="Maximum number of flat fields to take"
+    ),
+    no_tracking: bool = typer.Option(
+        True,
+        "--no-tracking/--tracking",
+        help="Control mount tracking. Default --no-tracking stops tracking for drift flats",
+    ),
+) -> None:
+    """Take flat field images using the Observatory.take_flat_fields method.
+
+    This command will slew the mount to the specified altitude/azimuth coordinates
+    (or use configured coordinates for evening/morning flats) and take a series of
+    flat field images. The exposure time is automatically adjusted to achieve the
+    target ADU counts.
+
+    Args:
+        context: Typer context carrying shared options.
+        which: Either 'evening' or 'morning' to lookup coordinates in config.
+        alt: Optional altitude for flats in degrees. Default  70 degrees.
+        az: Optional azimuth for flats in degrees. If None, defaults to 180 degrees
+            opposite the sun position at the time of observation.
+        min_counts: Minimum acceptable ADU count for flats.
+        max_counts: Maximum acceptable ADU count for flats.
+        target_adu_percentage: Target ADU as percentage of (min_counts + max_counts).
+        initial_exptime: Initial exposure time in seconds.
+        min_exptime: Minimum exposure time in seconds.
+        max_exptime: Maximum exposure time before stopping.
+        readout: Camera readout time in seconds. Default matches Observatory method default.
+        bias: Default bias for the cameras. Default matches Observatory method default.
+        max_num_exposures: Maximum number of flat field exposures to take.
+        no_tracking: If True, stops tracking for drift flats.
+
+    Returns:
+        None
+    """
+    pocs = get_pocs(context)
+    print(f"[bold yellow]Starting flat field acquisition ({which}).[/bold yellow]")
+
+    pocs.observatory.mount.unpark()
+
+    try:
+        pocs.observatory.take_flat_fields(
+            which=which,
+            alt=alt,
+            az=az,
+            min_counts=min_counts,
+            max_counts=max_counts,
+            target_adu_percentage=target_adu_percentage,
+            initial_exptime=initial_exptime,
+            min_exptime=min_exptime,
+            max_exptime=max_exptime,
+            readout=readout,
+            camera_list=None,  # Use all cameras
+            bias=bias,
+            max_num_exposures=max_num_exposures,
+            no_tracking=no_tracking,
+        )
+    except KeyboardInterrupt:
+        print("[red]Flat field acquisition interrupted by user, shutting down.[/red]")
+    except Exception as e:
+        print("[bold red]Error during flat field acquisition.[/bold red]")
+        print(e)
+    else:
+        print("[green]Flat field acquisition finished.[/green]")
+    finally:
+        print(
+            "[bold yellow]Please be patient, this may take a moment while the mount "
+            "parks itself.[/bold yellow]"
+        )
+        pocs.power_down()

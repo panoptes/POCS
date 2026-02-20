@@ -34,9 +34,9 @@ class Camera(AbstractSDKCamera):
     def __init__(
         self,
         name: str = "ZWO ASI Camera",
-        gain: int | None = 100,
-        image_type: str | None = None,
-        bandwidthoverload: float = 99,
+        gain: int | None = 120,
+        image_type: str | None = "RAW16",
+        bandwidthoverload: float = 50,
         binning: int = 2,
         *args,
         **kwargs,
@@ -45,7 +45,7 @@ class Camera(AbstractSDKCamera):
         ZWO ASI Camera class
 
         Args:
-            serial_number (str): camera serial number or user set ID (up to 8 bytes). See notes.
+            name (str): camera serial number or user set ID (up to 8 bytes). See notes.
             gain (int, optional): gain setting, using camera's internal units. If not given
                 the camera will use its current or default setting.
             image_type (str, optional): image format to use (one of 'RAW8', 'RAW16', 'RGB24'
@@ -283,6 +283,67 @@ class Camera(AbstractSDKCamera):
         self._driver.disable_dark_subtract(self._handle)
         self._connected = True
 
+    def take_exposure(
+        self,
+        seconds=1.0 * u.second,
+        filename=None,
+        metadata=None,
+        dark=False,
+        blocking=False,
+        timeout=10 * u.second,
+        *args,
+        **kwargs,
+    ) -> threading.Thread:
+        """Take an exposure, clipping exposure time to camera's valid range.
+
+        Ensures the exposure time is within the camera's valid range before
+        taking the exposure. This prevents issues where setting an exposure time
+        below the minimum (e.g., zero) would not be properly handled.
+
+        Args:
+            seconds: Length of exposure (will be clipped to valid range)
+            filename: Image filename
+            metadata: FITS header metadata
+            dark: Whether this is a dark frame
+            blocking: Whether to block until exposure completes
+            timeout: Additional timeout beyond exposure + readout time
+            *args, **kwargs: Additional arguments passed to parent class
+
+        Returns:
+            threading.Thread: The readout thread
+        """
+        # Ensure seconds is a Quantity
+        if not isinstance(seconds, u.Quantity):
+            seconds = seconds * u.second
+
+        # Clip exposure time to valid range before proceeding
+        exposure_info = self._control_info.get("EXPOSURE")
+        if exposure_info:
+            min_exposure = exposure_info["min_value"]
+            max_exposure = exposure_info["max_value"]
+            if seconds < min_exposure:
+                self.logger.debug(
+                    f"Exposure time {seconds} is below minimum {min_exposure}, clipping to minimum"
+                )
+                seconds = min_exposure
+            elif seconds > max_exposure:
+                self.logger.debug(
+                    f"Exposure time {seconds} is above maximum {max_exposure}, clipping to maximum"
+                )
+                seconds = max_exposure
+
+        # Call parent class with clipped exposure time
+        return super().take_exposure(
+            seconds=seconds,
+            filename=filename,
+            metadata=metadata,
+            dark=dark,
+            blocking=blocking,
+            timeout=timeout,
+            *args,
+            **kwargs,
+        )
+
     def start_video(self, seconds, filename_root, max_frames, image_type=None):
         """Start video capture and write frames to FITS files.
 
@@ -359,9 +420,11 @@ class Camera(AbstractSDKCamera):
                 now = Time.now()
                 header.set("DATE-OBS", now.fits, "End of exposure + readout")
                 filename = f"{filename_root}_{frame_number:06d}.{file_extension}"
+
                 # Fix 'raw' data scaling by changing from zero padding of LSBs
                 # to zero padding of MSBs.
                 video_data = np.right_shift(video_data, pad_bits)
+
                 self.write_fits(video_data, header, filename)
                 good_frames += 1
             else:
@@ -410,8 +473,16 @@ class Camera(AbstractSDKCamera):
     def _create_fits_header(self, seconds, dark=None, metadata=None) -> fits.Header:
         header = super()._create_fits_header(seconds, dark)
         header.set("CAM-GAIN", self.gain, "Internal units")
-        header.set("XPIXSZ", get_quantity_value(self.properties["pixel_size"], u.um), "Microns")
-        header.set("YPIXSZ", get_quantity_value(self.properties["pixel_size"], u.um), "Microns")
+        header.set(
+            "XPIXSZ",
+            get_quantity_value(self.properties["pixel_size"] * self.binning, u.um),
+            "Microns",
+        )
+        header.set(
+            "YPIXSZ",
+            get_quantity_value(self.properties["pixel_size"] * self.binning, u.um),
+            "Microns",
+        )
         return header
 
     def _refresh_info(self):

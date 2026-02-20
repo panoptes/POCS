@@ -2,6 +2,12 @@
 
 # Unreleased
 
+### Added
+
+- Calibration frame commands for taking bias frames and flat fields
+    - `pocs camera take-bias`: Takes bias frames (zero exposure), stacks them, and reports statistics (default: 10 frames)
+    - `pocs run take-flats`: Takes flat field images with automatic exposure adjustment and mount positioning
+
 ## 0.8.0 - 2026-02-17
 
 ### Added
