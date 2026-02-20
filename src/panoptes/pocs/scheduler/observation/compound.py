@@ -11,7 +11,19 @@ class Observation(BaseObservation):
     """An observation that consists of different combinations of exptimes."""
 
     def __init__(self, *args, **kwargs):
-        """Accept a list of exptimes."""
+        """Accept a list of exptimes.
+
+        Note: CompoundObservation requires an explicit exptime parameter (or list of exptimes).
+        Unlike the base Observation class, it cannot use the camera config default because
+        it needs a sequence of exposure times to cycle through.
+        """
+        # Get exptime from kwargs, raise clear error if not provided
+        if "exptime" not in kwargs:
+            raise ValueError(
+                "CompoundObservation requires an 'exptime' parameter. "
+                "Provide a single value or a list of exposure times to cycle through."
+            )
+
         # Save all the exptimes.
         self._exptimes = listify(kwargs["exptime"])
 

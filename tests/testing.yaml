@@ -81,6 +81,7 @@ cameras:
     keep_jpgs: False
     readout_time: 0.5  # seconds
     timeout: 10  # seconds
+    exptime: 120  # Default exposure time in seconds (used when not specified in field files)
     filter_type: RGGB
     cooling:
       enabled: True

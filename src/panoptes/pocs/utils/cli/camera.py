@@ -149,6 +149,12 @@ def setup_cameras(
     # Turn off the autodetect
     set_config("cameras.defaults.auto_detect", False)
 
+    # Set default exptime to 1 second if ZWO cameras detected
+    has_zwo = any(cam_config.get("model", "").endswith("zwo.Camera") for cam_config in cameras.values())
+    if has_zwo:
+        print("ZWO cameras detected, setting default exposure time to 1 second.")
+        set_config("cameras.defaults.exptime", 1)
+
     # Now create the cameras from the config, calling the `setup_camera` method if available.
     print("Now creating the cameras from the config and setting them up.")
     cameras = create_cameras_from_config()

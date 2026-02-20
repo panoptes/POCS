@@ -10,7 +10,6 @@ from contextlib import suppress
 from pathlib import Path
 
 from astropy import units as u
-from astropy.units import s as Second
 from panoptes.utils import error
 from panoptes.utils.library import load_module
 from panoptes.utils.utils import get_quantity_value, listify
@@ -42,7 +41,7 @@ class Observation(PanBase):
     def __init__(
         self,
         field: Field,
-        exptime: Second = 120 * u.second,
+        exptime: float | u.Quantity | None = None,
         min_nexp: int = 60,
         exp_set_size: int = 10,
         priority: int | float = 100,
@@ -72,8 +71,10 @@ class Observation(PanBase):
             field to be captured
 
         Keyword Arguments:
-            exptime {u.second} -- Exposure time for individual exposures
-                (default: {120 * u.second})
+            exptime {u.second | float | None} -- Exposure time for individual exposures
+                (can be a float in seconds or an astropy Quantity with time units).
+                If None, will use the value from config at 'cameras.defaults.exptime',
+                or fall back to 120 seconds. (default: {None})
             min_nexp {int} -- The minimum number of exposures to be taken for a
                 given field (default: 60)
             exp_set_size {int} -- Number of exposures to take per set
@@ -90,6 +91,10 @@ class Observation(PanBase):
                 for metadata and searching purposes. Default: empty list.
         """
         super().__init__(*args, **kwargs)
+
+        # If exptime is None, get the default from camera config.
+        if exptime is None:
+            exptime = self.get_config("cameras.defaults.exptime", default=120)
 
         exptime = get_quantity_value(exptime, u.second) * u.second
 
