@@ -18,6 +18,10 @@
   specify exposure time for every field. The fallback remains 120 seconds if not configured.
 - `pocs camera setup` now automatically sets `cameras.defaults.exptime` to 1 second when ZWO cameras are detected,
   optimizing the default for faster-readout CCD cameras.
+- `CompoundObservation` now raises a clear `ValueError` if instantiated without an `exptime` parameter, 
+  since it requires a sequence of exposure times to cycle through.
+- `DarkObservation` now explicitly passes the first exposure time to the parent `Observation` class,
+  ensuring consistent behavior with the new default exptime logic.
 
 ## 0.8.0 - 2026-02-17
 
