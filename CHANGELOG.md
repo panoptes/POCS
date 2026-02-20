@@ -15,7 +15,9 @@
 - Observation exposure time defaults: when `exptime` is not specified in field files, observations now use the 
   `cameras.defaults.exptime` configuration value instead of a hardcoded 120 seconds. This allows setting 
   camera-specific defaults (e.g., 30s for ZWO cameras, 120s for DSLRs) in the config without needing to 
-  specify exposure time for every field. The fallback remains 120 seconds if not configured. #XXXX
+  specify exposure time for every field. The fallback remains 120 seconds if not configured.
+- `pocs camera setup` now automatically sets `cameras.defaults.exptime` to 1 second when ZWO cameras are detected,
+  optimizing the default for faster-readout CCD cameras.
 
 ## 0.8.0 - 2026-02-17
 
