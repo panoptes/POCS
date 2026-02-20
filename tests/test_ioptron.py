@@ -2,11 +2,9 @@ import os
 from contextlib import suppress
 
 import pytest
-from astropy import units as u
 from astropy.coordinates import EarthLocation
 from panoptes.utils.config.client import get_config
 
-from panoptes.pocs.images import OffsetError
 from panoptes.pocs.mount.ioptron.cem40 import Mount
 from panoptes.pocs.utils.location import create_location_from_config
 
@@ -65,97 +63,3 @@ class TestMount:
         assert self.mount.is_parked is False
         self.mount.home_and_park()
         assert self.mount.is_parked is True
-
-
-def test_get_tracking_correction(mount):
-    offsets = [
-        # HA, ΔRA, ΔDec, Magnitude
-        (2, -13.0881456, 1.4009, 12.154),
-        (2, -13.0881456, -1.4009, 12.154),
-        (2, 13.0881456, 1.4009, 12.154),
-        (14, -13.0881456, 1.4009, 12.154),
-        (14, 13.0881456, 1.4009, 12.154),
-        # Too small
-        (2, -13.0881456, 0.4009, 2.154),
-        (2, 0.0881456, 1.4009, 2.154),
-        # Too big
-        (2, -13.0881456, 99999.4009, 2.154),
-        (2, -99999.0881456, 1.4009, 2.154),
-    ]
-
-    corrections = [
-        (103.49, "south", 966.84, "east"),
-        (103.49, "north", 966.84, "east"),
-        (103.49, "south", 966.84, "west"),
-        (103.49, "north", 966.84, "east"),
-        (103.49, "north", 966.84, "west"),
-        # Too small
-        (None, "south", 966.84, "east"),
-        (103.49, "south", None, "east"),
-        # Too big
-        (99999.0, "south", 966.84, "east"),
-        (103.49, "south", 99999.0, "east"),
-    ]
-
-    for offset, correction in zip(offsets, corrections):
-        pointing_ha = offset[0]
-        offset_info = OffsetError(offset[1] * u.arcsec, offset[2] * u.arcsec, offset[3] * u.arcsec)
-        correction_info = mount.get_tracking_correction(offset_info, pointing_ha)
-
-        dec_info = correction_info["dec"]
-        expected_correction = correction[0]
-        if expected_correction is not None:
-            assert dec_info[1] == pytest.approx(expected_correction, abs=1e-2)
-            assert dec_info[2] == correction[1]
-        else:
-            assert dec_info == expected_correction
-
-        ra_info = correction_info["ra"]
-        expected_correction = correction[2]
-        if expected_correction is not None:
-            assert ra_info[1] == pytest.approx(expected_correction, abs=1e-2)
-            assert ra_info[2] == correction[3]
-        else:
-            assert ra_info == expected_correction
-
-
-def test_get_tracking_correction_custom(mount):
-    min_tracking = 105
-    max_tracking = 950
-
-    offsets = [
-        # HA, ΔRA, ΔDec, Magnitude
-        (2, -13.0881456, 1.4009, 12.154),
-        (2, -13.0881456, -1.4009, 12.154),
-    ]
-
-    corrections = [
-        (None, "south", 950.0, "east"),
-        (None, "north", 950.0, "east"),
-    ]
-
-    for offset, correction in zip(offsets, corrections):
-        pointing_ha = offset[0]
-        offset_info = OffsetError(offset[1] * u.arcsec, offset[2] * u.arcsec, offset[3] * u.arcsec)
-        correction_info = mount.get_tracking_correction(
-            offset_info,
-            pointing_ha,
-            min_tracking_threshold=min_tracking,
-            max_tracking_threshold=max_tracking,
-        )
-
-        dec_info = correction_info["dec"]
-        expected_correction = correction[0]
-        if expected_correction is not None:
-            assert dec_info[1] == pytest.approx(expected_correction, abs=1e-2)
-            assert dec_info[2] == correction[1]
-        else:
-            assert dec_info == expected_correction
-
-        ra_info = correction_info["ra"]
-        expected_correction = correction[2]
-        if expected_correction is not None:
-            assert ra_info[1] == pytest.approx(expected_correction, abs=1e-2)
-            assert ra_info[2] == correction[3]
-        else:
-            assert ra_info == expected_correction

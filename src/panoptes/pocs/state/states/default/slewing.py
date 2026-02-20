@@ -21,8 +21,8 @@ def on_enter(event_data):
         if pocs.observatory.mount.slew_to_target(blocking=True) is False:
             raise error.PocsError("Mount did not successfully slew to target.")
 
-        pocs.say("I'm at the target, checking pointing.")
-        pocs.next_state = "pointing"
+        pocs.say("I'm at the target, going to start observing.")
+        pocs.next_state = "observing"
 
     except Exception as e:
         pocs.say(f"Wait a minute, there was a problem slewing. Sending to parking. {e}")

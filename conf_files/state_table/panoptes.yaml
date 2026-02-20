@@ -2,104 +2,59 @@
 name: default
 initial: sleeping
 states:
-    parking:
-        tags: always_safe
-    parked:
-        tags: always_safe
-    sleeping:
-        tags: always_safe
-    housekeeping:
-        tags: always_safe
-    ready:
-        tags: always_safe
-    scheduling:
-        horizon: observe
-    slewing:
-    pointing:
-    tracking:
-    observing:
-    analyzing:
+  parking:
+    tags: always_safe
+  parked:
+    tags: always_safe
+  sleeping:
+    tags: always_safe
+  housekeeping:
+    tags: always_safe
+  ready:
+    tags: always_safe
+  scheduling:
+    horizon: observe
+  slewing:
+  observing:
 transitions:
-    -
-        source:
-            - ready
-            - scheduling
-            - slewing
-            - pointing
-            - tracking
-            - observing
-            - analyzing
-        dest: parking
-        trigger: park
-    -
-        source: parking
-        dest: parked
-        trigger: set_park
-    -
-        source: parked
-        dest: housekeeping
-        trigger: clean_up
-    -
-        source: housekeeping
-        dest: sleeping
-        trigger: goto_sleep
-    -
-        source: parked
-        dest: ready
-        trigger: get_ready
-        conditions: mount_is_initialized
-    -
-        source: sleeping
-        dest: ready
-        trigger: get_ready
-        conditions: mount_is_initialized
-    -
-        source: ready
-        dest: scheduling
-        trigger: schedule
-    -
-        source: analyzing
-        dest: scheduling
-        trigger: schedule
-    -
-        source: scheduling
-        dest: slewing
-        trigger: start_slewing
-    -
-        source: scheduling
-        dest: tracking
-        trigger: adjust_tracking
-    -
-        source: slewing
-        dest: pointing
-        trigger: adjust_pointing
-        conditions: mount_is_tracking
-    -
-        source: pointing
-        dest: slewing
-        trigger: start_slewing
-        conditions: mount_is_tracking
-    -
-        source: pointing
-        dest: tracking
-        trigger: track
-        conditions: mount_is_tracking
-    -
-        source: tracking
-        dest: observing
-        trigger: observe
-        conditions: mount_is_tracking
-    -
-        source: observing
-        dest: analyzing
-        trigger: analyze
-    -
-        source: observing
-        dest: observing
-        trigger: observe
-        conditions: mount_is_tracking
-    -
-        source: analyzing
-        dest: tracking
-        trigger: adjust_tracking
-        conditions: mount_is_tracking
+  - source:
+      - ready
+      - scheduling
+      - slewing
+      - observing
+    dest: parking
+    trigger: park
+  - source: parking
+    dest: parked
+    trigger: set_park
+  - source: parked
+    dest: housekeeping
+    trigger: clean_up
+  - source: housekeeping
+    dest: sleeping
+    trigger: goto_sleep
+  - source: parked
+    dest: ready
+    trigger: get_ready
+    conditions: mount_is_initialized
+  - source: sleeping
+    dest: ready
+    trigger: get_ready
+    conditions: mount_is_initialized
+  - source: ready
+    dest: scheduling
+    trigger: schedule
+  - source: scheduling
+    dest: slewing
+    trigger: start_slewing
+  - source: slewing
+    dest: observing
+    trigger: observe
+    conditions: mount_is_tracking
+  - source: observing
+    dest: observing
+    trigger: observe
+    conditions: mount_is_tracking
+  - source: observing
+    dest: scheduling
+    trigger: schedule
