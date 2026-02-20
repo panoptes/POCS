@@ -38,6 +38,7 @@ class Camera(AbstractSDKCamera):
         image_type: str | None = "RAW16",
         bandwidthoverload: float = 50,
         binning: int = 2,
+        fix_bit_padding: bool = False,
         *args,
         **kwargs,
     ):
@@ -55,6 +56,8 @@ class Camera(AbstractSDKCamera):
                 default is 99.
             binning (int, optional): binning factor to use for the camera, default is 2,
                 which is quad binning.
+            fix_bit_padding (bool, optional): whether to right-shift RAW16 data to convert
+                from zero-padded LSBs to zero-padded MSBs (native 12-bit). Default is False.
             *args, **kwargs: additional arguments to be passed to the parent classes.
 
         Notes:
@@ -70,6 +73,7 @@ class Camera(AbstractSDKCamera):
         kwargs["internal_darks"] = kwargs.get("internal_darks", False)
 
         self._video_event = threading.Event()
+        self._fix_bit_padding = fix_bit_padding
 
         super().__init__(name, ASIDriver, *args, **kwargs)
 
@@ -423,7 +427,8 @@ class Camera(AbstractSDKCamera):
 
                 # Fix 'raw' data scaling by changing from zero padding of LSBs
                 # to zero padding of MSBs.
-                video_data = np.right_shift(video_data, pad_bits)
+                if self._fix_bit_padding:
+                    video_data = np.right_shift(video_data, pad_bits)
 
                 self.write_fits(video_data, header, filename)
                 good_frames += 1
@@ -458,7 +463,7 @@ class Camera(AbstractSDKCamera):
             else:
                 # Fix 'raw' data scaling by changing from zero padding of LSBs
                 # to zero padding of MSBs.
-                if self.image_type == "RAW16":
+                if self._fix_bit_padding and self.image_type == "RAW16":
                     pad_bits = 16 - int(get_quantity_value(self.bit_depth, u.bit))
                     image_data = np.right_shift(image_data, pad_bits)
 
