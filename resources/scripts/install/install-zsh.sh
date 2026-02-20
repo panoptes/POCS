@@ -71,6 +71,14 @@ fi
 # Source the plugins file.
 source \$zsh_plugins
 
+# Common aliases
+alias ll='ls -lh'
+alias la='ls -lAh'
+alias df='df -h'
+alias du='du -h'
+alias free='free -h'
+alias mkdir='mkdir -p'
+
 # History configuration
 HISTFILE="\${HOME}/.zsh_history"
 HISTSIZE=10000
