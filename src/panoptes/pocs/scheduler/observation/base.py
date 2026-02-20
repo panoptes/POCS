@@ -96,8 +96,6 @@ class Observation(PanBase):
         if exptime is None:
             exptime = self.get_config("cameras.defaults.exptime", default=120)
 
-        # At this point exptime is guaranteed to be a number (not None)
-        assert exptime is not None
         exptime = get_quantity_value(exptime, u.second) * u.second
 
         if not isinstance(field, Field):
