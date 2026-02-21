@@ -16,6 +16,7 @@ from panoptes.utils.utils import get_free_space
 
 from panoptes.pocs.base import PanBase
 from panoptes.pocs.hardware import get_simulator_names
+from panoptes.pocs.i18n import translate as _
 from panoptes.pocs.observatory import Observatory
 from panoptes.pocs.scheduler.observation.base import Observation
 from panoptes.pocs.state.machine import PanStateMachine
@@ -63,6 +64,13 @@ class POCS(PanStateMachine, PanBase):
         self.unit_id = self.get_config("pan_id", default="PAN000")
         location = self.get_config("location.name", default="Unknown location")
         self.logger.info(f"Initializing PANOPTES unit - {self.name} {self.unit_id} - {location}")
+
+        # Set up language for internationalization
+        language = self.get_config("language", default="en")
+        if language != "en":
+            from panoptes.pocs.i18n import set_language
+            set_language(language)
+            self.logger.info(f"Language set to: {language}")
 
         if state_machine_file is None:
             state_machine_file = self.get_config("state_machine", default="panoptes")
@@ -261,12 +269,13 @@ class POCS(PanStateMachine, PanBase):
     def say(self, msg):
         """PANOPTES Units like to talk!
 
-        Send a message.
+        Send a message. The message will be translated based on the configured language.
 
         Args:
             msg(str): Message to be sent to logs.
         """
-        self.logger.success(f"{self.unit_id} says: {msg}")
+        translated_msg = _(msg)
+        self.logger.success(f"{self.unit_id} says: {translated_msg}")
 
     def power_down(self):
         """Actions to be performed upon shutdown
