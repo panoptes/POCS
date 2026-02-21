@@ -8,7 +8,7 @@ from rich import print
 from panoptes.pocs.sensor.remote import RemoteMonitor
 from panoptes.pocs.utils.logger import get_logger
 
-app = typer.Typer()
+app = typer.Typer(no_args_is_help=True)
 logger = get_logger(stderr_log_level="ERROR")
 
 

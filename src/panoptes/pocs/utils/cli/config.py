@@ -34,7 +34,7 @@ class HostInfo(BaseModel):
         return f"{self.host}:{self.port}"
 
 
-app = typer.Typer()
+app = typer.Typer(no_args_is_help=True)
 host_info: dict[str, HostInfo | None] = {"config_server": None}
 logger = get_logger(stderr_log_level="ERROR")
 

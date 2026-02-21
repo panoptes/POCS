@@ -47,3 +47,32 @@ def test_invalid_command_shows_error(cli_runner):
     assert "No such command" in result.output
     # Should suggest using help option
     assert "--help" in result.output
+
+
+def test_mount_subcommand_no_args_shows_help(cli_runner):
+    """Test that 'pocs mount' with no arguments shows help."""
+    result = cli_runner.invoke(app, ["mount"])
+
+    # Should show help for mount subcommand
+    assert "Usage:" in result.output
+    assert "Commands" in result.output or "Options" in result.output
+    # Check for some mount-specific commands
+    assert "park" in result.output or "home" in result.output
+
+
+def test_camera_subcommand_no_args_shows_help(cli_runner):
+    """Test that 'pocs camera' with no arguments shows help."""
+    result = cli_runner.invoke(app, ["camera"])
+
+    # Should show help for camera subcommand
+    assert "Usage:" in result.output
+    assert "Commands" in result.output or "Options" in result.output
+
+
+def test_config_subcommand_no_args_shows_help(cli_runner):
+    """Test that 'pocs config' with no arguments shows help."""
+    result = cli_runner.invoke(app, ["config"])
+
+    # Should show help for config subcommand
+    assert "Usage:" in result.output
+    assert "Commands" in result.output or "Options" in result.output

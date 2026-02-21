@@ -41,7 +41,7 @@ class HostInfo:
         return f"http://{self.host}:{self.port}"
 
 
-app = typer.Typer()
+app = typer.Typer(no_args_is_help=True)
 
 
 @app.callback()

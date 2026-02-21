@@ -27,7 +27,7 @@ from panoptes.pocs.mount.ioptron import MountInfo
 from panoptes.pocs.utils.coords import get_target_coords
 from panoptes.pocs.utils.location import create_location_from_config
 
-app = typer.Typer()
+app = typer.Typer(no_args_is_help=True)
 
 
 @app.command(name="park")
