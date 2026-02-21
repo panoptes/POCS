@@ -65,6 +65,9 @@ def main():
     # Show Spanish
     demonstrate_translation('es', 'Spanish (Español)')
     
+    # Show Japanese
+    demonstrate_translation('ja', 'Japanese (日本語)')
+    
     print_header("How to Use")
     print("""
 To enable Spanish in your POCS installation:
@@ -76,20 +79,24 @@ To enable Spanish in your POCS installation:
 
 3. Restart POCS
 
-All user-facing messages from the say() method will now be in Spanish!
+For Japanese, use:
+   
+   language: ja
+
+All user-facing messages from the say() method will be translated!
 
 For more languages, see: src/panoptes/pocs/locale/README.md
     """)
     
     print_header("Summary")
     print("""
-✓ 47 messages translated to Spanish
+✓ 47 messages translated to Spanish and Japanese
 ✓ Easy to add more languages
 ✓ Simple configuration option
 ✓ Preserves format strings and emojis
 ✓ Falls back gracefully for untranslated messages
 
-¡Gracias! Thanks for using POCS! 🌟🔭
+¡Gracias! ありがとう！ Thanks for using POCS! 🌟🔭
     """)
 
 

@@ -30,6 +30,20 @@ class TestI18nModule:
         # Reset to English
         i18n.set_language('en')
 
+    def test_japanese_translation(self):
+        """Test Japanese translation of messages."""
+        # Set language to Japanese
+        i18n.set_language('ja')
+        
+        # Test a few key messages
+        assert i18n.translate("Hi there!") == "こんにちは！"
+        assert i18n.translate("I'm powering down") == "電源を切っています"
+        assert i18n.translate("Ok, let's park!") == "OK、格納しましょう！"
+        assert i18n.translate("Another successful night!") == "今夜も成功しました！"
+        
+        # Reset to English
+        i18n.set_language('en')
+
     def test_format_string_translation(self):
         """Test that format strings work with translations."""
         i18n.set_language('es')

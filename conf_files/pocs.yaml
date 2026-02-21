@@ -14,7 +14,7 @@ name: Generic PANOPTES Unit
 pan_id: PAN000
 
 # Language setting for user-facing messages (optional)
-# Supported languages: en (English, default), es (Spanish)
+# Supported languages: en (English, default), es (Spanish), ja (Japanese)
 # language: es
 
 location:

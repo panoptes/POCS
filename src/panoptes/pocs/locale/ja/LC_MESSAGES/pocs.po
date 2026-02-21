@@ -1,0 +1,169 @@
+# PANOPTES Observatory Control System - Japanese Translation
+# Copyright (C) 2024 PANOPTES
+# This file is distributed under the same license as the POCS package.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: POCS\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2024-01-01 00:00+0000\n"
+"PO-Revision-Date: 2024-01-01 00:00+0000\n"
+"Last-Translator: PANOPTES Team\n"
+"Language-Team: Japanese\n"
+"Language: ja\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+# Core.py messages
+msgid "Hi there!"
+msgstr "こんにちは！"
+
+msgid "Looks like we're missing some required hardware."
+msgstr "必要なハードウェアが不足しているようです。"
+
+msgid "Initializing the system! Woohoo!"
+msgstr "システムを初期化しています！やった！"
+
+msgid "Oh wait. There was a problem initializing: {e!r}"
+msgstr "あれ、初期化中に問題が発生しました：{e!r}"
+
+msgid "Since we didn't initialize, I'm going to exit."
+msgstr "初期化できなかったので、終了します。"
+
+msgid "I'm powering down"
+msgstr "電源を切っています"
+
+msgid "Observing {current_observation}"
+msgstr "{current_observation}を観測中"
+
+msgid "Safety warning! Stopping {current_observation}."
+msgstr "安全警告！{current_observation}を停止します。"
+
+msgid "Parking the mount!"
+msgstr "マウントを格納します！"
+
+msgid "Mount is not tracking, stopping observations."
+msgstr "マウントが追尾していません。観測を停止します。"
+
+# State: ready
+msgid "Failed to open the dome while entering state 'ready'"
+msgstr "「準備完了」状態への移行中にドームを開けませんでした"
+
+msgid "Ok, I'm all set up and ready to go!"
+msgstr "OK、準備完了です！"
+
+# State: parking
+msgid "Closing dome"
+msgstr "ドームを閉じています"
+
+msgid "Unable to close dome!"
+msgstr "ドームを閉じることができません！"
+
+msgid "Ok, let's park!"
+msgstr "OK、格納しましょう！"
+
+# State: scheduling
+msgid "Looks like we only wanted to run once, parking now"
+msgstr "一度だけ実行する設定のようです。今すぐ格納します"
+
+msgid "Ok, I'm finding something good to look at..."
+msgstr "OK、観測対象を探しています..."
+
+msgid "No valid observations found. Can't schedule. Going to park."
+msgstr "有効な観測が見つかりません。スケジュールできません。格納します。"
+
+msgid "I'm sticking with {observation.name}"
+msgstr "{observation.name}を続けます"
+
+msgid "Got it! I'm going to check out: {observation.name}"
+msgstr "了解！{observation.name}を確認します"
+
+# State: sleeping
+msgid "Weather is good and it is dark. Something must have gone wrong. Stopping loop."
+msgstr "天気は良く、暗いです。何か問題が発生したようです。ループを停止します。"
+
+msgid "Another successful night!"
+msgstr "今夜も成功しました！"
+
+# State: analyzing
+msgid "Analyzing image {observation.current_exp_num} / {observation.min_nexp}"
+msgstr "画像を解析中 {observation.current_exp_num} / {observation.min_nexp}"
+
+msgid "Forcing a move to the scheduler"
+msgstr "スケジューラへの移動を強制します"
+
+msgid "Observation complete, going to {pocs.next_state}"
+msgstr "観測完了、{pocs.next_state}へ移動します"
+
+# State: pointing
+msgid "Taking pointing picture."
+msgstr "ポインティング画像を撮影しています。"
+
+msgid "Ok, I've got the pointing picture, let's see how close we are."
+msgstr "OK、ポインティング画像を取得しました。どれくらい近いか見てみましょう。"
+
+msgid "I'm still a bit away from the field so I'm going to get closer."
+msgstr "まだ視野から少し離れているので、近づきます。"
+
+msgid "Syncing with the latest image..."
+msgstr "最新の画像と同期しています..."
+
+msgid "Hmm, I had a problem checking the pointing error. Going to park."
+msgstr "うーん、ポインティングエラーの確認中に問題が発生しました。格納します。"
+
+# State: housekeeping
+msgid "Resetting the list of observations and doing some cleanup!"
+msgstr "観測リストをリセットして、クリーンアップしています！"
+
+# State: tracking
+msgid "Checking our tracking"
+msgstr "追尾を確認しています"
+
+msgid "Done with tracking adjustment, going to observe"
+msgstr "追尾調整が完了しました。観測を開始します"
+
+# State: parked
+msgid "I'm parked now."
+msgstr "格納しました。"
+
+msgid "Done running loop, going to clean up and wait!"
+msgstr "ループの実行が完了しました。クリーンアップして待機します！"
+
+msgid "Done with retrying loop, going to clean up and wait!"
+msgstr "再試行ループが完了しました。クリーンアップして待機します！"
+
+msgid "Things look okay for now. I'm going to try again."
+msgstr "今のところ問題ないようです。再試行します。"
+
+msgid "Cleaning up for the night!"
+msgstr "今夜の片付けをしています！"
+
+msgid "No observations found."
+msgstr "観測が見つかりません。"
+
+msgid "Going to stay parked for five minutes then will try again."
+msgstr "5分間格納したままにして、その後再試行します。"
+
+msgid "Looks like it's not dark anymore. Going to clean up."
+msgstr "もう暗くないようです。片付けます。"
+
+msgid "Seems to be bad weather. I'll wait another 5 minutes."
+msgstr "悪天候のようです。あと5分待ちます。"
+
+# State: observing
+msgid "🔭🔭 I'm observing {current_obs.field.field_name}! 🔭🔭"
+msgstr "🔭🔭 {current_obs.field.field_name}を観測中！ 🔭🔭"
+
+msgid "Hmm, I'm not sure what happened with that exposure."
+msgstr "うーん、その露出で何が起こったのかわかりません。"
+
+# State: slewing
+msgid "I'm slewing over to the coordinates to track the target."
+msgstr "目標を追尾するために座標へ移動しています。"
+
+msgid "I'm at the target, checking pointing."
+msgstr "目標に到達しました。ポインティングを確認しています。"
+
+msgid "Wait a minute, there was a problem slewing. Sending to parking. {e}"
+msgstr "ちょっと待って、移動中に問題が発生しました。格納します。{e}"

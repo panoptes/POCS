@@ -6,6 +6,7 @@ This directory contains translation files for POCS user-facing messages.
 
 - **English (en)**: Default language
 - **Spanish (es)**: ¡Español! 🌎
+- **Japanese (ja)**: 日本語 🗾
 
 ## Directory Structure
 
@@ -13,7 +14,11 @@ This directory contains translation files for POCS user-facing messages.
 locale/
 ├── README.md                          # This file
 ├── messages.pot                       # Template file (all messages)
-└── es/                                # Spanish translations
+├── es/                                # Spanish translations
+│   └── LC_MESSAGES/
+│       ├── pocs.po                   # Human-readable translations
+│       └── pocs.mo                   # Compiled binary translations
+└── ja/                                # Japanese translations
     └── LC_MESSAGES/
         ├── pocs.po                   # Human-readable translations
         └── pocs.mo                   # Compiled binary translations
@@ -27,6 +32,12 @@ To enable Spanish messages, add this to your `pocs.yaml` or `pocs_local.yaml`:
 
 ```yaml
 language: es
+```
+
+For Japanese:
+
+```yaml
+language: ja
 ```
 
 See `conf_files/pocs_spanish.yaml` for a complete example.

@@ -32,7 +32,7 @@ For more information, see the full documentation at: https://pocs.readthedocs.io
 ## Features
 
 - 🤖 **Autonomous Operation**: Fully automated observation scheduling and execution
-- 🌍 **Internationalization**: User-facing messages available in multiple languages (English, Spanish)
+- 🌍 **Internationalization**: User-facing messages available in multiple languages (English, Spanish, Japanese)
 - 🔭 **Hardware Control**: Support for various mounts, cameras, domes, and focusers
 - 🌙 **Smart Scheduling**: Constraint-based observation scheduling with safety checks
 - 📊 **State Machine**: Robust state-based control flow for reliable operation
@@ -49,7 +49,7 @@ New to POCS? Start here:
 - **Architecture Guide:** Read [docs/architecture-for-beginners.md](docs/architecture-for-beginners.md) to understand how POCS works  
 - **Glossary:** Check [docs/glossary.md](docs/glossary.md) for definitions of all terms
 - **Python Examples:** Run [examples/beginner_simulation.py](examples/beginner_simulation.py) for API tutorial (advanced)
-- **Internationalization:** See [src/panoptes/pocs/locale/README.md](src/panoptes/pocs/locale/README.md) for multi-language support (¡Español disponible!)
+- **Internationalization:** See [src/panoptes/pocs/locale/README.md](src/panoptes/pocs/locale/README.md) for multi-language support (¡Español! 日本語!)
 
 ## Install
 
