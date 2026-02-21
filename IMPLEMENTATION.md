@@ -2,7 +2,7 @@
 
 ## Overview
 
-This implementation adds internationalization (i18n) support to the POCS `say()` method, allowing user-facing messages to be displayed in different languages. The initial implementation includes full Spanish translation of all 47 messages.
+This implementation adds internationalization (i18n) support to the POCS `say()` method, allowing user-facing messages to be displayed in different languages. The implementation includes full translations of all 47 messages in Spanish and Japanese.
 
 ## Files Added/Modified
 
@@ -20,29 +20,44 @@ This implementation adds internationalization (i18n) support to the POCS `say()`
    - Includes metadata and proper UTF-8 charset declaration
 
 3. **`src/panoptes/pocs/locale/es/LC_MESSAGES/pocs.mo`**
-   - Compiled binary translation file
+   - Compiled binary Spanish translation file
    - Generated from .po file
    - Used at runtime for fast translation lookups
 
-4. **`src/panoptes/pocs/locale/README.md`**
+4. **`src/panoptes/pocs/locale/ja/LC_MESSAGES/pocs.po`**
+   - Human-readable Japanese translation file
+   - 47 messages translated
+   - Includes metadata and proper UTF-8 charset declaration
+
+5. **`src/panoptes/pocs/locale/ja/LC_MESSAGES/pocs.mo`**
+   - Compiled binary Japanese translation file
+   - Generated from .po file
+   - Used at runtime for fast translation lookups
+
+6. **`src/panoptes/pocs/locale/README.md`**
    - Complete documentation for the i18n system
    - Instructions for users and developers
    - Guide for adding new languages
    - Includes compilation script
 
-5. **`tests/test_i18n.py`**
+7. **`tests/test_i18n.py`**
    - Comprehensive test suite for i18n functionality
    - Tests language switching, format strings, emojis, fallbacks
+   - Tests for Spanish and Japanese
    - All tests passing
 
-6. **`examples/i18n_demo.py`**
+8. **`examples/i18n_demo.py`**
    - Interactive demonstration script
-   - Shows English and Spanish translations side-by-side
+   - Shows English, Spanish, and Japanese translations
    - Includes usage instructions
 
-7. **`conf_files/pocs_spanish.yaml`**
+9. **`conf_files/pocs_spanish.yaml`**
    - Example configuration file for Spanish
    - Shows how to enable Spanish language
+
+10. **`conf_files/pocs_japanese.yaml`**
+    - Example configuration file for Japanese
+    - Shows how to enable Japanese language
 
 ### Modified Files
 
@@ -61,9 +76,9 @@ This implementation adds internationalization (i18n) support to the POCS `say()`
 ### User Perspective
 
 1. Edit `pocs.yaml` or `pocs_local.yaml`
-2. Add `language: es` at the top level
+2. Add `language: es` (Spanish) or `language: ja` (Japanese) at the top level
 3. Restart POCS
-4. All messages from `say()` are now in Spanish
+4. All messages from `say()` are now in the selected language
 
 ### Developer Perspective
 
@@ -120,13 +135,14 @@ All 47 `say()` messages are translated, including:
 
 - ✅ Default language (English)
 - ✅ Spanish translation
+- ✅ Japanese translation
 - ✅ Format string preservation
 - ✅ Emoji preservation
 - ✅ Language switching
 - ✅ Fallback for untranslated messages
 - ✅ Invalid language code handling
 - ✅ Multiple language switches
-- ✅ All 47 messages have translations
+- ✅ All 47 messages have translations in both languages
 
 ### Running Tests
 
@@ -199,8 +215,8 @@ This implementation provides a solid foundation for internationalization in POCS
 - ✅ Well-tested
 - ✅ Well-documented
 - ✅ No external dependencies
-- ✅ Fully functional with Spanish
+- ✅ Fully functional with Spanish and Japanese
 
 Users can now enjoy POCS messages in their native language, making the system more accessible to the global astronomy community.
 
-¡Gracias! 🌟🔭
+¡Gracias! ありがとう！ Thanks! 🌟🔭
