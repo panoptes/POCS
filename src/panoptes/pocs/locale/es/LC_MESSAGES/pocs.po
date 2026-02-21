@@ -1,0 +1,169 @@
+# PANOPTES Observatory Control System - Spanish Translation
+# Copyright (C) 2024 PANOPTES
+# This file is distributed under the same license as the POCS package.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: POCS\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2024-01-01 00:00+0000\n"
+"PO-Revision-Date: 2024-01-01 00:00+0000\n"
+"Last-Translator: PANOPTES Team\n"
+"Language-Team: Spanish\n"
+"Language: es\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+# Core.py messages
+msgid "Hi there!"
+msgstr "¡Hola!"
+
+msgid "Looks like we're missing some required hardware."
+msgstr "Parece que nos falta hardware requerido."
+
+msgid "Initializing the system! Woohoo!"
+msgstr "¡Inicializando el sistema! ¡Woohoo!"
+
+msgid "Oh wait. There was a problem initializing: {e!r}"
+msgstr "Oh, espera. Hubo un problema al inicializar: {e!r}"
+
+msgid "Since we didn't initialize, I'm going to exit."
+msgstr "Como no se inicializó, voy a salir."
+
+msgid "I'm powering down"
+msgstr "Me estoy apagando"
+
+msgid "Observing {current_observation}"
+msgstr "Observando {current_observation}"
+
+msgid "Safety warning! Stopping {current_observation}."
+msgstr "¡Advertencia de seguridad! Deteniendo {current_observation}."
+
+msgid "Parking the mount!"
+msgstr "¡Estacionando la montura!"
+
+msgid "Mount is not tracking, stopping observations."
+msgstr "La montura no está rastreando, deteniendo observaciones."
+
+# State: ready
+msgid "Failed to open the dome while entering state 'ready'"
+msgstr "No se pudo abrir la cúpula al entrar en el estado 'listo'"
+
+msgid "Ok, I'm all set up and ready to go!"
+msgstr "¡Ok, estoy todo preparado y listo para empezar!"
+
+# State: parking
+msgid "Closing dome"
+msgstr "Cerrando cúpula"
+
+msgid "Unable to close dome!"
+msgstr "¡No se puede cerrar la cúpula!"
+
+msgid "Ok, let's park!"
+msgstr "¡Ok, vamos a estacionar!"
+
+# State: scheduling
+msgid "Looks like we only wanted to run once, parking now"
+msgstr "Parece que solo queríamos ejecutar una vez, estacionando ahora"
+
+msgid "Ok, I'm finding something good to look at..."
+msgstr "Ok, estoy buscando algo bueno para observar..."
+
+msgid "No valid observations found. Can't schedule. Going to park."
+msgstr "No se encontraron observaciones válidas. No se puede programar. Voy a estacionar."
+
+msgid "I'm sticking with {observation.name}"
+msgstr "Me quedo con {observation.name}"
+
+msgid "Got it! I'm going to check out: {observation.name}"
+msgstr "¡Entendido! Voy a verificar: {observation.name}"
+
+# State: sleeping
+msgid "Weather is good and it is dark. Something must have gone wrong. Stopping loop."
+msgstr "El clima está bien y está oscuro. Algo debe haber salido mal. Deteniendo bucle."
+
+msgid "Another successful night!"
+msgstr "¡Otra noche exitosa!"
+
+# State: analyzing
+msgid "Analyzing image {observation.current_exp_num} / {observation.min_nexp}"
+msgstr "Analizando imagen {observation.current_exp_num} / {observation.min_nexp}"
+
+msgid "Forcing a move to the scheduler"
+msgstr "Forzando un movimiento al programador"
+
+msgid "Observation complete, going to {pocs.next_state}"
+msgstr "Observación completa, yendo a {pocs.next_state}"
+
+# State: pointing
+msgid "Taking pointing picture."
+msgstr "Tomando imagen de apuntado."
+
+msgid "Ok, I've got the pointing picture, let's see how close we are."
+msgstr "Ok, tengo la imagen de apuntado, veamos qué tan cerca estamos."
+
+msgid "I'm still a bit away from the field so I'm going to get closer."
+msgstr "Todavía estoy un poco lejos del campo, así que voy a acercarme."
+
+msgid "Syncing with the latest image..."
+msgstr "Sincronizando con la última imagen..."
+
+msgid "Hmm, I had a problem checking the pointing error. Going to park."
+msgstr "Hmm, tuve un problema al verificar el error de apuntado. Voy a estacionar."
+
+# State: housekeeping
+msgid "Resetting the list of observations and doing some cleanup!"
+msgstr "¡Reiniciando la lista de observaciones y haciendo limpieza!"
+
+# State: tracking
+msgid "Checking our tracking"
+msgstr "Verificando nuestro rastreo"
+
+msgid "Done with tracking adjustment, going to observe"
+msgstr "Terminado con el ajuste de rastreo, voy a observar"
+
+# State: parked
+msgid "I'm parked now."
+msgstr "Estoy estacionado ahora."
+
+msgid "Done running loop, going to clean up and wait!"
+msgstr "¡Terminado de ejecutar el bucle, voy a limpiar y esperar!"
+
+msgid "Done with retrying loop, going to clean up and wait!"
+msgstr "¡Terminado con el bucle de reintento, voy a limpiar y esperar!"
+
+msgid "Things look okay for now. I'm going to try again."
+msgstr "Las cosas se ven bien por ahora. Voy a intentar de nuevo."
+
+msgid "Cleaning up for the night!"
+msgstr "¡Limpiando para la noche!"
+
+msgid "No observations found."
+msgstr "No se encontraron observaciones."
+
+msgid "Going to stay parked for five minutes then will try again."
+msgstr "Voy a permanecer estacionado cinco minutos y luego intentaré de nuevo."
+
+msgid "Looks like it's not dark anymore. Going to clean up."
+msgstr "Parece que ya no está oscuro. Voy a limpiar."
+
+msgid "Seems to be bad weather. I'll wait another 5 minutes."
+msgstr "Parece ser mal clima. Esperaré otros 5 minutos."
+
+# State: observing
+msgid "🔭🔭 I'm observing {current_obs.field.field_name}! 🔭🔭"
+msgstr "🔭🔭 ¡Estoy observando {current_obs.field.field_name}! 🔭🔭"
+
+msgid "Hmm, I'm not sure what happened with that exposure."
+msgstr "Hmm, no estoy seguro de qué pasó con esa exposición."
+
+# State: slewing
+msgid "I'm slewing over to the coordinates to track the target."
+msgstr "Me estoy desplazando a las coordenadas para rastrear el objetivo."
+
+msgid "I'm at the target, checking pointing."
+msgstr "Estoy en el objetivo, verificando apuntado."
+
+msgid "Wait a minute, there was a problem slewing. Sending to parking. {e}"
+msgstr "Espera un minuto, hubo un problema al desplazarse. Enviando a estacionar. {e}"

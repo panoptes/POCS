@@ -1,0 +1,53 @@
+---
+######################### PANOPTES UNIT (Japanese Example) #######################
+# This is an example configuration file showing Japanese language support.
+# Copy this file to pocs_local.yaml and customize for your unit.
+# これはPANOPTESユニットの日本語サポートを示す設定ファイルの例です。
+################################################################################
+name: 汎用PANOPTESユニット
+pan_id: PAN000
+
+# Language setting - Set to 'ja' for Japanese messages
+# 言語設定 - 日本語メッセージの場合は'ja'に設定します
+language: ja
+
+location:
+  name: Mauna Loa Observatory
+  latitude: 19.54 deg
+  longitude: -155.58 deg
+  elevation: 3400.0 m
+  horizon: 30 deg
+  flat_horizon: -6 deg
+  focus_horizon: -12 deg
+  observe_horizon: -18 deg
+  obstructions: [ ]
+  timezone: US/Hawaii
+  gmt_offset: -600
+
+directories:
+  base: .
+  images: images
+  resources: resources
+  mounts: resources/mounts
+  fields: conf_files/fields
+
+db:
+  name: panoptes
+  type: file
+  folder: json_store
+
+wait_delay: 180
+max_transition_attempts: 5
+status_check_interval: 60
+
+state_machine: panoptes
+
+scheduler:
+  type: panoptes.pocs.scheduler.dispatch
+  fields_file: tess_sectors_north.yaml
+  check_file: True
+
+# Simulators (for testing without hardware)
+# シミュレータ（ハードウェアなしでテストする場合）
+simulator:
+  - all
