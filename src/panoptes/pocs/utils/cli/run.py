@@ -24,7 +24,7 @@ from panoptes.pocs.utils.alignment import plot_alignment_diff, process_quick_ali
 from panoptes.pocs.utils.cloud import upload_image
 from panoptes.pocs.utils.logger import get_logger
 
-app = typer.Typer()
+app = typer.Typer(no_args_is_help=True)
 
 # Ignore FITS header warnings.
 warnings.filterwarnings(action="ignore", message="datfix")

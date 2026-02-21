@@ -45,7 +45,7 @@ from panoptes.pocs.camera import (
 )
 from panoptes.pocs.camera.libasi import ASIDriver
 
-app = typer.Typer()
+app = typer.Typer(no_args_is_help=True)
 
 
 class RecentFilesRenderable:
