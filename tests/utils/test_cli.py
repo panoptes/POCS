@@ -19,8 +19,7 @@ def test_no_args_shows_help(cli_runner):
     """Test that running the CLI with no arguments shows the help screen."""
     result = cli_runner.invoke(app, [])
 
-    # The exit code should be non-zero (typically 2 for missing command/help)
-    # but the help should be shown
+    # With no_args_is_help=True, the help screen is shown
     assert "Usage:" in result.output
     assert "Options" in result.output
     assert "Commands" in result.output
@@ -46,5 +45,5 @@ def test_invalid_command_shows_error(cli_runner):
 
     assert result.exit_code == 2
     assert "No such command" in result.output
-    # Should suggest using help
-    assert "--help" in result.output or "help" in result.output.lower()
+    # Should suggest using help option
+    assert "--help" in result.output
