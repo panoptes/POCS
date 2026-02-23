@@ -40,8 +40,6 @@ For Japanese:
 language: ja
 ```
 
-See `conf_files/pocs_spanish.yaml` for a complete example.
-
 ### For Developers
 
 #### Adding New Messages
