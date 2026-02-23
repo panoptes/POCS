@@ -20,8 +20,8 @@ from watchdog.observers import Observer
 
 from panoptes.pocs.utils.cloud import upload_image
 
-app = typer.Typer()
-upload_app = typer.Typer()
+app = typer.Typer(no_args_is_help=True)
+upload_app = typer.Typer(no_args_is_help=True)
 app.add_typer(upload_app, name="upload")
 
 
