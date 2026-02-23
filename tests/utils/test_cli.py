@@ -45,8 +45,8 @@ def test_invalid_command_shows_error(cli_runner):
 
     assert result.exit_code == 2
     assert "No such command" in result.output
-    # Should suggest using help option
-    assert "--help" in result.output
+    # Should suggest using help option (checking for "help" to avoid ANSI color code issues)
+    assert "help" in result.output
 
 
 def test_mount_subcommand_no_args_shows_help(cli_runner):
