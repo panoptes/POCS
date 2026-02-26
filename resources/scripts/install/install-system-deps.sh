@@ -41,7 +41,7 @@ sudo DEBIAN_FRONTEND=noninteractive apt-get -y install --no-install-recommends \
 # If we are using a desktop, we need to prevent gvfs-gphoto2-volume-monitor
 # from running, otherwise it will steal the cameras.
 if [ -f /usr/lib/gvfs/gvfs-gphoto2-volume-monitor ]; then
-  chmod -x /usr/lib/gvfs/gvfs-gphoto2-volume-monitor
+  sudo chmod -x /usr/lib/gvfs/gvfs-gphoto2-volume-monitor
 fi
 
 sudo DEBIAN_FRONTEND=noninteractive apt-get -y autoremove
