@@ -11,14 +11,16 @@ If you're new to POCS, start with these essential commands:
 pocs config setup
 
 # 2. Test your mount
+pocs mount setup
 pocs mount search-home
 pocs mount park
 pocs mount slew-home
-pocs mount slew-to-target --target Polaris
+pocs mount slew-to-target --target M42 # Pick a target that's up
 pocs mount park
 
 # 3. Test your camera
-pocs camera take-pics --num-images 1
+pocs camera setup
+pocs camera take-pics
 
 # 4. Run automated observing
 pocs run auto
