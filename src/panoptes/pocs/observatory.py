@@ -1057,12 +1057,12 @@ class Observatory(PanBase):
 
                 # Check we are above minimum counts.
                 if counts < min_counts:
-                    self.logger.info("Counts are too low, flat should be discarded")
+                    self.logger.warning("Counts are too low, flat should be discarded")
                     setval(img_file, "QUALITY", value="BAD", ext=int(img_file.endswith(".fz")))
 
                 # Check we are below maximum counts.
                 if counts >= max_counts:
-                    self.logger.info("Image is saturated")
+                    self.logger.warning("Image is saturated")
                     is_saturated = True
                     setval(img_file, "QUALITY", value="BAD", ext=int(img_file.endswith("fz")))
 
@@ -1091,7 +1091,7 @@ class Observatory(PanBase):
                 # Stop flats if any time is greater than max.
                 self.logger.debug(f"Checking for long exposures on {cam_name}")
                 if suggested_exptime >= max_exptime:
-                    self.logger.info(
+                    self.logger.warning(
                         f"Suggested exposure time greater than max, stopping flat fields for {cam_name}"
                     )
                     camera_list.remove(cam_name)
@@ -1109,7 +1109,7 @@ class Observatory(PanBase):
                     self.logger.info("Saturated short exposure, waiting 60 seconds for more dark")
                     CountdownTimer(60, name="WaitingForTheDarkness").sleep()
                 else:
-                    self.logger.info("Saturated short exposure, too bright to continue")
+                    self.logger.warning("Saturated short exposure, too bright to continue")
                     return
 
     def _create_flat_field_observation(
