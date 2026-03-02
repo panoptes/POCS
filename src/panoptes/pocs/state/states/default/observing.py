@@ -19,5 +19,5 @@ def on_enter(event_data):
         pocs.logger.warning(f"Problem with imaging: {e!r}")
         pocs.say("Hmm, I'm not sure what happened with that exposure.")
     else:
-        pocs.next_state = "analyzing"
-        pocs.logger.debug("Finished with observing, going to {pocs.next_state}")
+        pocs.next_state = "scheduling"
+        pocs.say(f"Finished with observing, going to {pocs.next_state}")

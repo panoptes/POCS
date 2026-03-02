@@ -24,7 +24,6 @@ import panoptes.pocs.camera.fli
 from panoptes.pocs.base import PanBase
 from panoptes.pocs.camera import AbstractCamera
 from panoptes.pocs.dome import AbstractDome
-from panoptes.pocs.images import Image
 from panoptes.pocs.mount.mount import AbstractMount
 from panoptes.pocs.scheduler.field import Field
 from panoptes.pocs.scheduler.observation.base import Observation
@@ -642,7 +641,7 @@ class Observatory(PanBase):
                     self.logger.debug(f"Preparing {image_path=} for upload to {bucket_name=}")
 
                     # Remove images directory from path so it's stored in bucket relative to images directory.
-                    bucket_path = Path(image_path[image_path.find(images_dir) + len(images_dir) :])
+                    bucket_path = Path(image_path[image_path.find(images_dir) + len(images_dir):])
 
                     self.logger.debug(f"Adding {unit_id=} to {bucket_path=}")
                     bucket_path = Path(unit_id) / bucket_path.relative_to("/")
@@ -669,55 +668,6 @@ class Observatory(PanBase):
                 self.logger.debug(f"Adding current observation to db: {image_id}")
                 metadata["status"] = "complete"
                 self.db.insert_current("images", metadata, store_permanently=False)
-
-    def analyze_recent(self):
-        """Analyze the most recent exposure
-
-        Compares the most recent exposure to the reference exposure and determines
-        the offset between the two.
-
-        Returns:
-            dict: Offset information
-        """
-        # Clear the offset info
-        self.current_offset_info = None
-
-        pointing_image_id, pointing_image = self.current_observation.pointing_image
-        self.logger.debug(f"Analyzing recent image using pointing image: '{pointing_image}'")
-
-        try:
-            # Get the image to compare
-            image_id, image_path = self.current_observation.last_exposure
-
-            current_image = Image(image_path, location=self.earth_location)
-
-            solve_info = current_image.solve_field(skip_solved=False)
-
-            self.logger.debug(f"Solve Info: {solve_info}")
-
-            # Get the offset between the two
-            self.current_offset_info = current_image.compute_offset(pointing_image)
-            self.logger.debug(f"Offset Info: {self.current_offset_info}")
-
-            # Store the offset information
-            self.db.insert_current(
-                "offset_info",
-                {
-                    "image_id": image_id,
-                    "d_ra": self.current_offset_info.delta_ra.value,
-                    "d_dec": self.current_offset_info.delta_dec.value,
-                    "magnitude": self.current_offset_info.magnitude.value,
-                    "unit": "arcsec",
-                },
-                store_permanently=False,
-            )
-
-        except error.SolveError:
-            self.logger.warning("Can't solve field, skipping")
-        except Exception as e:
-            self.logger.warning(f"Problem in analyzing: {e!r}")
-
-        return self.current_offset_info
 
     def update_tracking(self, **kwargs):
         """Update tracking with rate adjustment.
