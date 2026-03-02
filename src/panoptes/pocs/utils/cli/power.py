@@ -14,9 +14,12 @@ import numpy as np
 import requests
 import typer
 from rich import print
+from rich.console import Console
 from sparklines import sparklines
 
 from panoptes.pocs.utils.service.power import RelayCommand
+
+console = Console()
 
 
 @dataclass
@@ -200,25 +203,13 @@ def setup_power(
             help="Confirm power board setup.",
         ),
     ] = False,
-    do_install: Annotated[
-        bool,
-        typer.Option(
-            ...,
-            "--install",
-            prompt="Would you like to install the arduino script?",
-            help="Install the arduino script.",
-        ),
-    ] = False,
-    install_script: Path = typer.Option(
-        "resources/arduino/install-power-board.sh", help="Path to the power monitor script."
-    ),
+    arduino_device: str = typer.Option("/dev/ttyACM0", help="Path to the Arduino device."),
 ):
     """Set up the power board port and labels; optionally install Arduino sketch.
 
     Args:
         confirm: Confirmation flag to proceed with setup.
-        do_install: If True, run the Arduino install script before setup.
-        install_script: Path to the Arduino install script.
+        arduino_device: Path to the Arduino device for uploading the sketch.
 
     Returns:
         None
@@ -227,20 +218,52 @@ def setup_power(
         print("[red]Cancelled.[/red]")
         return typer.Abort()
 
-    if do_install:
-        if not install_script.exists():
-            print(f"[red]Cannot find install script at {install_script}[/red]")
-            return typer.Abort()
-        # Change directory to the arduino script.
-        os.chdir(install_script.parent)
-        cmd = f"bash {install_script.name}"
-        print(f"Running: {cmd}")
-        try:
-            subprocess.run(cmd, shell=True)
-        except subprocess.CalledProcessError as e:
-            print(f"[red]Error running install script: {e}[/red]")
-        else:
-            print("[green]Arduino script installed.[/green]")
+    arduino_cli_script = Path("~/resources/arduino/install-arduino-cli.sh").expanduser()
+    power_board_script = Path("~/resources/arduino/install-power-board.sh").expanduser()
+
+    if not arduino_cli_script.exists() and not power_board_script.exists():
+        print(
+            f"[red]Error: Neither Arduino CLI setup script nor power board setup script found at "
+            f"{arduino_cli_script} and {power_board_script}. Cannot proceed with setup.[/red]"
+        )
+        return None
+
+    with console.status(f"Running Arduino CLI setup script: {arduino_cli_script}", spinner="dots"):
+        result = subprocess.run(f"bash {arduino_cli_script}", shell=True, capture_output=True, text=True)
+    if result.returncode != 0:
+        print(f"[red]{result.stdout}\n{result.stderr}[/red]")
+        return None
+    else:
+        print("[green]✅ Arduino CLI setup complete.[/green]")
+
+    # Check if the Arduino device is available
+    arduino_device_path = Path(arduino_device)
+    do_upload = "true" if arduino_device_path.exists() else "false"
+
+    env = os.environ.copy()
+    env["DO_UPLOAD"] = do_upload
+
+    upload_msg = "with upload" if do_upload == "true" else "without upload (device not found)"
+    with console.status(
+        f"Running power board setup script: {power_board_script} ({upload_msg})", spinner="dots"
+    ):
+        result = subprocess.run(
+            f"bash {power_board_script}", shell=True, capture_output=True, text=True, env=env
+        )
+    if result.returncode != 0:
+        print(f"[red]{result.stdout}\n{result.stderr}[/red]")
+        return None
+    else:
+        print("[green]✅ Power board script complete.[/green]")
+        if do_upload == "0":
+            print(
+                f"[yellow]⚠️  Sketch was compiled but not uploaded because "
+                f"device {arduino_device} was not found. Please connect the "
+                f"device and run this command again to upload the sketch."
+                f"[/yellow]"
+            )
+
+    return None
 
 
 if __name__ == "__main__":
