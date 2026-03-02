@@ -139,6 +139,7 @@ environment:
     safety_delay: 15  # minutes from bad reading until safe again
     capture_delay: 60  # seconds between taking measurements
     num_readings: 5  # number of readings to average for each measurement
+    store_permanently: False  # Whether to store all weather readings permanently (e.g. in a database)
     thresholds:
       cloudy: -25  # Cloudy threshold in delta degrees C
       very_cloudy: -15  # Very cloudy threshold in delta degrees C
