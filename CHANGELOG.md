@@ -9,6 +9,7 @@
     - `pocs run take-flats`: Takes flat field images with automatic exposure adjustment and mount positioning
 - ZWO cameras now have a `fix_bit_padding` option: `True` means restore raw data to native
       resolution of camera, `False` (default) will keep the data driver-padded 16-bits.
+- Ability to store the weather readings permanently via the config. #1405
 
 ### Changed
 
