@@ -17,6 +17,7 @@ import time
 import numpy as np
 from astropy import units as u
 from numpy.ctypeslib import as_ctypes
+
 from panoptes.utils import error
 from panoptes.utils.time import CountdownTimer
 from panoptes.utils.utils import get_quantity_value

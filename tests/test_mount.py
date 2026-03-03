@@ -3,6 +3,7 @@ from contextlib import suppress
 import pytest
 import requests
 from astropy.utils.iers import Conf as iers_conf
+
 from panoptes.utils import error
 from panoptes.utils.config.client import get_config, set_config
 from panoptes.utils.serializers import to_json

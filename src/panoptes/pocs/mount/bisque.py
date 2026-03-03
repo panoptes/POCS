@@ -12,6 +12,7 @@ from threading import Lock
 
 from astropy import units as u
 from astropy.coordinates import SkyCoord
+
 from panoptes.utils import error
 
 from panoptes.pocs.mount import AbstractMount

@@ -1,6 +1,7 @@
 import os
 
 import pytest
+
 from panoptes.utils import error
 from panoptes.utils.serializers import to_yaml
 

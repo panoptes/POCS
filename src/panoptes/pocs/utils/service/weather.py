@@ -11,8 +11,9 @@ from contextlib import asynccontextmanager, suppress
 from threading import Thread
 
 from fastapi import FastAPI
-from panoptes.utils.config.client import get_config
 from serial.tools.list_ports import comports as get_comports
+
+from panoptes.utils.config.client import get_config
 
 from panoptes.pocs.sensor.weather import WeatherStation
 

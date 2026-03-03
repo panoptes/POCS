@@ -5,6 +5,7 @@ import time
 import pytest
 import requests
 from astropy import units as u
+
 from panoptes.utils.config.client import set_config
 from panoptes.utils.serializers import to_json, to_yaml
 from panoptes.utils.time import current_time

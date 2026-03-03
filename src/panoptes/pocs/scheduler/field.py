@@ -6,6 +6,7 @@ additional conveniences for naming and construction from AltAz coordinates.
 
 from astroplan import FixedTarget
 from astropy.coordinates import SkyCoord
+
 from panoptes.utils.time import current_time
 from panoptes.utils.utils import altaz_to_radec
 

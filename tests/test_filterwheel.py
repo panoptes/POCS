@@ -3,6 +3,7 @@ from timeit import timeit
 
 import pytest
 from astropy import units as u
+
 from panoptes.utils import error
 
 from panoptes.pocs.camera.simulator.dslr import Camera as SimCamera

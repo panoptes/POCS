@@ -12,6 +12,7 @@ from abc import ABC
 from contextlib import suppress
 
 import astropy.units as u
+
 from panoptes.utils.config.client import get_config
 
 from panoptes.pocs.camera.sdk import AbstractSDKCamera, AbstractSDKDriver

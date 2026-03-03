@@ -6,6 +6,7 @@ and focus metric scatter with an optional fit overlay.
 
 from matplotlib.colors import LogNorm
 from matplotlib.figure import Figure
+
 from panoptes.utils.images.plot import add_colorbar, get_palette
 
 from panoptes.pocs.utils.logger import get_logger

@@ -8,6 +8,7 @@ compatible with the CLI-driven gphoto2 interface.
 from functools import lru_cache
 
 from astropy import units as u
+
 from panoptes.utils import error
 from panoptes.utils.error import PanError
 from panoptes.utils.time import current_time

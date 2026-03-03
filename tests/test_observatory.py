@@ -5,6 +5,7 @@ import pytest
 import requests
 from astropy.coordinates import get_body
 from astropy.time import Time
+
 from panoptes.utils import error
 from panoptes.utils.config.client import set_config
 from panoptes.utils.serializers import to_json

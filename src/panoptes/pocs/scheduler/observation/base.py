@@ -10,10 +10,11 @@ from contextlib import suppress
 from pathlib import Path
 
 from astropy import units as u
+from pydantic.dataclasses import dataclass
+
 from panoptes.utils import error
 from panoptes.utils.library import load_module
 from panoptes.utils.utils import get_quantity_value, listify
-from pydantic.dataclasses import dataclass
 
 from panoptes.pocs.base import PanBase
 from panoptes.pocs.scheduler import create_constraints_from_config

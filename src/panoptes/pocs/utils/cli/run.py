@@ -12,10 +12,11 @@ from pathlib import Path
 
 import typer
 from astropy.coordinates import SkyCoord
+from rich import print
+
 from panoptes.utils.error import PanError
 from panoptes.utils.time import current_time
 from panoptes.utils.utils import altaz_to_radec, listify
-from rich import print
 
 from panoptes.pocs.core import POCS
 from panoptes.pocs.scheduler.field import Field

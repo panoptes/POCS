@@ -13,6 +13,7 @@ import numpy as np
 from astropy import units as u
 from astropy.io import fits
 from astropy.time import Time
+
 from panoptes.utils import error
 from panoptes.utils.utils import get_quantity_value
 

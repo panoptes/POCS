@@ -8,6 +8,7 @@ import time
 from threading import Timer
 
 from astropy import units as u
+
 from panoptes.utils import error
 from panoptes.utils.time import current_time
 

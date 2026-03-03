@@ -9,6 +9,7 @@ from contextlib import suppress
 import numpy as np
 from astropy import units as u
 from astropy.io import fits
+
 from panoptes.utils import error
 
 from panoptes.pocs.camera import libfliconstants as c

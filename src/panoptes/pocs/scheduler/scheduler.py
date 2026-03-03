@@ -14,6 +14,7 @@ from contextlib import suppress
 from astroplan import Observer
 from astropy import units as u
 from astropy.coordinates import get_body
+
 from panoptes.utils import error
 from panoptes.utils.serializers import from_yaml
 from panoptes.utils.time import current_time

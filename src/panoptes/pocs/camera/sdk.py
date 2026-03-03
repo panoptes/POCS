@@ -9,6 +9,7 @@ from abc import ABCMeta, abstractmethod
 from contextlib import suppress
 
 from astropy.io import fits
+
 from panoptes.utils import error
 from panoptes.utils.library import load_c_library
 

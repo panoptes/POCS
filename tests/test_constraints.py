@@ -5,6 +5,7 @@ from astroplan import Observer
 from astropy import units as u
 from astropy.coordinates import EarthLocation, get_body
 from astropy.time import Time
+
 from panoptes.utils import horizon as horizon_utils
 from panoptes.utils.config.client import get_config
 from panoptes.utils.error import PanError

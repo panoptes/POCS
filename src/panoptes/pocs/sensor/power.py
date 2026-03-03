@@ -15,6 +15,7 @@ from functools import partial
 
 import pandas as pd
 from astropy import units as u
+
 from panoptes.utils import error
 from panoptes.utils.serial.device import SerialDevice, find_serial_port
 from panoptes.utils.serializers import from_json, to_json

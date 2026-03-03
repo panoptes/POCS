@@ -13,10 +13,11 @@ from pathlib import Path
 import requests
 import typer
 from google.cloud import firestore, storage
-from panoptes.utils.config.client import get_config, set_config
 from rich import print
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
+
+from panoptes.utils.config.client import get_config, set_config
 
 from panoptes.pocs.utils.cloud import upload_image
 

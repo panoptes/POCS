@@ -10,6 +10,7 @@ from collections import abc
 from contextlib import suppress
 
 from astropy import units as u
+
 from panoptes.utils import error
 from panoptes.utils.utils import listify
 
