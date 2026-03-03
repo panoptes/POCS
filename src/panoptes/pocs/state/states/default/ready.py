@@ -5,6 +5,7 @@ transition to 'scheduling' (or to 'parking' if dome open fails).
 """
 
 from astropy import units as u
+
 from panoptes.utils.time import current_time
 
 

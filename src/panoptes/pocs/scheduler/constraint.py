@@ -12,6 +12,7 @@ from contextlib import suppress
 from astropy import units as u
 from astropy.time import Time
 from dateutil.parser import parse as parse_date
+
 from panoptes.utils import error
 from panoptes.utils import horizon as horizon_utils
 from panoptes.utils.utils import get_quantity_value
@@ -80,7 +81,7 @@ class Altitude(BaseConstraint):
 
         if isinstance(horizon, horizon_utils.Horizon):
             self.horizon_line = horizon.horizon_line
-        elif horizon is None or isinstance(horizon, (int, float, u.Quantity)):
+        elif horizon is None or isinstance(horizon, int | float | u.Quantity):
             obstruction_list = obstructions
             default_horizon = horizon
 

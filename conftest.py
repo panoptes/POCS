@@ -5,6 +5,7 @@ import tempfile
 from contextlib import suppress
 
 import pytest
+
 from panoptes.utils.config.client import set_config
 from panoptes.utils.config.server import config_server
 

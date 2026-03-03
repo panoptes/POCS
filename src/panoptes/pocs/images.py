@@ -13,6 +13,7 @@ from astropy import units as u
 from astropy.coordinates import FK5, EarthLocation, SkyCoord
 from astropy.io import fits
 from astropy.time import Time
+
 from panoptes.utils.images import fits as fits_utils
 
 from panoptes.pocs.base import PanBase

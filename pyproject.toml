@@ -192,6 +192,21 @@ select = [
 ]
 ignore = []
 
+[tool.ruff.lint.isort]
+section-order = [
+    "future",
+    "standard-library",
+    "third-party",
+    "first-party",
+    "local-folder",
+    "panoptes-utils",
+    "panoptes-pocs"
+]
+
+[tool.ruff.lint.isort.sections]
+"panoptes-utils" = ["panoptes.utils"]
+"panoptes-pocs" = ["panoptes.pocs"]
+
 [tool.ruff.format]
 quote-style = "double"
 indent-style = "space"

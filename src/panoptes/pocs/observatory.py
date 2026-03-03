@@ -14,6 +14,7 @@ import numpy as np
 from astropy import units as u
 from astropy.coordinates import get_body
 from astropy.io.fits import setval
+
 from panoptes.utils import error
 from panoptes.utils import images as img_utils
 from panoptes.utils.images import fits as fits_utils

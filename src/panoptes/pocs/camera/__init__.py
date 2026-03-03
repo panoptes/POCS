@@ -6,10 +6,11 @@ from collections import OrderedDict
 from contextlib import suppress
 
 import requests
+from pydantic import AnyHttpUrl
+
 from panoptes.utils import error
 from panoptes.utils.config.client import get_config
 from panoptes.utils.library import load_module
-from pydantic import AnyHttpUrl
 
 from panoptes.pocs.camera.camera import AbstractCamera  # noqa
 from panoptes.pocs.utils.logger import get_logger

@@ -7,6 +7,7 @@ SBIG CCD/CMOS cameras and integrate with the AbstractSDKCamera interface.
 from contextlib import suppress
 
 from astropy.io import fits
+
 from panoptes.utils import error
 
 from panoptes.pocs.camera.sbigudrv import INVALID_HANDLE_VALUE, SBIGDriver

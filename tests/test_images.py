@@ -5,6 +5,7 @@ import tempfile
 import pytest
 from astropy import units as u
 from astropy.coordinates import SkyCoord
+
 from panoptes.utils.error import SolveError, Timeout
 
 from panoptes.pocs.images import Image, OffsetError

@@ -3,6 +3,7 @@ from contextlib import suppress
 from threading import Thread
 
 import pytest
+
 from panoptes.utils import error
 from panoptes.utils.config.helpers import load_config
 

@@ -13,6 +13,7 @@ from pathlib import Path
 
 from astropy import units as u
 from astropy.coordinates import EarthLocation, SkyCoord
+
 from panoptes.utils import error
 from panoptes.utils.serializers import from_yaml
 from panoptes.utils.time import CountdownTimer, current_time

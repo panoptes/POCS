@@ -12,8 +12,9 @@ from threading import Thread
 
 from fastapi import FastAPI
 from fastapi_utils.enums import StrEnum
-from panoptes.utils.config.client import get_config
 from pydantic import BaseModel
+
+from panoptes.utils.config.client import get_config
 
 from panoptes.pocs.sensor.power import PowerBoard
 

@@ -5,6 +5,7 @@ then proceed to 'tracking'.
 """
 
 import numpy as np
+
 from panoptes.utils.time import wait_for_events
 
 from panoptes.pocs.images import Image

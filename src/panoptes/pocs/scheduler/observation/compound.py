@@ -2,6 +2,7 @@
 
 import numpy as np
 from astropy import units as u
+
 from panoptes.utils.utils import get_quantity_value, listify
 
 from panoptes.pocs.scheduler.observation.base import Observation as BaseObservation

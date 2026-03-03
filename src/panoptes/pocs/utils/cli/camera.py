@@ -16,12 +16,6 @@ import numpy as np
 import typer
 from astropy.io import fits
 from astropy.stats import sigma_clipped_stats
-from panoptes.utils.config.client import get_config, set_config
-from panoptes.utils.error import PanError
-from panoptes.utils.images import cr2 as cr2_utils
-from panoptes.utils.images import make_pretty_image
-from panoptes.utils.images.fits import fpack, get_solve_field, getdata
-from panoptes.utils.time import current_time
 from rich import print
 from rich.console import Group
 from rich.live import Live
@@ -37,6 +31,13 @@ from rich.progress import (
 )
 from rich.table import Table
 from rich.text import Text
+
+from panoptes.utils.config.client import get_config, set_config
+from panoptes.utils.error import PanError
+from panoptes.utils.images import cr2 as cr2_utils
+from panoptes.utils.images import make_pretty_image
+from panoptes.utils.images.fits import fpack, get_solve_field, getdata
+from panoptes.utils.time import current_time
 
 from panoptes.pocs.camera import (
     AbstractCamera,

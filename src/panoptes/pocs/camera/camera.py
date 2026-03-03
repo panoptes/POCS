@@ -18,6 +18,7 @@ from pathlib import Path
 import astropy.units as u
 from astropy.io import fits
 from astropy.time import Time
+
 from panoptes.utils import error
 from panoptes.utils.images import fits as fits_utils
 from panoptes.utils.images.misc import crop_data

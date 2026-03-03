@@ -10,8 +10,9 @@ import queue
 import threading
 import time
 
-from panoptes.utils.serial.handlers.protocol_no_op import NoOpSerial
 from serial import serialutil
+
+from panoptes.utils.serial.handlers.protocol_no_op import NoOpSerial
 
 from panoptes.pocs.dome import astrohaven
 from panoptes.pocs.utils.logger import get_logger
@@ -338,7 +339,7 @@ class AstrohavenSerialSimulator(NoOpSerial):
             SerialTimeoutException: In case a write timeout is configured for
                 the port and the time is exceeded.
         """
-        if not isinstance(data, (bytes, bytearray)):
+        if not isinstance(data, bytes | bytearray):
             raise ValueError("write takes bytes")
         data = bytes(data)  # Make sure it can't change.
         self.logger.info(f"AstrohavenSerialSimulator.write({data!r})")

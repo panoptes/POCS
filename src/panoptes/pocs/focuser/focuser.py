@@ -12,10 +12,11 @@ from threading import Event, Thread
 
 import numpy as np
 from astropy.modeling import fitting, models
+from scipy.ndimage import binary_dilation
+
 from panoptes.utils.images import focus as focus_utils
 from panoptes.utils.images.misc import mask_saturated
 from panoptes.utils.time import current_time
-from scipy.ndimage import binary_dilation
 
 from panoptes.pocs.base import PanBase
 from panoptes.pocs.utils.plotting import make_autofocus_plot
