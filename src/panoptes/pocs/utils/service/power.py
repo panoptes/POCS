@@ -7,11 +7,11 @@ for querying current status/readings and for toggling relays via POST/GET.
 
 import time
 from contextlib import asynccontextmanager
-from enum import auto
+from enum import StrEnum
 from threading import Thread
+from typing import Annotated
 
-from fastapi import FastAPI
-from fastapi_utils.enums import StrEnum
+from fastapi import Depends, FastAPI, HTTPException, Request
 from pydantic import BaseModel
 
 from panoptes.utils.config.client import get_config
@@ -22,8 +22,8 @@ from panoptes.pocs.sensor.power import PowerBoard
 class RelayAction(StrEnum):
     """Enumeration of supported relay actions."""
 
-    turn_on = auto()
-    turn_off = auto()
+    turn_on = "turn_on"
+    turn_off = "turn_off"
 
 
 class RelayCommand(BaseModel):
@@ -36,9 +36,6 @@ class RelayCommand(BaseModel):
 
     relay: str | int
     command: RelayAction
-
-
-app_objects = {}
 
 
 @asynccontextmanager
@@ -57,8 +54,8 @@ async def lifespan(app: FastAPI):
     conf: dict = get_config("environment.power", {})
     power_board = PowerBoard(**conf)
     power_board.logger.info(f"Power board setup: {power_board}")
-    app_objects["power_board"] = power_board
-    app_objects["conf"] = conf
+    app.state.power_board = power_board
+    app.state.conf = conf
 
     # Set up a thread to record the readings at an interval.
     def record_readings():
@@ -85,48 +82,71 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 
 
+def get_power_board(request: Request) -> PowerBoard:
+    """Dependency that retrieves the PowerBoard from application state.
+
+    Args:
+        request (Request): The incoming FastAPI request.
+
+    Returns:
+        PowerBoard: The active PowerBoard instance.
+    """
+    return request.app.state.power_board
+
+
+PowerBoardDep = Annotated[PowerBoard, Depends(get_power_board)]
+
+
 @app.get("/")
-async def root():
+async def root(power_board: PowerBoardDep):
     """Returns the power board status."""
-    power_board = app_objects["power_board"]
     return power_board.status
 
 
 @app.get("/readings")
-async def readings():
+async def readings(power_board: PowerBoardDep):
     """Return the current readings as a dict."""
-    power_board = app_objects["power_board"]
     return power_board.to_dataframe().to_dict()
 
 
 @app.post("/control")
-def control_relay(relay_command: RelayCommand):
+def control_relay(relay_command: RelayCommand, power_board: PowerBoardDep):
     """Control a relay via a POST request.
 
     Args:
         relay_command (RelayCommand): The relay identifier and action to perform.
+        power_board (PowerBoardDep): The active PowerBoard instance.
 
     Returns:
         RelayCommand: Echo of the command that was executed upon success.
     """
-    return do_command(relay_command)
+    return do_command(relay_command, power_board)
 
 
 @app.get("/relay/{relay}/control/{command}")
-def control_relay_url(relay: int | str, command: str = "turn_on"):
+def control_relay_url(relay: int | str, power_board: PowerBoardDep, command: str = "turn_on"):
     """Control a relay via a GET request.
 
     Args:
         relay (int | str): The relay index or label to control.
+        power_board (PowerBoardDep): The active PowerBoard instance.
         command (str): The action to perform, e.g. "turn_on" or "turn_off".
 
     Returns:
         RelayCommand: Echo of the command that was executed upon success.
+
+    Raises:
+        HTTPException: 422 if the command string is not a valid RelayAction.
     """
-    return do_command(RelayCommand(relay=relay, command=RelayAction(command)))
+    try:
+        action = RelayAction(command)
+    except ValueError:
+        valid = [a.value for a in RelayAction]
+        raise HTTPException(status_code=422, detail=f"Invalid command '{command}'. Must be one of: {valid}")
+    return do_command(RelayCommand(relay=relay, command=action), power_board)
 
 
-def do_command(relay_command: RelayCommand):
+def do_command(relay_command: RelayCommand, power_board: PowerBoard):
     """Control a relay.
 
     This function performs the actual relay control and is used by both request
@@ -134,11 +154,11 @@ def do_command(relay_command: RelayCommand):
 
     Args:
         relay_command (RelayCommand): The relay identifier and action to execute.
+        power_board (PowerBoard): The active PowerBoard instance.
 
     Returns:
         RelayCommand: Echo of the command that was executed.
     """
-    power_board = app_objects["power_board"]
     relay_id = relay_command.relay
     try:
         relay = power_board.relay_labels[relay_id]
