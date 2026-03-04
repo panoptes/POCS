@@ -13,18 +13,7 @@
 
 ### Changed
 
-- Upgraded `fastapi` from `<0.106.0` to the latest stable release (v0.135.1). Removed the
-  direct dependency on `fastapi-utils`; `StrEnum` is now sourced from the Python 3.11+ stdlib
-  `enum` module. The `fastapi[standard]` extra is used, which bundles `uvicorn[standard]` and
-  removes the need for a separate `uvicorn` dependency entry.
-- Refactored the `power` and `weather` FastAPI services to use `app.state` and `Annotated`
-  dependency injection instead of a module-level `app_objects` global dict. This makes the
-  services easier to test and aligns with modern FastAPI patterns.
-- `GET /relay/{relay}/control/{command}` in the power service now returns HTTP 422 with a
-  descriptive message for unrecognised commands, instead of an unhandled 500 error.
-- Added `TestClient`-based unit tests for both the `power` and `weather` services
-  (`tests/utils/test_service_power.py` and `tests/utils/test_service_weather.py`). Tests use
-  dependency overrides and a no-op lifespan so no hardware or config server is required.
+- Upgraded `fastapi` from `<0.106.0` to the latest stable release (v0.135.1). #1408
 - Observation exposure time defaults: when `exptime` is not specified in field files, observations now use the 
   `cameras.defaults.exptime` configuration value instead of a hardcoded 120 seconds. This allows setting 
   camera-specific defaults (e.g., 30s for ZWO cameras, 120s for DSLRs) in the config without needing to 

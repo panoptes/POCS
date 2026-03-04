@@ -1,12 +1,16 @@
 # AI Agent Guidelines for POCS
 
-This document provides guidelines for AI coding agents working with the PANOPTES Observatory Control System (POCS) codebase. It is designed to be tool-agnostic and applicable to any AI assistant working on this project.
+This document provides guidelines for AI coding agents working with the PANOPTES Observatory Control System (POCS)
+codebase. It is designed to be tool-agnostic and applicable to any AI assistant working on this project.
 
 ## Project Overview
 
-POCS (PANOPTES Observatory Control System) is the main software driver for robotic astronomical observatories designed to detect transiting exoplanets. The system controls telescope hardware, schedules observations, captures images, and manages the entire observation workflow through a state machine architecture.
+POCS (PANOPTES Observatory Control System) is the main software driver for robotic astronomical observatories designed
+to detect transiting exoplanets. The system controls telescope hardware, schedules observations, captures images, and
+manages the entire observation workflow through a state machine architecture.
 
 **Key Characteristics:**
+
 - **Language:** Python 3.12+ (type hints expected)
 - **Architecture:** State machine-based observatory control
 - **Domain:** Astronomy, robotics, hardware control
@@ -48,6 +52,7 @@ POCS/
 ### 1. Understanding Changes
 
 **Before making any changes:**
+
 - Check if an issue exists for the change; reference it in commits/PRs
 - Read relevant architecture documentation to understand affected components
 - Review existing tests to understand expected behavior
@@ -56,17 +61,20 @@ POCS/
 ### 2. Code Standards
 
 **Style and Formatting:**
+
 - Use Ruff for linting and formatting (configured in `pyproject.toml`)
 - Line length: 110 characters
 - Quote style: double quotes
 - Follow PEP 8 conventions
 
 **Type Hints:**
+
 - Required for all function signatures
 - Use modern Python 3.12+ type syntax
 - Import from `typing` when necessary
 
 **Documentation:**
+
 - Docstrings for all public classes and functions
 - Use Google-style docstrings
 - Include examples in docstrings when helpful
@@ -74,6 +82,7 @@ POCS/
 ### 3. Testing Requirements
 
 **All code changes must include tests:**
+
 - Unit tests in `tests/` directory
 - Test files named `test_*.py`
 - Use pytest fixtures from `conftest.py`
@@ -81,22 +90,25 @@ POCS/
 - Run tests locally before committing: `pytest`
 
 **Testing markers available:**
+
 ```python
-@pytest.mark.theskyx          # Tests requiring TheSkyX
-@pytest.mark.with_camera      # Tests requiring camera hardware
-@pytest.mark.without_camera   # Tests that should skip camera
-@pytest.mark.plate_solve      # Tests requiring plate solving
+@pytest.mark.theskyx  # Tests requiring TheSkyX
+@pytest.mark.with_camera  # Tests requiring camera hardware
+@pytest.mark.without_camera  # Tests that should skip camera
+@pytest.mark.plate_solve  # Tests requiring plate solving
 ```
 
 ### 4. Dependencies
 
 **Adding Dependencies:**
+
 - Add to `dependencies` in `pyproject.toml` for runtime requirements
 - Add to `[dependency-groups]` for development/testing tools
 - Use `uv add <package>` to install and update lockfile
 - Pin security-sensitive packages (e.g., `certifi>=2024.2.2`)
 
 **Optional Dependencies:**
+
 - `focuser`: Matplotlib and focus-related tools
 - `google`: Google Cloud integration
 - `weather`: Weather station support
@@ -105,6 +117,7 @@ POCS/
 ### 5. Making Changes
 
 **File Editing Best Practices:**
+
 1. Read entire files or large sections before editing
 2. Preserve existing code style and patterns
 3. Make minimal, focused changes
@@ -112,6 +125,7 @@ POCS/
 5. Run relevant tests to confirm functionality
 
 **Commit Messages:**
+
 - Clear, descriptive commit messages
 - Reference issue numbers when applicable
 - Format: `Brief description (#issue-number)`
@@ -123,9 +137,11 @@ POCS/
 **Location:** `src/panoptes/pocs/core.py`
 
 The POCS state machine orchestrates observations. Key states include:
+
 - `sleeping` → `ready` → `scheduling` → `slewing` → `tracking` → `observing` → `parking`
 
 **When modifying:**
+
 - Understand state transitions (defined by `transitions` library)
 - Respect the state flow logic
 - Add appropriate state validation
@@ -138,6 +154,7 @@ The POCS state machine orchestrates observations. Key states include:
 The scheduler decides WHAT to observe (POCS decides WHEN).
 
 **When modifying:**
+
 - Understand constraints system
 - Preserve target selection logic
 - Test with various constraint combinations
@@ -150,6 +167,7 @@ The scheduler decides WHAT to observe (POCS decides WHEN).
 Manages all hardware as a unified system.
 
 **When modifying:**
+
 - Ensure thread safety for hardware access
 - Validate hardware initialization sequences
 - Handle missing hardware gracefully (simulator mode)
@@ -162,6 +180,7 @@ Manages all hardware as a unified system.
 Device-specific control code.
 
 **When modifying:**
+
 - Maintain consistent driver interfaces
 - Include simulator implementations for testing
 - Handle hardware errors gracefully
@@ -173,6 +192,7 @@ Device-specific control code.
 **Configuration files:** `conf_files/pocs.yaml` (and variants)
 
 **Important configuration sections:**
+
 - `simulator`: Which components to simulate
 - `mount`: Mount type and configuration
 - `cameras`: Camera definitions and parameters
@@ -181,9 +201,11 @@ Device-specific control code.
 
 ### Config Server
 
-POCS uses a configuration server from the [`panoptes-utils`](https://github.com/panoptes/panoptes-utils) library to manage configuration. The server provides centralized configuration access across components.
+POCS uses a configuration server from the [`panoptes-utils`](https://github.com/panoptes/panoptes-utils) library to
+manage configuration. The server provides centralized configuration access across components.
 
 **Starting the config server locally:**
+
 ```bash
 # For normal development
 panoptes-config-server --host 0.0.0.0 --port 6563 run --config-file conf_files/pocs.yaml
@@ -193,12 +215,14 @@ panoptes-config-server --host 0.0.0.0 --port 6563 run --config-file tests/testin
 ```
 
 **Notes:**
+
 - The config server must be running before starting POCS
 - Default port is 6563
 - Use `tests/testing.yaml` as the config file when running tests
 - The server provides a REST API for configuration access
 
 **When modifying configuration:**
+
 - Maintain backward compatibility when possible
 - Update example configs in `conf_files/`
 - Document new configuration options
@@ -241,17 +265,19 @@ panoptes-config-server --host 0.0.0.0 --port 6563 run --config-file tests/testin
 **This process should be followed to create a new release of POCS.**
 
 **Prerequisites:**
+
 - Ensure you have write access to the repository
 - Ensure all CI tests are passing on `develop` branch
 - Determine the new version number (see Version Numbering below)
 
 **Version Numbering:**
+
 - Use semantic versioning: `vX.Y.Z`
 - Get the current version: `git describe --tags --abbrev=0`
 - Increment appropriately:
-  - **X (Major):** Breaking changes
-  - **Y (Minor):** New features, backward compatible
-  - **Z (Patch):** Bug fixes, backward compatible
+    - **X (Major):** Breaking changes
+    - **Y (Minor):** New features, backward compatible
+    - **Z (Patch):** Bug fixes, backward compatible
 
 **Release Process:**
 
@@ -279,20 +305,20 @@ panoptes-config-server --host 0.0.0.0 --port 6563 run --config-file tests/testin
    ```
 
 4. **Update `CHANGELOG.md`:**
-   - Add release header with version and date: `## X.Y.Z - YYYY-MM-DD`
-   - Ensure all changes are documented under appropriate sections (Added, Changed, Fixed, Removed)
-   - Move any "Unreleased" changes under the new version
-   - Verify all PR numbers are referenced
-   - Example:
-     ```markdown
-     ## 0.8.11 - 2026-02-13
-     
-     ### Added
-     - New feature description. #123
-     
-     ### Fixed
-     - Bug fix description. #124
-     ```
+    - Add release header with version and date: `## X.Y.Z - YYYY-MM-DD`
+    - Ensure all changes are documented under appropriate sections (Added, Changed, Fixed, Removed)
+    - Move any "Unreleased" changes under the new version
+    - Verify all PR numbers are referenced
+    - Example:
+      ```markdown
+      ## 0.8.11 - 2026-02-13
+      
+      ### Added
+      - New feature description. #123
+      
+      ### Fixed
+      - Bug fix description. #124
+      ```
 
 5. **Commit changelog updates:**
    ```bash
@@ -308,13 +334,13 @@ panoptes-config-server --host 0.0.0.0 --port 6563 run --config-file tests/testin
    ```
 
 7. **Resolve conflicts if necessary:**
-   - If conflicts occur, resolve them carefully
-   - Ensure `CHANGELOG.md` and `pyproject.toml` are correct
-   - Commit resolved conflicts:
-     ```bash
-     git add .
-     git commit -m "Resolve merge conflicts for ${NEW_VERSION}"
-     ```
+    - If conflicts occur, resolve them carefully
+    - Ensure `CHANGELOG.md` and `pyproject.toml` are correct
+    - Commit resolved conflicts:
+      ```bash
+      git add .
+      git commit -m "Resolve merge conflicts for ${NEW_VERSION}"
+      ```
 
 8. **Test and build on `main`:**
    ```bash
@@ -378,17 +404,20 @@ panoptes-config-server --host 0.0.0.0 --port 6563 run --config-file tests/testin
     ```
 
 **Post-Release:**
+
 - Verify the new tag appears on GitHub releases page
 - Monitor CI/CD for any issues
 - Confirm the GitHub Actions workflow has successfully built and published the release to PyPI (triggered on tag push)
 - Announce release on forum/communications channels
 
 **Common Issues:**
+
 - **Merge conflicts:** Most common in `CHANGELOG.md`. Keep both sets of changes and organize chronologically.
 - **Test failures:** Fix on the release branch before merging to `main`.
 - **Twine check failures:** Usually due to missing or malformed metadata in `pyproject.toml`.
 
 **Automation Notes for AI Agents:**
+
 - Parse version from `git describe --tags --abbrev=0`
 - Calculate next version based on changelog entries or commit messages
 - Extract date automatically: `date +%Y-%m-%d`
@@ -399,6 +428,7 @@ panoptes-config-server --host 0.0.0.0 --port 6563 run --config-file tests/testin
 ## Error Handling
 
 **Best Practices:**
+
 - Use specific exception types
 - Provide informative error messages
 - Log errors appropriately (use `loguru`)
@@ -411,6 +441,7 @@ panoptes-config-server --host 0.0.0.0 --port 6563 run --config-file tests/testin
 **The project uses `loguru` for logging, with `PanBase` providing logger setup:**
 
 Most classes inherit from `PanBase`, which automatically sets up a logger:
+
 ```python
 class MyClass(PanBase):
     def my_method(self):
@@ -421,6 +452,7 @@ class MyClass(PanBase):
 ```
 
 For standalone utilities or modules that don't inherit from `PanBase`:
+
 ```python
 from loguru import logger
 
@@ -428,6 +460,7 @@ logger.info("Informational message")
 ```
 
 **Guidelines:**
+
 - Use `self.logger` in classes that inherit from `PanBase`
 - Import `logger` from `loguru` only for standalone utilities
 - Log important state changes
@@ -452,6 +485,7 @@ tests/
 ### Writing Tests
 
 **Good test characteristics:**
+
 - Isolated (don't depend on other tests)
 - Repeatable (same result every time)
 - Fast (use simulators, not real hardware)
@@ -459,6 +493,7 @@ tests/
 - Comprehensive (test edge cases)
 
 **Use fixtures:**
+
 ```python
 def test_camera_exposure(camera):
     """Test camera can take exposure."""
@@ -515,12 +550,16 @@ def function_name(param1: str, param2: int) -> bool:
 ### Documentation Updates
 
 When making changes, update:
+
 - Inline code comments for complex logic
 - Docstrings for API changes
 - Architecture docs for structural changes
 - CLI guide for new commands
 - Examples for new features
-- Changelog (`CHANGELOG.md`) for notable changes
+- A Changelog (`CHANGELOG.md`) entry should exist for each PR.
+- Changelog entries should be categorized under appropriate sections (Added, Changed, Fixed, Removed) and reference PR
+  numbers.
+- Changelog entries should be clear and concise, describing the change and its impact, ideally less than one line.
 
 ## Security Considerations
 
@@ -554,6 +593,7 @@ When making changes, update:
 ## Astronomy Domain Knowledge
 
 **Key concepts to understand:**
+
 - **Alt/Az vs. RA/Dec:** Different coordinate systems
 - **Sidereal Time:** Astronomical time standard
 - **Transit:** When object crosses meridian
@@ -564,7 +604,9 @@ When making changes, update:
 - **Dark/Flat/Bias Frames:** Calibration images
 
 **Useful libraries:**
-- **`panoptes-utils`**: **Primary source for PANOPTES utilities** - Always check here first for common functionality (time utilities, configuration, logging setup, etc.) before implementing new utilities or importing external libraries
+
+- **`panoptes-utils`**: **Primary source for PANOPTES utilities** - Always check here first for common functionality (
+  time utilities, configuration, logging setup, etc.) before implementing new utilities or importing external libraries
 - `astropy`: Astronomical calculations and units
 - `astroplan`: Observation planning
 - `astroquery`: Catalog queries
@@ -581,53 +623,53 @@ When making changes, update:
 ### Context Gathering
 
 1. **Start broad, then narrow:**
-   - Read architecture docs first
-   - Understand component relationships
-   - Then dive into specific files
+    - Read architecture docs first
+    - Understand component relationships
+    - Then dive into specific files
 
 2. **Search effectively:**
-   - Use semantic search for concepts
-   - Use grep for specific strings/patterns
-   - Check test files for usage examples
+    - Use semantic search for concepts
+    - Use grep for specific strings/patterns
+    - Check test files for usage examples
 
 3. **Understand before changing:**
-   - Read the full function/class
-   - Check call sites to understand usage
-   - Review related tests
+    - Read the full function/class
+    - Check call sites to understand usage
+    - Review related tests
 
 ### Making Changes
 
 1. **Validate assumptions:**
-   - Check current behavior with tests
-   - Verify understanding of requirements
-   - Consider edge cases
+    - Check current behavior with tests
+    - Verify understanding of requirements
+    - Consider edge cases
 
 2. **Incremental approach:**
-   - Make small, testable changes
-   - Run tests frequently
-   - Fix errors as they appear
+    - Make small, testable changes
+    - Run tests frequently
+    - Fix errors as they appear
 
 3. **Preserve intent:**
-   - Maintain existing patterns
-   - Don't over-engineer solutions
-   - Keep changes focused
+    - Maintain existing patterns
+    - Don't over-engineer solutions
+    - Keep changes focused
 
 ### Communication
 
 1. **Be specific:**
-   - Reference exact file paths
-   - Quote relevant code sections
-   - Explain reasoning for changes
+    - Reference exact file paths
+    - Quote relevant code sections
+    - Explain reasoning for changes
 
 2. **Show your work:**
-   - Explain what you searched for
-   - Describe what you found
-   - Outline your approach
+    - Explain what you searched for
+    - Describe what you found
+    - Outline your approach
 
 3. **Ask when uncertain:**
-   - Clarify requirements if ambiguous
-   - Confirm understanding of domain concepts
-   - Request feedback on approach
+    - Clarify requirements if ambiguous
+    - Confirm understanding of domain concepts
+    - Request feedback on approach
 
 ## Quick Reference
 
@@ -682,4 +724,5 @@ uv run pocs --help
 
 ---
 
-**Remember:** POCS controls real hardware that moves physical equipment. Always test thoroughly and consider safety implications of changes.
+**Remember:** POCS controls real hardware that moves physical equipment. Always test thoroughly and consider safety
+implications of changes.
