@@ -9,15 +9,14 @@ import os
 import time
 from contextlib import asynccontextmanager, suppress
 from threading import Thread
+from typing import Annotated
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI, Request
 from serial.tools.list_ports import comports as get_comports
 
 from panoptes.utils.config.client import get_config
 
 from panoptes.pocs.sensor.weather import WeatherStation
-
-app_objects = {}
 
 
 @asynccontextmanager
@@ -31,7 +30,7 @@ async def lifespan(app: FastAPI):
         app (FastAPI): The FastAPI application instance.
     """
     conf = get_config("environment.weather", {})
-    app_objects["conf"] = conf
+    app.state.conf = conf
 
     # Get list of possible ports for auto-detect or use the configured port.
     if conf.get("auto_detect", False) is True:
@@ -44,7 +43,7 @@ async def lifespan(app: FastAPI):
     with suppress(FileNotFoundError):
         ioptron_port = os.readlink("/dev/ioptron")
 
-    weather_thread: Thread = None
+    weather_thread: Thread | None = None
 
     # Try to connect to the weather station.
     for port in ports:
@@ -75,7 +74,7 @@ async def lifespan(app: FastAPI):
             weather_thread.daemon = True
             weather_thread.start()
 
-            app_objects["weather_station"] = weather_station
+            app.state.weather_station = weather_station
             break
         except Exception as e:
             print(f"Could not connect to weather station on {port}: {e}")
@@ -90,13 +89,28 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 
 
+def get_weather_station(request: Request) -> WeatherStation:
+    """Dependency that retrieves the WeatherStation from application state.
+
+    Args:
+        request (Request): The incoming FastAPI request.
+
+    Returns:
+        WeatherStation: The active WeatherStation instance.
+    """
+    return request.app.state.weather_station
+
+
+WeatherStationDep = Annotated[WeatherStation, Depends(get_weather_station)]
+
+
 @app.get("/status")
-async def status():
-    """Returns the power board status."""
-    return app_objects["weather_station"].status
+async def status(weather_station: WeatherStationDep):
+    """Returns the weather station status."""
+    return weather_station.status
 
 
 @app.get("/config")
-async def get_ws_config():
-    """Returns the power board status."""
-    return app_objects["weather_station"]
+async def get_ws_config(weather_station: WeatherStationDep):
+    """Returns the weather station configuration."""
+    return weather_station
