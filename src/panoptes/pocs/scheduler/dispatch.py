@@ -99,22 +99,40 @@ class Scheduler(BaseScheduler):
             top_obs_name, top_obs_score = best_obs[0]
             self.logger.info(f"Best observation: {top_obs_name}\tScore: {top_obs_score:.02f}")
 
-            # Check new best against current_observation
-            if self.current_observation is not None and top_obs_name != self.current_observation.name:
-                self.logger.info(f"Checking if {self.current_observation} is still valid")
+            # Determine if we should keep the current observation
+            keep_current = False
 
-                # Favor the current observation if still available
-                end_of_next_set = time + self.current_observation.set_duration
-                if self.observation_available(self.current_observation, end_of_next_set):
-                    # If current is better or equal to top, use it
-                    self.logger.debug(f"{self.current_observation.merit=}")
-                    self.logger.debug(f"{top_obs_score=}")
-                    if self.current_observation.merit >= top_obs_score:
-                        best_obs.insert(0, (self.current_observation, self.current_observation.merit))
+            # If we have a current observation, check if we should keep it
+            if self.current_observation is not None:
+                # Case 1: Top observation has same name as current - definitely keep it
+                if top_obs_name == self.current_observation.name:
+                    keep_current = True
+                    self.logger.info(
+                        f"Top observation is current observation, keeping {self.current_observation.name}"
+                    )
+                # Case 2: Different name, but check if current is still better
+                elif self.current_observation.name in valid_obs:
+                    # Get the current observation's fresh score from this round of evaluation
+                    current_obs_score = valid_obs[self.current_observation.name]
+                    self.logger.info(f"Checking if {self.current_observation} is still valid")
+                    # Favor the current observation if still available
+                    end_of_next_set = time + self.current_observation.set_duration
+                    if self.observation_available(self.current_observation, end_of_next_set):
+                        # If current is better or equal to top, use it
+                        self.logger.debug(f"{current_obs_score=}")
+                        self.logger.debug(f"{top_obs_score=}")
+                        if current_obs_score >= top_obs_score:
+                            best_obs.insert(0, (self.current_observation, current_obs_score))
+                            keep_current = True
 
-            # Set the current
-            self.current_observation = self.observations[top_obs_name]
-            self.current_observation.merit = top_obs_score
+            # Set the current observation
+            # Only update if we're not keeping the current observation to avoid resetting exposure count
+            if not keep_current:
+                self.current_observation = self.observations[top_obs_name]
+                self.current_observation.merit = top_obs_score
+            else:
+                # Update merit even if keeping current observation
+                self.current_observation.merit = top_obs_score
         else:
             if self.current_observation is not None:
                 # Favor the current observation if still available
