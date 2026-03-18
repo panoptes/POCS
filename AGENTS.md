@@ -556,7 +556,7 @@ When making changes, update:
 - Architecture docs for structural changes
 - CLI guide for new commands
 - Examples for new features
-- A Changelog (`CHANGELOG.md`) entry should exist for each PR.
+- A Changelog (`CHANGELOG.md`) entry should exist for every feature or bug fix. Minor changes (e.g., documentation updates, internal refactoring) may not require an entry.
 - Changelog entries should be categorized under appropriate sections (Added, Changed, Fixed, Removed) and reference PR
   numbers.
 - Changelog entries should be clear and concise, describing the change and its impact, ideally less than one line.
