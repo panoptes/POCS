@@ -4,6 +4,10 @@
 
 ### Added
 
+- Migration to structured telemetry system using `panoptes-utils>=0.3.1`.
+    - New `TelemetryClient` integration in `PanBase`.
+    - Pydantic models for `WeatherReading`, `PowerReading`, `ImageMetadata`, `ObservatoryStatus`, `SafetyStatus`, and `StateMachineState`.
+    - Automatic recording of structured telemetry for sensors, state transitions, and observatory status.
 - Calibration frame commands for taking bias frames and flat fields
     - `pocs camera take-bias`: Takes bias frames (zero exposure), stacks them, and reports statistics (default: 10 frames)
     - `pocs run take-flats`: Takes flat field images with automatic exposure adjustment and mount positioning

@@ -64,6 +64,10 @@ def pytest_configure(config):
     os.environ["PANOPTES_CONFIG_HOST"] = host
     os.environ["PANOPTES_CONFIG_PORT"] = port
 
+    # Fix IERS data age issue.
+    from astropy.utils.iers import conf
+    conf.auto_max_age = None
+
     config_server(config_file, host=host, port=port, load_local=False, save_local=False)
     download_iers_a_file()
     logger.success("Config server set up")
