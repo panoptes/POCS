@@ -51,7 +51,7 @@ class PanBase:
             )
             telemetry_port = kwargs.get(
                 "telemetry_port",
-                os.getenv("PANOPTES_TELEMETRY_PORT", self.get_config("telemetry.port", default=6565)),
+                os.getenv("PANOPTES_TELEMETRY_PORT", self.get_config("telemetry.port", default=6562)),
             )
             PAN_TELEMETRY_OBJ = TelemetryClient(host=telemetry_host, port=telemetry_port)
 
