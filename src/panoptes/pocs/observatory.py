@@ -23,6 +23,7 @@ from panoptes.utils.utils import get_quantity_value, listify
 
 import panoptes.pocs.camera.fli
 from panoptes.pocs.base import PanBase
+from panoptes.pocs.utils.telemetry import ImageMetadata
 from panoptes.pocs.camera import AbstractCamera
 from panoptes.pocs.dome import AbstractDome
 from panoptes.pocs.images import Image
@@ -670,6 +671,14 @@ class Observatory(PanBase):
                 self.logger.debug(f"Adding current observation to db: {image_id}")
                 metadata["status"] = "complete"
                 self.db.insert_current("images", metadata, store_permanently=False)
+
+                # Record to telemetry server.
+                try:
+                    # Filter metadata to match model.
+                    image_metadata = ImageMetadata(**metadata)
+                    self.record_telemetry(image_metadata)
+                except Exception as e:
+                    self.logger.warning(f"Could not record image telemetry: {e!r}")
 
     def analyze_recent(self):
         """Analyze the most recent exposure

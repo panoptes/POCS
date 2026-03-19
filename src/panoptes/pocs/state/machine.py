@@ -9,6 +9,7 @@ from panoptes.utils.config.client import get_config
 from panoptes.utils.library import load_module
 from panoptes.utils.serializers import from_yaml
 from panoptes.utils.utils import listify
+from panoptes.pocs.utils.telemetry import StateMachineState
 
 
 class PanStateMachine(Machine):
@@ -209,9 +210,16 @@ class PanStateMachine(Machine):
         state_changed = transition_method()
         if state_changed:
             self.logger.success(f"Finished with {self.state} state")
-            self.db.insert_current(
-                "state", {"source": self.state, "dest": self.next_state}, store_permanently=False
-            )
+            data = {"source": self.state, "dest": self.next_state}
+            self.db.insert_current("state", data, store_permanently=False)
+
+            # Record to telemetry server.
+            try:
+                state_reading = StateMachineState(**data)
+                if hasattr(self, "record_telemetry"):
+                    self.record_telemetry(state_reading)
+            except Exception as e:
+                self.logger.warning(f"Could not record state telemetry: {e!r}")
 
         return state_changed
 

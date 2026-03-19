@@ -3,6 +3,7 @@
 from aag.weather import CloudSensor
 
 from panoptes.pocs.base import PanBase
+from panoptes.pocs.utils.telemetry import WeatherReading
 
 
 class WeatherStation(PanBase):
@@ -13,7 +14,7 @@ class WeatherStation(PanBase):
 
     def __init__(
         self,
-        serial_port: str = None,
+        serial_port: str | None = None,
         name: str = "Weather Station",
         db_collection: str = "weather",
         *args,
@@ -64,7 +65,15 @@ class WeatherStation(PanBase):
         """Record the rolling mean of the power readings in the database."""
         recent_values = self.weather_station.get_reading()
 
+        # Record to legacy database.
         self.db.insert_current(self.collection_name, recent_values, store_permanently=self.store_permanently)
+
+        # Record to telemetry server.
+        try:
+            reading = WeatherReading(**recent_values)
+            self.record_telemetry(reading)
+        except Exception as e:
+            self.logger.warning(f"Could not record weather telemetry: {e!r}")
 
         return recent_values
 

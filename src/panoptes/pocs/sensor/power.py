@@ -22,6 +22,7 @@ from panoptes.utils.serializers import from_json, to_json
 from panoptes.utils.time import current_time
 
 from panoptes.pocs.base import PanBase
+from panoptes.pocs.utils.telemetry import PowerReading
 
 
 class PinState(IntEnum):
@@ -242,7 +243,7 @@ class PowerBoard(PanBase):
 
         return df0
 
-    def record(self, collection_name: str = None):
+    def record(self, collection_name: str | None = None):
         """Record the rolling mean of the power readings in the database.
 
         Args:
@@ -254,6 +255,13 @@ class PowerBoard(PanBase):
 
         collection_name = collection_name or self.arduino_board_name
         self.db.insert_current(collection_name, recent_values, store_permanently=False)
+
+        # Record to telemetry server.
+        try:
+            reading = PowerReading(**recent_values)
+            self.record_telemetry(reading)
+        except Exception as e:
+            self.logger.warning(f"Could not record power telemetry: {e!r}")
 
         return recent_values
 

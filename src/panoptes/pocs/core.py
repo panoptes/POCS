@@ -21,6 +21,7 @@ from panoptes.pocs.observatory import Observatory
 from panoptes.pocs.scheduler.observation.base import Observation
 from panoptes.pocs.state.machine import PanStateMachine
 from panoptes.pocs.utils import error
+from panoptes.pocs.utils.telemetry import ObservatoryStatus, SafetyStatus
 
 
 class POCS(PanStateMachine, PanBase):
@@ -203,15 +204,37 @@ class POCS(PanStateMachine, PanBase):
                 coarse system metrics (e.g., free space), and the observatory status.
         """
         try:
+            obs_status = self.observatory.status
             status = {
                 "state": self.state,
                 "next_state": self.next_state,
                 "system": {
                     "free_space": str(self._free_space),
                 },
-                "observatory": self.observatory.status,
+                "observatory": obs_status,
             }
             self.db.insert_current("status", status, store_permanently=False)
+
+            # Record to telemetry server.
+            try:
+                # Map observatory status to the model.
+                mount_status = obs_status.get("mount", {})
+                observer_status = obs_status.get("observer", {})
+                telemetry_status = ObservatoryStatus(
+                    state=self.state,
+                    next_state=self.next_state,
+                    mount_ra=mount_status.get("current_ra"),
+                    mount_dec=mount_status.get("current_dec"),
+                    mount_state=mount_status.get("state"),
+                    is_parked=mount_status.get("is_parked", True),
+                    sun_alt=observer_status.get("local_sun_position", -90.0),
+                    moon_alt=observer_status.get("local_moon_alt", -90.0),
+                    moon_illumination=observer_status.get("local_moon_illumination", 0.0),
+                )
+                self.record_telemetry(telemetry_status)
+            except Exception as e:
+                self.logger.warning(f"Could not record observatory telemetry: {e!r}")
+
             return status
         except Exception as e:  # pragma: no cover
             self.logger.warning(f"Can't get status: {e!r}")
@@ -430,6 +453,13 @@ class POCS(PanStateMachine, PanBase):
         # Insert safety reading
         self.db.insert_current("safety", is_safe_values, store_permanently=False)
 
+        # Record to telemetry server.
+        try:
+            safety_reading = SafetyStatus(**is_safe_values)
+            self.record_telemetry(safety_reading)
+        except Exception as e:
+            self.logger.warning(f"Could not record safety telemetry: {e!r}")
+
         if not safe:
             if no_warning is False:
                 self.logger.warning(f"Unsafe conditions: {is_safe_values}")
@@ -536,7 +566,11 @@ class POCS(PanStateMachine, PanBase):
         Returns:
             bool: True if enough space
         """
-        directory = directory or os.getenv("PANDIR")
+        directory = directory or os.getenv("PANDIR") or "."
+        if not os.path.exists(directory):
+            self.logger.warning(f"Directory {directory!r} does not exist, assuming enough space.")
+            return True
+
         req_space = required_space.to(u.gigabyte)
         self._free_space = get_free_space(directory=directory)
 
