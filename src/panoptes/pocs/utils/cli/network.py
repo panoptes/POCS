@@ -167,6 +167,7 @@ def upload_directory(
     assert directory_path.is_dir() and directory_path.exists(), print("[red]Need a directory that exists")
 
     from google.cloud import storage
+
     storage_client = storage_client or storage.Client()
 
     public_urls = list()

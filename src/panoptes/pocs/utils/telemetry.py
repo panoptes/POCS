@@ -1,12 +1,13 @@
 from datetime import datetime
-from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
+
 from panoptes.utils.time import current_time
 
 
 class TelemetryBase(BaseModel):
     """Base model for all telemetry."""
+
     model_config = ConfigDict(extra="allow")
 
     timestamp: datetime = Field(default_factory=lambda: current_time().datetime)
@@ -15,6 +16,7 @@ class TelemetryBase(BaseModel):
 
 class WeatherReading(TelemetryBase):
     """Weather station reading."""
+
     type: str = "weather"
     ambient_temp: float
     sky_temp: float
@@ -32,6 +34,7 @@ class WeatherReading(TelemetryBase):
 
 class PowerReading(TelemetryBase):
     """Power board reading."""
+
     type: str = "power"
     ac_ok: bool | None = None
     battery_low: bool | None = None
@@ -43,6 +46,7 @@ class PowerReading(TelemetryBase):
 
 class SafetyStatus(TelemetryBase):
     """Combined safety status."""
+
     type: str = "safety"
     ac_power: bool
     is_dark: bool
@@ -53,6 +57,7 @@ class SafetyStatus(TelemetryBase):
 
 class StateMachineState(TelemetryBase):
     """State machine transition."""
+
     type: str = "state"
     source: str
     dest: str
@@ -60,6 +65,7 @@ class StateMachineState(TelemetryBase):
 
 class ImageMetadata(TelemetryBase):
     """Metadata for a captured image."""
+
     type: str = "images"
     camera_name: str
     camera_uid: str
@@ -78,6 +84,7 @@ class ImageMetadata(TelemetryBase):
 
 class ObservatoryStatus(TelemetryBase):
     """General observatory status."""
+
     type: str = "status"
     state: str
     next_state: str | None = None
