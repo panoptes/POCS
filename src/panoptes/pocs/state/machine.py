@@ -211,9 +211,8 @@ class PanStateMachine(Machine):
         if state_changed:
             self.logger.success(f"Finished with {self.state} state")
             data = {"source": self.state, "dest": self.next_state}
-            self.db.insert_current("state", data, store_permanently=False)
 
-            # Record to telemetry server.
+            # Record to telemetry server (handles legacy DB internally).
             try:
                 state_reading = StateMachineState(**data)
                 if hasattr(self, "record_telemetry"):

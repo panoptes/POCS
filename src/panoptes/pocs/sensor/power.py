@@ -253,13 +253,10 @@ class PowerBoard(PanBase):
         """
         recent_values = self.readings
 
-        collection_name = collection_name or self.arduino_board_name
-        self.db.insert_current(collection_name, recent_values, store_permanently=False)
-
-        # Record to telemetry server.
+        # Record to telemetry server (handles legacy DB internally).
         try:
             reading = PowerReading(**recent_values)
-            self.record_telemetry(reading)
+            self.record_telemetry(reading, event_type=collection_name or self.arduino_board_name)
         except Exception as e:
             self.logger.warning(f"Could not record power telemetry: {e!r}")
 

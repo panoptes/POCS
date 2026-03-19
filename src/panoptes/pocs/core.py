@@ -213,9 +213,8 @@ class POCS(PanStateMachine, PanBase):
                 },
                 "observatory": obs_status,
             }
-            self.db.insert_current("status", status, store_permanently=False)
 
-            # Record to telemetry server.
+            # Record to telemetry server (handles legacy DB internally).
             try:
                 # Map observatory status to the model.
                 mount_status = obs_status.get("mount", {})
@@ -450,10 +449,7 @@ class POCS(PanStateMachine, PanBase):
             )
         safe = all([v for k, v in is_safe_values.items() if k not in ignore])
 
-        # Insert safety reading
-        self.db.insert_current("safety", is_safe_values, store_permanently=False)
-
-        # Record to telemetry server.
+        # Record to telemetry server (handles legacy DB internally).
         try:
             safety_reading = SafetyStatus(**is_safe_values)
             self.record_telemetry(safety_reading)

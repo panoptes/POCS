@@ -66,12 +66,16 @@ class PanBase:
 
         self.telemetry = PAN_TELEMETRY_OBJ
 
-    def record_telemetry(self, model, **kwargs):
+    def record_telemetry(self, model, store_permanently=False, **kwargs):
         """Record a telemetry event.
+
+        This method centralizes data recording, handling both the legacy database
+        (insert_current) and the new telemetry server.
 
         Args:
             model (pydantic.BaseModel | dict): The telemetry model or data to record.
-            **kwargs: Passed to `post_event`.
+            store_permanently (bool): If the data should be stored permanently in the legacy DB.
+            **kwargs: Passed to `post_event` and `insert_current`.
         """
         if hasattr(model, "model_dump"):
             data = model.model_dump()
@@ -80,7 +84,17 @@ class PanBase:
             data = model
             event_type = kwargs.pop("event_type", "unknown")
 
-        return self.telemetry.post_event(event_type, data, **kwargs)
+        # Record to legacy database for backward compatibility.
+        try:
+            self.db.insert_current(event_type, data, store_permanently=store_permanently)
+        except Exception as e:
+            self.logger.warning(f"Could not record to legacy database: {e!r}")
+
+        # Record to telemetry server.
+        try:
+            return self.telemetry.post_event(event_type, data, **kwargs)
+        except Exception as e:
+            self.logger.warning(f"Could not record to telemetry server: {e!r}")
 
     def get_config(
         self, key: str, default: Any | None = None, remember: bool = False, *args, **kwargs

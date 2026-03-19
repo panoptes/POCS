@@ -670,9 +670,8 @@ class Observatory(PanBase):
             if record_observations:
                 self.logger.debug(f"Adding current observation to db: {image_id}")
                 metadata["status"] = "complete"
-                self.db.insert_current("images", metadata, store_permanently=False)
 
-                # Record to telemetry server.
+                # Record to telemetry server (handles legacy DB internally).
                 try:
                     # Filter metadata to match model.
                     image_metadata = ImageMetadata(**metadata)
