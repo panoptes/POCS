@@ -709,8 +709,7 @@ class Observatory(PanBase):
             self.logger.debug(f"Offset Info: {self.current_offset_info}")
 
             # Store the offset information
-            self.db.insert_current(
-                "offset_info",
+            self.record_telemetry(
                 {
                     "image_id": image_id,
                     "d_ra": self.current_offset_info.delta_ra.value,
@@ -718,7 +717,7 @@ class Observatory(PanBase):
                     "magnitude": self.current_offset_info.magnitude.value,
                     "unit": "arcsec",
                 },
-                store_permanently=False,
+                event_type="offset_info",
             )
 
         except error.SolveError:

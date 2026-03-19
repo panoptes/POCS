@@ -22,7 +22,6 @@ cd "$PANDIR"
 echo "Creating POCS directories."
 mkdir -p "${HOME}/logs"
 mkdir -p "${HOME}/images"
-mkdir -p "${HOME}/json_store"
 mkdir -p "${HOME}/keys"
 
 # Link the needed POCS folders.

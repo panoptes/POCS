@@ -8,6 +8,7 @@ import pytest
 
 from panoptes.utils.config.client import set_config
 from panoptes.utils.config.server import config_server
+from panoptes.utils.telemetry import telemetry_server
 
 from panoptes.pocs import hardware
 from panoptes.pocs.utils.location import download_iers_a_file
@@ -71,6 +72,18 @@ def pytest_configure(config):
     config_server(config_file, host=host, port=port, load_local=False, save_local=False)
     download_iers_a_file()
     logger.success("Config server set up")
+
+    # Set up telemetry server for testing.
+    telemetry_port = "8766"
+    logger.info(f"Setting up the telemetry server on {telemetry_port}")
+    os.environ["PANOPTES_TELEMETRY_PORT"] = telemetry_port
+    
+    # Use a temporary directory for telemetry NDJSON files.
+    telemetry_dir = tempfile.mkdtemp(prefix="pocs-telemetry-")
+    
+    # Start the server using the helper function.
+    telemetry_server(host=host, port=telemetry_port, site_dir=telemetry_dir)
+    logger.success("Telemetry server set up")
 
 
 def pytest_addoption(parser):

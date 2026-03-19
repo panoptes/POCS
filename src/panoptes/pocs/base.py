@@ -10,14 +10,10 @@ from typing import Any
 from requests.exceptions import ConnectionError
 
 from panoptes.utils.config import client
-from panoptes.utils.database import PanDB
 from panoptes.utils.telemetry import TelemetryClient
 
 from panoptes.pocs import __version__, hardware
 from panoptes.pocs.utils.logger import get_logger
-
-# Global database.
-PAN_DB_OBJ = None
 
 # Global telemetry client.
 PAN_TELEMETRY_OBJ = None
@@ -29,7 +25,7 @@ PAN_CONFIG_CACHE = {}
 class PanBase:
     """Base class for other classes within the PANOPTES ecosystem
 
-    Defines common properties for each class (e.g. logger, config, db).
+    Defines common properties for each class (e.g. logger, config).
     """
 
     def __init__(self, config_host=None, config_port=None, *args, **kwargs):
@@ -47,21 +43,16 @@ class PanBase:
             log_dir=kwargs.get("log_dir", log_dir), cloud_logging_level=cloud_logging_level
         )
 
-        global PAN_DB_OBJ
-        if PAN_DB_OBJ is None:
-            # If the user requests a db_type then update runtime config.
-            db_name = kwargs.get("db_name", self.get_config("db.name", default="panoptes"))
-            db_folder = kwargs.get("db_folder", self.get_config("db.folder", default="json_store"))
-            db_type = kwargs.get("db_type", self.get_config("db.type", default="file"))
-
-            PAN_DB_OBJ = PanDB(db_name=db_name, storage_dir=db_folder, db_type=db_type)
-
-        self.db = PAN_DB_OBJ
-
         global PAN_TELEMETRY_OBJ
         if PAN_TELEMETRY_OBJ is None:
-            telemetry_host = kwargs.get("telemetry_host", self.get_config("telemetry.host", default="localhost"))
-            telemetry_port = kwargs.get("telemetry_port", self.get_config("telemetry.port", default=6565))
+            telemetry_host = kwargs.get(
+                "telemetry_host",
+                os.getenv("PANOPTES_TELEMETRY_HOST", self.get_config("telemetry.host", default="localhost"))
+            )
+            telemetry_port = kwargs.get(
+                "telemetry_port",
+                os.getenv("PANOPTES_TELEMETRY_PORT", self.get_config("telemetry.port", default=6565))
+            )
             PAN_TELEMETRY_OBJ = TelemetryClient(host=telemetry_host, port=telemetry_port)
 
         self.telemetry = PAN_TELEMETRY_OBJ
@@ -69,26 +60,19 @@ class PanBase:
     def record_telemetry(self, model, store_permanently=False, **kwargs):
         """Record a telemetry event.
 
-        This method centralizes data recording, handling both the legacy database
-        (insert_current) and the new telemetry server.
+        This method centralizes data recording using the telemetry server.
 
         Args:
             model (pydantic.BaseModel | dict): The telemetry model or data to record.
-            store_permanently (bool): If the data should be stored permanently in the legacy DB.
-            **kwargs: Passed to `post_event` and `insert_current`.
+            store_permanently (bool): Ignored (legacy parameter kept for API compatibility).
+            **kwargs: Passed to `post_event`.
         """
         if hasattr(model, "model_dump"):
-            data = model.model_dump()
+            data = model.model_dump(mode="json")
             event_type = getattr(model, "type", "unknown")
         else:
             data = model
             event_type = kwargs.pop("event_type", "unknown")
-
-        # Record to legacy database for backward compatibility.
-        try:
-            self.db.insert_current(event_type, data, store_permanently=store_permanently)
-        except Exception as e:
-            self.logger.warning(f"Could not record to legacy database: {e!r}")
 
         # Record to telemetry server.
         try:

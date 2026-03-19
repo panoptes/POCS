@@ -1,21 +1,16 @@
 """Typer CLI commands for PANOPTES networking and uploads.
 
-Includes helpers to retrieve a service account key, watch and upload JSON metadata
-to Firestore, and upload images or directories to Google Cloud Storage.
+Includes helpers to retrieve a service account key, and upload images or
+directories to Google Cloud Storage.
 """
 
-import json
 import os
 import stat
-import time
 from pathlib import Path
 
 import requests
 import typer
-from google.cloud import firestore, storage
 from rich import print
-from watchdog.events import FileSystemEventHandler
-from watchdog.observers import Observer
 
 from panoptes.utils.config.client import get_config, set_config
 
@@ -110,89 +105,6 @@ def get_key_cmd(
             print(f"[red]Error updating config: {e}[/]")
 
 
-@app.command("upload-metadata")
-def upload_metadata(
-    dir_path: Path = "/home/panoptes/json_store/panoptes",
-    unit_id: str = None,
-    verbose: bool = False,
-):
-    """Watch a directory and upload JSON metadata files to Firestore.
-
-    Args:
-        dir_path (Path): Directory containing JSON envelopes to watch. Defaults to
-            '/home/panoptes/json_store/panoptes'.
-        unit_id (str | None): Unit identifier to attach to records; if None uses
-            environment/config via _get_unit_id().
-        verbose (bool): If True, echo progress and debug information.
-
-    Returns:
-        None
-
-    Notes:
-        Expects files named with 'current' under dir_path that contain envelopes of
-        the form {'type': <record_type>, 'data': {...}, 'date': ...}. Records are
-        added under units/{unit_id}/metadata and the unit document is updated.
-    """
-    unit_id = unit_id or _get_unit_id()
-
-    if verbose:
-        print(f"Listening to {dir_path.absolute()} for {unit_id}")
-
-    firestore_db = firestore.Client()
-    # Get the unit reference to link metadata to unit.
-    unit_ref = firestore_db.document(f"units/{unit_id}")
-    metadata_records_ref = unit_ref.collection("metadata")
-
-    def handleEvent(event):
-        if event.is_directory:
-            return
-
-        if "current" not in event.src_path:
-            if verbose:
-                print(f"Skipping {event.src_path}")
-            return
-
-        try:
-            record = json.loads(Path(event.src_path).read_text())
-
-            # Unpack the envelope.
-            record_type = record["type"]
-            data = record["data"]
-            data["date"] = record["date"]
-            data["received_time"] = firestore.SERVER_TIMESTAMP
-
-            if verbose:
-                print(f"Adding data for {record_type=}: {data}")
-
-            # Update the unit's metadata with the record_type.
-            unit_ref.set(
-                {
-                    "metadata": {record_type: data},
-                    "last_updated": firestore.SERVER_TIMESTAMP,
-                },
-                merge=True,
-            )
-
-            # Add the record, storing the record_type name in the data.
-            data["record_type"] = record_type
-            doc_ts, doc_id = metadata_records_ref.add(data)
-            if verbose:
-                print(f"Added data to firestore with {doc_id.id=} at {doc_ts}")
-        except Exception as e:
-            print(f"Exception {e!r}")
-
-    file_observer = _start_event_handler(dir_path, handleEvent)
-    try:
-        while True:
-            time.sleep(1)
-    except KeyboardInterrupt:
-        if verbose:
-            print("Cleaning up file watcher")
-        file_observer.stop()
-    finally:
-        file_observer.join()
-
-
 @upload_app.command("image")
 def upload_image_cmd(
     file_path: Path,
@@ -254,6 +166,7 @@ def upload_directory(
     """
     assert directory_path.is_dir() and directory_path.exists(), print("[red]Need a directory that exists")
 
+    from google.cloud import storage
     storage_client = storage_client or storage.Client()
 
     public_urls = list()
@@ -283,13 +196,3 @@ def _get_unit_id():
         raise ValueError("No unit id found in environment or config")
 
     return unit_id
-
-
-def _start_event_handler(dir_path: Path, handle_event: callable):
-    """Start the event handler."""
-    event_handler = FileSystemEventHandler()
-    event_handler.on_modified = handle_event
-    file_observer = Observer()
-    file_observer.schedule(event_handler, dir_path.as_posix())
-    file_observer.start()
-    return file_observer

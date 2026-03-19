@@ -6,6 +6,7 @@ and manages the high-level observing loop, safety checks, and lifecycle.
 
 import os
 from contextlib import suppress
+from datetime import datetime
 from multiprocessing import Process
 from zoneinfo import ZoneInfo
 
@@ -519,30 +520,46 @@ class POCS(PanStateMachine, PanBase):
         if self._in_simulator("weather"):
             return True
 
-        # Get current weather readings from database
+        # Get current weather readings from telemetry server.
         is_safe = False
         try:
-            record = self.db.get_current("weather")
-            if record is None:
+            record = self.telemetry.current_event("weather")
+            if not record or "data" not in record:
                 return False
 
+            data = record["data"]
             is_safe = False
             for key in ["safe", "is_safe"]:
                 with suppress(KeyError):
-                    is_safe = bool(record["data"][key])
+                    is_safe = bool(data[key])
 
             tz = ZoneInfo(self.get_config("location.timezone", default="UTC"))
 
-            timestamp = Time(record["data"]["timestamp"].replace(tzinfo=tz))
-            age = (current_time().datetime - timestamp.datetime).total_seconds()
+            # Prefer 'timestamp' in data (which might be mocked in tests), fallback to 'ts' envelope.
+            ts = data.get("timestamp") or record.get("ts")
+            
+            if isinstance(ts, str):
+                # astropy.Time can handle most ISO-like strings directly.
+                timestamp = Time(ts)
+            elif isinstance(ts, datetime):
+                timestamp = Time(ts)
+            else:
+                self.logger.warning(f"Unknown timestamp format in telemetry record: {ts!r}")
+                return False
+            
+            # Ensure we have a timezone-aware datetime for comparison.
+            if timestamp.datetime.tzinfo is None:
+                timestamp = Time(timestamp.datetime.replace(tzinfo=tz))
+            
+            age = (current_time().datetime - timestamp.datetime.replace(tzinfo=None)).total_seconds()
 
             self.logger.debug(f"Weather Safety: {is_safe=} {age=:.0f}s [{timestamp}]")
 
         except Exception as e:  # pragma: no cover
-            self.logger.error(f"No weather record in database: {e!r}")
+            self.logger.error(f"Error checking weather telemetry: {e!r}")
         else:
             if age >= stale:
-                self.logger.warning("Weather record looks stale, marking unsafe.")
+                self.logger.warning(f"Weather record looks stale ({age=:.0f}s), marking unsafe.")
                 is_safe = False
 
         return is_safe
@@ -591,10 +608,9 @@ class POCS(PanStateMachine, PanBase):
     def has_ac_power(self, stale=90):
         """Check for system AC power.
 
-        Power readings are done by the arduino and are placed in the metadata
-        database. This method looks for entries saved with type `power` and key
-        `main` the `current` collection. The method will also return False if
-        the record is older than `stale` seconds.
+        Power readings are done by the arduino and are recorded as telemetry.
+        This method checks the current 'power' event from the telemetry server.
+        The method will also return False if the record is older than `stale` seconds.
 
         Args:
             stale (int, optional): Number of seconds before record is stale,
@@ -610,26 +626,43 @@ class POCS(PanStateMachine, PanBase):
         if self._in_simulator("power"):
             return True
 
-        # Get current power readings from database
+        # Get current power readings from telemetry server.
         try:
-            record = self.db.get_current("power")
-            if record is None:
-                self.logger.warning('No mains "power" reading found in database.')
+            record = self.telemetry.current_event("power")
+            if not record or "data" not in record:
+                self.logger.warning('No "power" record found.')
+                return False
 
+            data = record["data"]
             has_power = False  # Assume not.
             for power_key in ["main", "mains", "ac_ok"]:  # Legacy support.
                 with suppress(KeyError):
-                    has_power = bool(record["data"][power_key])
+                    has_power = bool(data[power_key])
 
-            date = record["date"].replace(tzinfo=None)  # current_time is timezone naive
+            # Prefer 'timestamp' in data (which might be mocked in tests), fallback to 'ts' envelope.
+            ts = data.get("timestamp") or record.get("ts")
+            
+            if isinstance(ts, str):
+                # Handle potential Z or other timezone indicators.
+                date = datetime.fromisoformat(ts.replace("Z", "+00:00"))
+            elif isinstance(ts, datetime):
+                date = ts
+            else:
+                self.logger.warning(f"Unknown timestamp format in telemetry record: {ts!r}")
+                return False
+
+            # Ensure naive datetime for comparison with current_time().datetime (which is naive).
+            if date.tzinfo is not None:
+                date = date.replace(tzinfo=None)
+            
             age = (current_time().datetime - date).total_seconds()
 
             self.logger.debug(f"Power Safety: {has_power} [{age:.0f}s old - {date:%m-%d %H:%M:%S}]")
 
         except (TypeError, KeyError) as e:
-            self.logger.warning(f"No record found in DB: {e!r}")
+            self.logger.warning(f"No valid record found: {e!r}")
         except Exception as e:  # pragma: no cover
-            self.logger.error(f"Error checking weather: {e!r}")
+            self.logger.error(f"Error checking power: {e!r}")
         else:
             if age > stale:
                 self.logger.warning("Power record looks stale, marking unsafe.")
