@@ -11,12 +11,16 @@ from requests.exceptions import ConnectionError
 
 from panoptes.utils.config import client
 from panoptes.utils.database import PanDB
+from panoptes.utils.telemetry import TelemetryClient
 
 from panoptes.pocs import __version__, hardware
 from panoptes.pocs.utils.logger import get_logger
 
 # Global database.
 PAN_DB_OBJ = None
+
+# Global telemetry client.
+PAN_TELEMETRY_OBJ = None
 
 # Cache for config values that are `remember`ed.
 PAN_CONFIG_CACHE = {}
@@ -53,6 +57,30 @@ class PanBase:
             PAN_DB_OBJ = PanDB(db_name=db_name, storage_dir=db_folder, db_type=db_type)
 
         self.db = PAN_DB_OBJ
+
+        global PAN_TELEMETRY_OBJ
+        if PAN_TELEMETRY_OBJ is None:
+            telemetry_host = kwargs.get("telemetry_host", self.get_config("telemetry.host", default="localhost"))
+            telemetry_port = kwargs.get("telemetry_port", self.get_config("telemetry.port", default=6565))
+            PAN_TELEMETRY_OBJ = TelemetryClient(host=telemetry_host, port=telemetry_port)
+
+        self.telemetry = PAN_TELEMETRY_OBJ
+
+    def record_telemetry(self, model, **kwargs):
+        """Record a telemetry event.
+
+        Args:
+            model (pydantic.BaseModel | dict): The telemetry model or data to record.
+            **kwargs: Passed to `post_event`.
+        """
+        if hasattr(model, "model_dump"):
+            data = model.model_dump()
+            event_type = getattr(model, "type", "unknown")
+        else:
+            data = model
+            event_type = kwargs.pop("event_type", "unknown")
+
+        return self.telemetry.post_event(event_type, data, **kwargs)
 
     def get_config(
         self, key: str, default: Any | None = None, remember: bool = False, *args, **kwargs
