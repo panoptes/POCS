@@ -23,7 +23,6 @@ from panoptes.utils.utils import get_quantity_value, listify
 
 import panoptes.pocs.camera.fli
 from panoptes.pocs.base import PanBase
-from panoptes.pocs.utils.telemetry import ImageMetadata
 from panoptes.pocs.camera import AbstractCamera
 from panoptes.pocs.dome import AbstractDome
 from panoptes.pocs.images import Image
@@ -34,6 +33,7 @@ from panoptes.pocs.scheduler.observation.compound import Observation as Compound
 from panoptes.pocs.scheduler.scheduler import BaseScheduler
 from panoptes.pocs.utils.cloud import upload_image as image_uploader
 from panoptes.pocs.utils.location import create_location_from_config
+from panoptes.pocs.utils.telemetry import ImageMetadata
 
 
 class Observatory(PanBase):
@@ -671,7 +671,7 @@ class Observatory(PanBase):
                 self.logger.debug(f"Adding current observation to db: {image_id}")
                 metadata["status"] = "complete"
 
-                # Record to telemetry server (handles legacy DB internally).
+                # Record to telemetry server.
                 try:
                     # Filter metadata to match model.
                     image_metadata = ImageMetadata(**metadata)

@@ -6,7 +6,6 @@ and manages the high-level observing loop, safety checks, and lifecycle.
 
 import os
 from contextlib import suppress
-from datetime import datetime
 from multiprocessing import Process
 from zoneinfo import ZoneInfo
 
@@ -215,7 +214,7 @@ class POCS(PanStateMachine, PanBase):
                 "observatory": obs_status,
             }
 
-            # Record to telemetry server (handles legacy DB internally).
+            # Record to telemetry server.
             try:
                 # Map observatory status to the model.
                 mount_status = obs_status.get("mount", {})
@@ -450,7 +449,7 @@ class POCS(PanStateMachine, PanBase):
             )
         safe = all([v for k, v in is_safe_values.items() if k not in ignore])
 
-        # Record to telemetry server (handles legacy DB internally).
+        # Record to telemetry server.
         try:
             safety_reading = SafetyStatus(**is_safe_values)
             self.record_telemetry(safety_reading)
@@ -535,22 +534,17 @@ class POCS(PanStateMachine, PanBase):
 
             tz = ZoneInfo(self.get_config("location.timezone", default="UTC"))
 
-            # Prefer 'timestamp' in data (which might be mocked in tests), fallback to 'ts' envelope.
-            ts = data.get("timestamp") or record.get("ts")
-            
-            if isinstance(ts, str):
-                # astropy.Time can handle most ISO-like strings directly.
-                timestamp = Time(ts)
-            elif isinstance(ts, datetime):
-                timestamp = Time(ts)
-            else:
-                self.logger.warning(f"Unknown timestamp format in telemetry record: {ts!r}")
+            # Use helper to get timestamp (prefers mocked time in data).
+            date = self._get_telemetry_timestamp(record)
+            if not date:
+                self.logger.warning(f"Could not extract timestamp from telemetry record: {record!r}")
                 return False
-            
+
+            timestamp = Time(date)
             # Ensure we have a timezone-aware datetime for comparison.
             if timestamp.datetime.tzinfo is None:
                 timestamp = Time(timestamp.datetime.replace(tzinfo=tz))
-            
+
             age = (current_time().datetime - timestamp.datetime.replace(tzinfo=None)).total_seconds()
 
             self.logger.debug(f"Weather Safety: {is_safe=} {age=:.0f}s [{timestamp}]")
@@ -639,22 +633,16 @@ class POCS(PanStateMachine, PanBase):
                 with suppress(KeyError):
                     has_power = bool(data[power_key])
 
-            # Prefer 'timestamp' in data (which might be mocked in tests), fallback to 'ts' envelope.
-            ts = data.get("timestamp") or record.get("ts")
-            
-            if isinstance(ts, str):
-                # Handle potential Z or other timezone indicators.
-                date = datetime.fromisoformat(ts.replace("Z", "+00:00"))
-            elif isinstance(ts, datetime):
-                date = ts
-            else:
-                self.logger.warning(f"Unknown timestamp format in telemetry record: {ts!r}")
+            # Use helper to get timestamp (prefers mocked time in data).
+            date = self._get_telemetry_timestamp(record)
+            if not date:
+                self.logger.warning(f"Could not extract timestamp from telemetry record: {record!r}")
                 return False
 
             # Ensure naive datetime for comparison with current_time().datetime (which is naive).
             if date.tzinfo is not None:
                 date = date.replace(tzinfo=None)
-            
+
             age = (current_time().datetime - date).total_seconds()
 
             self.logger.debug(f"Power Safety: {has_power} [{age:.0f}s old - {date:%m-%d %H:%M:%S}]")

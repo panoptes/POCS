@@ -65,7 +65,7 @@ class WeatherStation(PanBase):
         """Record the rolling mean of the power readings in the database."""
         recent_values = self.weather_station.get_reading()
 
-        # Record to telemetry server (handles legacy DB internally).
+        # Record to telemetry server.
         try:
             reading = WeatherReading(**recent_values)
             self.record_telemetry(reading, store_permanently=self.store_permanently)

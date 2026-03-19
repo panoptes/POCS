@@ -9,6 +9,7 @@ from panoptes.utils.config.client import get_config
 from panoptes.utils.library import load_module
 from panoptes.utils.serializers import from_yaml
 from panoptes.utils.utils import listify
+
 from panoptes.pocs.utils.telemetry import StateMachineState
 
 
@@ -212,7 +213,7 @@ class PanStateMachine(Machine):
             self.logger.success(f"Finished with {self.state} state")
             data = {"source": self.state, "dest": self.next_state}
 
-            # Record to telemetry server (handles legacy DB internally).
+            # Record to telemetry server.
             try:
                 state_reading = StateMachineState(**data)
                 if hasattr(self, "record_telemetry"):

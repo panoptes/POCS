@@ -47,11 +47,11 @@ class PanBase:
         if PAN_TELEMETRY_OBJ is None:
             telemetry_host = kwargs.get(
                 "telemetry_host",
-                os.getenv("PANOPTES_TELEMETRY_HOST", self.get_config("telemetry.host", default="localhost"))
+                os.getenv("PANOPTES_TELEMETRY_HOST", self.get_config("telemetry.host", default="localhost")),
             )
             telemetry_port = kwargs.get(
                 "telemetry_port",
-                os.getenv("PANOPTES_TELEMETRY_PORT", self.get_config("telemetry.port", default=6565))
+                os.getenv("PANOPTES_TELEMETRY_PORT", self.get_config("telemetry.port", default=6565)),
             )
             PAN_TELEMETRY_OBJ = TelemetryClient(host=telemetry_host, port=telemetry_port)
 
@@ -79,6 +79,39 @@ class PanBase:
             return self.telemetry.post_event(event_type, data, **kwargs)
         except Exception as e:
             self.logger.warning(f"Could not record to telemetry server: {e!r}")
+
+    def _get_telemetry_timestamp(self, record):
+        """Helper to extract a timestamp from a telemetry record.
+
+        Prefer 'timestamp' in the data payload (useful for mocked time in tests),
+        falling back to the 'ts' field in the record envelope.
+
+        Args:
+            record (dict): The telemetry record from `current_event`.
+
+        Returns:
+            datetime.datetime | None: The extracted timestamp or None if not found.
+        """
+        if not record:
+            return None
+
+        data = record.get("data", {})
+        ts = data.get("timestamp") or record.get("ts")
+
+        if ts is None:
+            return None
+
+        from datetime import datetime
+
+        if isinstance(ts, str):
+            try:
+                return datetime.fromisoformat(ts.replace("Z", "+00:00"))
+            except Exception:
+                return None
+        elif isinstance(ts, datetime):
+            return ts
+
+        return None
 
     def get_config(
         self, key: str, default: Any | None = None, remember: bool = False, *args, **kwargs

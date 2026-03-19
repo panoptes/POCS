@@ -66,7 +66,7 @@ class RemoteMonitor(PanBase):
         sensor_data["date"] = current_time(flatten=True)
 
         if store_result and len(sensor_data) > 0:
-            # Record to telemetry server (handles legacy DB internally).
+            # Record to telemetry server.
             try:
                 self.record_telemetry(sensor_data, event_type=self.sensor_name)
             except Exception as e:
@@ -74,7 +74,7 @@ class RemoteMonitor(PanBase):
 
             # Make a separate power entry
             if "power" in sensor_data:
-                # Record separate power telemetry (handles legacy DB internally).
+                # Record separate power telemetry.
                 try:
                     self.record_telemetry(sensor_data["power"], event_type="power")
                 except Exception as e:

@@ -67,6 +67,7 @@ def pytest_configure(config):
 
     # Fix IERS data age issue.
     from astropy.utils.iers import conf
+
     conf.auto_max_age = None
 
     config_server(config_file, host=host, port=port, load_local=False, save_local=False)
@@ -77,10 +78,10 @@ def pytest_configure(config):
     telemetry_port = "8766"
     logger.info(f"Setting up the telemetry server on {telemetry_port}")
     os.environ["PANOPTES_TELEMETRY_PORT"] = telemetry_port
-    
+
     # Use a temporary directory for telemetry NDJSON files.
     telemetry_dir = tempfile.mkdtemp(prefix="pocs-telemetry-")
-    
+
     # Start the server using the helper function.
     telemetry_server(host=host, port=telemetry_port, site_dir=telemetry_dir)
     logger.success("Telemetry server set up")

@@ -253,7 +253,7 @@ class PowerBoard(PanBase):
         """
         recent_values = self.readings
 
-        # Record to telemetry server (handles legacy DB internally).
+        # Record to telemetry server.
         try:
             reading = PowerReading(**recent_values)
             self.record_telemetry(reading, event_type=collection_name or self.arduino_board_name)
