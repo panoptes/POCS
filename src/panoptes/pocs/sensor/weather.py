@@ -42,7 +42,9 @@ class WeatherStation(PanBase):
         self.serial_port = serial_port or conf.get("serial_port", "/dev/ttyUSB0")
         self.name = name
         self.collection_name = db_collection
-        self.store_permanently = conf.pop("store_permanently", False)
+
+        # Remove store_permanently if it exists in conf.
+        conf.pop("store_permanently", None)
 
         self.logger.debug(f"Setting up weather station connection for {name=} on {self.serial_port}")
         self.weather_station = CloudSensor(serial_port=self.serial_port, **conf)
@@ -68,7 +70,7 @@ class WeatherStation(PanBase):
         # Record to telemetry server.
         try:
             reading = WeatherReading(**recent_values)
-            self.record_telemetry(reading, store_permanently=self.store_permanently)
+            self.record_telemetry(reading)
         except Exception as e:
             self.logger.warning(f"Could not record weather telemetry: {e!r}")
 

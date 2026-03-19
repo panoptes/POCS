@@ -57,14 +57,13 @@ class PanBase:
 
         self.telemetry = PAN_TELEMETRY_OBJ
 
-    def record_telemetry(self, model, store_permanently=False, **kwargs):
+    def record_telemetry(self, model, **kwargs):
         """Record a telemetry event.
 
         This method centralizes data recording using the telemetry server.
 
         Args:
             model (pydantic.BaseModel | dict): The telemetry model or data to record.
-            store_permanently (bool): Ignored (legacy parameter kept for API compatibility).
             **kwargs: Passed to `post_event`.
         """
         if hasattr(model, "model_dump"):
