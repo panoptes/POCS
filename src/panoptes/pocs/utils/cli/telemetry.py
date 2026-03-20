@@ -163,9 +163,12 @@ class PowerDisplay(TelemetryDisplay):
         for i in range(5):
             relay_key = f"relay_{i}"
             label = relay_labels.get(relay_key, relay_key.upper())
-            val = self.get_val(data, relay_key, default=-1)
+            val = data.get(relay_key)
 
-            if val < 0:
+            if val is None:
+                status_text = "[yellow]N/A[/]"
+                amps_text = ""
+            elif val < 0:
                 status_text = "[red]OFF[/]"
                 amps_text = ""
             else:
