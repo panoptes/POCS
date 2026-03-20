@@ -129,14 +129,14 @@ class WeatherDisplay(TelemetryDisplay):
         table = Table(show_header=False, box=None, expand=True)
         table.add_row("Status", f"[{safe_color} bold]{safe_text}[/]")
 
-        ambient_temp = self.get_val(data, "ambient_temp")
-        sky_temp = self.get_val(data, "sky_temp")
+        ambient_temp = self.get_val(data, "ambient_temp", default=0.0)
+        sky_temp = self.get_val(data, "sky_temp", default=0.0)
         temp_diff = sky_temp - ambient_temp
         table.add_row("Ambient Temp", f"{ambient_temp:.1f} C")
         table.add_row("Sky Temp", f"{sky_temp:.1f} C")
         table.add_row("Sky - Ambient", f"{temp_diff:.1f} C")
 
-        wind_speed = self.get_val(data, "wind_speed")
+        wind_speed = self.get_val(data, "wind_speed", default=0.0)
         table.add_row("Wind Speed", f"{wind_speed:.1f} m/s")
 
         for key in ["cloud", "wind", "rain"]:
@@ -316,7 +316,7 @@ class TelemetryApp(App):
     def update_telemetry(self) -> None:
         """Fetch latest telemetry and update widgets."""
         try:
-            current_data = self.client.current().get("current", {})
+            current_data = self.client.current()
         except Exception as e:
             # Show error in some way?
             self.notify(f"Error fetching telemetry: {e!r}", severity="error")
