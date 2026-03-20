@@ -12,6 +12,7 @@ from textual.app import App, ComposeResult
 from textual.containers import Grid
 from textual.widgets import Footer, Header, Static
 
+from panoptes.utils.config.client import get_config
 from panoptes.utils.telemetry import TelemetryClient
 
 app = typer.Typer(no_args_is_help=True)
@@ -108,6 +109,13 @@ class TelemetryDisplay(Static):
 class WeatherDisplay(TelemetryDisplay):
     """Display weather telemetry."""
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        try:
+            self.thresholds = get_config("weather.thresholds", default={})
+        except Exception:
+            self.thresholds = {}
+
     def update_data(self, data: dict[str, Any], timestamp: str | None = None) -> None:
         if not data:
             self.update("No weather data")
@@ -119,11 +127,25 @@ class WeatherDisplay(TelemetryDisplay):
 
         table = Table(show_header=False, box=None, expand=True)
         table.add_row("Status", f"[{safe_color} bold]{safe_text}[/]")
-        table.add_row("Ambient Temp", f"{self.get_val(data, 'ambient_temp'):.1f} C")
-        table.add_row("Sky Temp", f"{self.get_val(data, 'sky_temp'):.1f} C")
-        table.add_row("Wind Speed", f"{self.get_val(data, 'wind_speed'):.1f} m/s")
-        table.add_row("Cloud", f"{self.get_val(data, 'cloud_condition', 'Unknown')}")
-        table.add_row("Rain", f"{self.get_val(data, 'rain_condition', 'Unknown')}")
+
+        ambient_temp = self.get_val(data, "ambient_temp")
+        sky_temp = self.get_val(data, "sky_temp")
+        temp_diff = sky_temp - ambient_temp
+        table.add_row("Ambient Temp", f"{ambient_temp:.1f} C")
+        table.add_row("Sky Temp", f"{sky_temp:.1f} C")
+
+        cloudy_threshold = self.thresholds.get("cloudy", "N/A")
+        table.add_row("Sky - Ambient", f"{temp_diff:.1f} C [dim]({cloudy_threshold})[/]")
+
+        wind_speed = self.get_val(data, "wind_speed")
+        wind_threshold = self.thresholds.get("windy", "N/A")
+        table.add_row("Wind Speed", f"{wind_speed:.1f} m/s [dim]({wind_threshold})[/]")
+
+        for key in ["cloud", "wind", "rain"]:
+            condition = data.get(f"{key}_condition", "Unknown")
+            is_condition_safe = data.get(f"{key}_safe", False)
+            color = "green" if is_condition_safe else "red"
+            table.add_row(f"{key.title()} Status", f"[{color}]{condition}[/]")
 
         self.update(Panel(table, title="Weather", subtitle=self.get_footer(timestamp)))
 
