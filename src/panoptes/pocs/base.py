@@ -66,12 +66,15 @@ class PanBase:
             model (pydantic.BaseModel | dict): The telemetry model or data to record.
             **kwargs: Passed to `post_event`.
         """
+        # Get event_type from kwargs if provided, then pop it.
+        event_type = kwargs.pop("event_type", "unknown")
+
         if hasattr(model, "model_dump"):
             data = model.model_dump(mode="json")
-            event_type = getattr(model, "type", "unknown")
+            # Prefer model's type if available.
+            event_type = getattr(model, "type", event_type)
         else:
             data = model
-            event_type = kwargs.pop("event_type", "unknown")
 
         # Record to telemetry server.
         try:
