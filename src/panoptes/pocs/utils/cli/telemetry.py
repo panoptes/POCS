@@ -121,6 +121,13 @@ class WeatherDisplay(TelemetryDisplay):
             self.update("No weather data")
             return
 
+        # Try to fetch thresholds if not already loaded (e.g. if config server was down)
+        if not self.thresholds:
+            try:
+                self.thresholds = get_config("weather.thresholds", default={})
+            except Exception:
+                pass
+
         is_safe = data.get("is_safe", False)
         safe_color = "green" if is_safe else "red"
         safe_text = "SAFE" if is_safe else "UNSAFE"
@@ -135,11 +142,11 @@ class WeatherDisplay(TelemetryDisplay):
         table.add_row("Sky Temp", f"{sky_temp:.1f} C")
 
         cloudy_threshold = self.thresholds.get("cloudy", "N/A")
-        table.add_row("Sky - Ambient", f"{temp_diff:.1f} C [dim]({cloudy_threshold})[/]")
+        table.add_row("Sky - Ambient", f"{temp_diff:.1f} C [italic blue]({cloudy_threshold})[/]")
 
         wind_speed = self.get_val(data, "wind_speed")
         wind_threshold = self.thresholds.get("windy", "N/A")
-        table.add_row("Wind Speed", f"{wind_speed:.1f} m/s [dim]({wind_threshold})[/]")
+        table.add_row("Wind Speed", f"{wind_speed:.1f} m/s [italic blue]({wind_threshold})[/]")
 
         for key in ["cloud", "wind", "rain"]:
             condition = data.get(f"{key}_condition", "Unknown")
