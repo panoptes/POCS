@@ -2,6 +2,10 @@
 
 # Unreleased
 
+### Fixed
+
+- Fixed `pocs power` CLI commands causing Pydantic validation errors in the power service by correctly sending JSON payloads. #1411
+
 ### Added
 
 - Migration to structured telemetry system using `panoptes-utils>=0.3.1`.
