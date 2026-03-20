@@ -112,7 +112,7 @@ class WeatherDisplay(TelemetryDisplay):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         try:
-            self.thresholds = get_config("weather.thresholds", default={})
+            self.thresholds = get_config("environment.weather.thresholds", default={})
         except Exception:
             self.thresholds = {}
 
@@ -124,7 +124,7 @@ class WeatherDisplay(TelemetryDisplay):
         # Try to fetch thresholds if not already loaded (e.g. if config server was down)
         if not self.thresholds:
             try:
-                self.thresholds = get_config("weather.thresholds", default={})
+                self.thresholds = get_config("environment.weather.thresholds", default={})
             except Exception:
                 pass
 
