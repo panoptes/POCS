@@ -2,6 +2,7 @@
 
 import pytest
 import responses
+
 from panoptes.utils import error
 
 from panoptes.pocs.sensor import power, remote

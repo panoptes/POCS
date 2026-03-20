@@ -4,6 +4,7 @@ from contextlib import suppress
 import pytest
 from astropy import units as u
 from astropy.coordinates import EarthLocation
+
 from panoptes.utils.config.client import get_config
 
 from panoptes.pocs.images import OffsetError

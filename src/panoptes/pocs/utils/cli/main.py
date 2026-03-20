@@ -27,7 +27,7 @@ from panoptes.pocs.utils.cli import (
     weather,
 )
 
-app = typer.Typer()
+app = typer.Typer(no_args_is_help=True)
 state = {"verbose": False}
 
 app.add_typer(config.app, name="config", help="Interact with the config server.")

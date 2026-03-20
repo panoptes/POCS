@@ -8,6 +8,7 @@ import astropy.units as u
 import pytest
 import requests
 from astropy.io import fits
+
 from panoptes.utils import error
 from panoptes.utils.config.client import get_config, set_config
 from panoptes.utils.error import NotFound

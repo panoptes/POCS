@@ -34,8 +34,7 @@ dependencies = [
     "astroquery",
     "certifi>=2024.2.2",
     "click>=8.2.1",
-    "fastapi<0.106.0",
-    "fastapi-utils",
+    "fastapi[standard]",
     "GitPython",
     "human-readable",
     "numpy>=2",
@@ -53,7 +52,6 @@ dependencies = [
     "typer",
     "typing-inspect",
     "urllib3>=2.0.7",
-    "uvicorn[standard]",
     "watchdog",
 ]
 
@@ -191,6 +189,21 @@ select = [
     "UP",  # pyupgrade
 ]
 ignore = []
+
+[tool.ruff.lint.isort]
+section-order = [
+    "future",
+    "standard-library",
+    "third-party",
+    "first-party",
+    "local-folder",
+    "panoptes-utils",
+    "panoptes-pocs"
+]
+
+[tool.ruff.lint.isort.sections]
+"panoptes-utils" = ["panoptes.utils"]
+"panoptes-pocs" = ["panoptes.pocs"]
 
 [tool.ruff.format]
 quote-style = "double"

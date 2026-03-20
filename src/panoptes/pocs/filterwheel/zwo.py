@@ -7,6 +7,7 @@ control ZWO electronic filter wheels.
 from contextlib import suppress
 
 from astropy import units as u
+
 from panoptes.utils import error
 
 from panoptes.pocs.camera.camera import AbstractCamera

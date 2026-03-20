@@ -38,6 +38,12 @@ sudo DEBIAN_FRONTEND=noninteractive apt-get -y install --no-install-recommends \
   wget \
   zsh
 
+# If we are using a desktop, we need to prevent gvfs-gphoto2-volume-monitor
+# from running, otherwise it will steal the cameras.
+if [ -f /usr/lib/gvfs/gvfs-gphoto2-volume-monitor ]; then
+  sudo chmod -x /usr/lib/gvfs/gvfs-gphoto2-volume-monitor
+fi
+
 sudo DEBIAN_FRONTEND=noninteractive apt-get -y autoremove
 
 # Set zsh as the default shell for the current user.

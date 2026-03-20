@@ -18,6 +18,7 @@ function install_zsh() {
 
     # Configure starship if available
     if command -v starship &>/dev/null; then
+      mkdir -p ~/.config
       starship preset plain-text-symbols -o ~/.config/starship.toml
     fi
   fi
@@ -69,6 +70,14 @@ fi
 
 # Source the plugins file.
 source \$zsh_plugins
+
+# Common aliases
+alias ll='ls -lh'
+alias la='ls -lAh'
+alias df='df -h'
+alias du='du -h'
+alias free='free -h'
+alias mkdir='mkdir -p'
 
 # History configuration
 HISTFILE="\${HOME}/.zsh_history"

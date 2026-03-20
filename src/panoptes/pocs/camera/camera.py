@@ -18,6 +18,7 @@ from pathlib import Path
 import astropy.units as u
 from astropy.io import fits
 from astropy.time import Time
+
 from panoptes.utils import error
 from panoptes.utils.images import fits as fits_utils
 from panoptes.utils.images.misc import crop_data
@@ -1079,8 +1080,16 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                 # Get the value from either the metadata, the default, or use blank string.
                 fits_value = metadata.get(metadata_key, field_info.get("default", ""))
 
+                if isinstance(fits_value, list):
+                    fits_value = ",".join(str(v) for v in fits_value)
+
                 self.logger.trace(f"Setting {fits_key=!r} = {fits_value=!r} {fits_comment=!r}")
-                hdu.header.set(fits_key, fits_value, fits_comment)
+                try:
+                    hdu.header.set(fits_key, fits_value, fits_comment)
+                except ValueError as e:
+                    self.logger.warning(
+                        f"Problem setting FITS header for {fits_key}={fits_value} with {e=!r}"
+                    )
 
         self.logger.debug(f"Finished FITS headers: {file_path}")
 

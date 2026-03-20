@@ -34,7 +34,10 @@ Each field configuration file is a YAML list where each item defines:
 ### `observation` section
 
 - **priority** (optional, default: 100): Higher priority targets are observed first
-- **exptime** (optional, default: 120): Exposure time in seconds
+- **exptime** (optional): Exposure time in seconds. If not specified, uses the value 
+  from `cameras.defaults.exptime` in the configuration file (default: 120 seconds). 
+  This allows you to set camera-specific defaults (e.g., 30s for ZWO cameras, 120s for DSLRs) 
+  without needing to specify exposure time for every field.
 - **min_nexp** (optional, default: 60): Minimum number of exposures to take
 - **exp_set_size** (optional, default: 10): Number of exposures per set
 - **filter_name** (optional): Filter to use for this observation

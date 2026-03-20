@@ -10,6 +10,7 @@ import re
 from contextlib import suppress
 
 import serial
+
 from panoptes.utils import error
 
 from panoptes.pocs.focuser.serial import AbstractSerialFocuser

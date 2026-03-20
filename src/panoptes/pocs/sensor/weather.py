@@ -41,6 +41,7 @@ class WeatherStation(PanBase):
         self.serial_port = serial_port or conf.get("serial_port", "/dev/ttyUSB0")
         self.name = name
         self.collection_name = db_collection
+        self.store_permanently = conf.pop("store_permanently", False)
 
         self.logger.debug(f"Setting up weather station connection for {name=} on {self.serial_port}")
         self.weather_station = CloudSensor(serial_port=self.serial_port, **conf)
@@ -63,7 +64,7 @@ class WeatherStation(PanBase):
         """Record the rolling mean of the power readings in the database."""
         recent_values = self.weather_station.get_reading()
 
-        self.db.insert_current(self.collection_name, recent_values, store_permanently=False)
+        self.db.insert_current(self.collection_name, recent_values, store_permanently=self.store_permanently)
 
         return recent_values
 

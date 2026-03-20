@@ -9,10 +9,11 @@ import subprocess
 
 import typer
 from astropy import units as u
-from panoptes.utils.config.client import get_config, server_is_running, set_config
 from pydantic import BaseModel
 from rich import print, prompt
 from rich.console import Console
+
+from panoptes.utils.config.client import get_config, server_is_running, set_config
 
 from panoptes.pocs.utils.logger import get_logger
 
@@ -34,7 +35,7 @@ class HostInfo(BaseModel):
         return f"{self.host}:{self.port}"
 
 
-app = typer.Typer()
+app = typer.Typer(no_args_is_help=True)
 host_info: dict[str, HostInfo | None] = {"config_server": None}
 logger = get_logger(stderr_log_level="ERROR")
 

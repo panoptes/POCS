@@ -6,8 +6,8 @@ if command -v arduino-cli &> /dev/null; then
   exit 0
 fi
 
-# Make sure we are at home.
-cd
+# Make sure we are at home or give a warning and exit.
+cd "$HOME" || { echo "Could not change to home directory."; exit 1; }
 
 # Get the arduino-cli tool and install.
 curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh | sh
@@ -16,10 +16,3 @@ curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.
 "${HOME}/bin/arduino-cli" core update-index
 "${HOME}/bin/arduino-cli" core install arduino:avr
 "${HOME}/bin/arduino-cli" lib install ArduinoJson
-
-# Ask if the user wants to install the power board software.
-read -p "Do you want to install the power board software? [y/N] " -n 1 -r
-echo
-if [[ $REPLY =~ ^[Yy]$ ]]; then
-  source ./install-power-board.sh
-fi

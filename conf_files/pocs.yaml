@@ -94,6 +94,8 @@ cameras:
     keep_jpgs: True
     readout_time: 5.0  # seconds
     timeout: 60  # seconds
+    exptime: 120  # Default exposure time in seconds (used when not specified in field files)
+                  # For ZWO cameras, you may want to use shorter exposures, e.g., 30 seconds
     filter_type: RGGB
     file_extension: cr2
     endpoint:  # Used for remote cameras
@@ -137,6 +139,7 @@ environment:
     safety_delay: 15  # minutes from bad reading until safe again
     capture_delay: 60  # seconds between taking measurements
     num_readings: 5  # number of readings to average for each measurement
+    store_permanently: False  # Whether to store all weather readings permanently (e.g. in a database)
     thresholds:
       cloudy: -25  # Cloudy threshold in delta degrees C
       very_cloudy: -15  # Very cloudy threshold in delta degrees C

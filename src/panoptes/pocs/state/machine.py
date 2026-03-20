@@ -1,13 +1,14 @@
 from contextlib import suppress
 from pathlib import Path
 
+from transitions import Machine
+from transitions.extensions.states import Tags as MachineState
+
 from panoptes.utils import error
 from panoptes.utils.config.client import get_config
 from panoptes.utils.library import load_module
 from panoptes.utils.serializers import from_yaml
 from panoptes.utils.utils import listify
-from transitions import Machine
-from transitions.extensions.states import Tags as MachineState
 
 
 class PanStateMachine(Machine):

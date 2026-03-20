@@ -10,6 +10,7 @@ import enum
 
 import numpy as np
 from astropy import units as u
+
 from panoptes.utils import error
 from panoptes.utils.utils import get_quantity_value
 

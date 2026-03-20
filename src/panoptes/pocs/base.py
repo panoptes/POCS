@@ -7,9 +7,10 @@ shared lightweight database handle used throughout the project.
 import os
 from typing import Any
 
+from requests.exceptions import ConnectionError
+
 from panoptes.utils.config import client
 from panoptes.utils.database import PanDB
-from requests.exceptions import ConnectionError
 
 from panoptes.pocs import __version__, hardware
 from panoptes.pocs.utils.logger import get_logger

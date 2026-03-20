@@ -18,12 +18,13 @@ from astropy.wcs import WCS, FITSFixedWarning
 from matplotlib import pyplot as plt
 from matplotlib.figure import Figure
 from matplotlib.patches import Circle
-from panoptes.utils.error import PanError
-from panoptes.utils.images import fits
-from panoptes.utils.images.fits import get_solve_field, get_wcsinfo, getdata
 from rich import print
 from skimage.feature import canny
 from skimage.transform import hough_circle, hough_circle_peaks
+
+from panoptes.utils.error import PanError
+from panoptes.utils.images import fits
+from panoptes.utils.images.fits import get_solve_field, get_wcsinfo, getdata
 
 warnings.simplefilter("ignore", category=FITSFixedWarning)
 

@@ -11,6 +11,7 @@ from astropy import units as u
 from astropy.coordinates import Latitude, Longitude, SkyCoord
 from astropy.coordinates.earth import EarthLocation
 from astropy.time import Time
+
 from panoptes.utils import error as error
 from panoptes.utils.time import current_time
 

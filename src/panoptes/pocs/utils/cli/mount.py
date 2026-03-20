@@ -15,19 +15,20 @@ import typer
 from astropy import units as u
 from astropy.coordinates import AltAz
 from human_readable import time_delta as friendly_time_delta
+from pick import pick
+from rich import print
+
 from panoptes.utils.config.client import set_config
 from panoptes.utils.rs232 import SerialData
 from panoptes.utils.serial.device import get_serial_port_info
 from panoptes.utils.time import CountdownTimer, current_time
-from pick import pick
-from rich import print
 
 from panoptes.pocs.mount import create_mount_from_config
 from panoptes.pocs.mount.ioptron import MountInfo
 from panoptes.pocs.utils.coords import get_target_coords
 from panoptes.pocs.utils.location import create_location_from_config
 
-app = typer.Typer()
+app = typer.Typer(no_args_is_help=True)
 
 
 @app.command(name="park")

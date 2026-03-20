@@ -1,5 +1,6 @@
 import pytest
 import requests
+
 from panoptes.utils import error
 from panoptes.utils.config.client import set_config
 from panoptes.utils.serializers import to_json

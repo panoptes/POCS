@@ -11,6 +11,7 @@ from threading import Timer
 import numpy as np
 from astropy import units as u
 from astropy.io import fits
+
 from panoptes.utils.images import fits as fits_utils
 from panoptes.utils.time import CountdownTimer
 from panoptes.utils.utils import get_quantity_value

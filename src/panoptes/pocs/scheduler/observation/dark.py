@@ -7,6 +7,7 @@ lengths, saving outputs under an images/dark subdirectory.
 import os
 
 from astropy import units as u
+
 from panoptes.utils.utils import get_quantity_value, listify
 
 from panoptes.pocs.scheduler.field import Field
@@ -30,11 +31,17 @@ class DarkObservation(Observation):
             exptimes = self.get_config("calibs.dark.exposure_times")
         self._exptimes = exptimes
 
-        # Create the observation
+        # Create the observation - use first exptime for initialization
         min_nexp = len(self._exptimes)
         exp_set_size = min_nexp
         field = Field("Dark", position=position)
-        super().__init__(field=field, min_nexp=min_nexp, exp_set_size=exp_set_size, dark=True)
+        super().__init__(
+            field=field,
+            exptime=self._exptimes[0],  # Pass first exptime to parent
+            min_nexp=min_nexp,
+            exp_set_size=exp_set_size,
+            dark=True,
+        )
 
         # Specify directory root for file storage
         self._directory = os.path.join(self._image_dir, "dark")

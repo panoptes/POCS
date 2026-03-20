@@ -2,6 +2,7 @@ import os
 
 import pytest
 from astropy.coordinates import EarthLocation
+
 from panoptes.utils.config.client import get_config
 from panoptes.utils.time import current_time
 from panoptes.utils.utils import altaz_to_radec

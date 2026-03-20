@@ -186,3 +186,23 @@ def test_observation_from_dict_without_tags():
     obs = Observation.from_dict(observation_config)
     assert obs.tags == []
     assert obs.priority == 100
+
+
+def test_default_exptime_from_config(field):
+    """Test that default exptime comes from camera config when not specified."""
+    # The testing.yaml config sets cameras.defaults.exptime to 120, so the configured default is used
+    obs = Observation(field)
+    assert obs.exptime == 120 * u.second
+
+
+def test_observation_from_dict_without_exptime():
+    """Test creating observation from dict without exptime uses camera config default."""
+    observation_config = {
+        "field": {"name": "Test Field", "position": "20h00m43.7135s +22d42m39.0645s"},
+        "observation": {"priority": 100},  # No exptime specified
+    }
+
+    obs = Observation.from_dict(observation_config)
+    # Should use default from config (120 seconds in test config)
+    assert obs.exptime == 120 * u.second
+    assert obs.priority == 100

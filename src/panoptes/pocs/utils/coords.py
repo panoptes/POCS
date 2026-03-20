@@ -7,6 +7,7 @@ from astropy.coordinates import SkyCoord, get_body, solar_system_ephemeris
 from astropy.coordinates.name_resolve import NameResolveError
 from astropy.time import Time
 from astroquery.jplhorizons import Horizons
+
 from panoptes.utils.time import current_time
 
 
