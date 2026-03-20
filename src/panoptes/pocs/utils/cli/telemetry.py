@@ -316,7 +316,7 @@ class TelemetryApp(App):
     def update_telemetry(self) -> None:
         """Fetch latest telemetry and update widgets."""
         try:
-            current_data = self.client.current()
+            current_data = self.client.current().get("current", {})
         except Exception as e:
             # Show error in some way?
             self.notify(f"Error fetching telemetry: {e!r}", severity="error")

@@ -250,11 +250,13 @@ async def test_telemetry_app_update_success():
     app = TelemetryApp()
     app.client = MagicMock()
     app.client.current.return_value = {
-        "weather": {"data": {"is_safe": True}, "ts": "2026-03-19T12:00:00Z"},
-        "power": {"data": {"ac_ok": True}, "ts": "2026-03-19T12:00:00Z"},
-        "safety": {"data": {"ac_power": True}, "ts": "2026-03-19T12:00:00Z"},
-        "status": {"data": {"state": "ready"}, "ts": "2026-03-19T12:00:00Z"},
-        "images": {"data": {"field_name": "M42"}, "ts": "2026-03-19T12:00:00Z"},
+        "current": {
+            "weather": {"data": {"is_safe": True}, "ts": "2026-03-19T12:00:00Z"},
+            "power": {"data": {"ac_ok": True}, "ts": "2026-03-19T12:00:00Z"},
+            "safety": {"data": {"ac_power": True}, "ts": "2026-03-19T12:00:00Z"},
+            "status": {"data": {"state": "ready"}, "ts": "2026-03-19T12:00:00Z"},
+            "images": {"data": {"field_name": "M42"}, "ts": "2026-03-19T12:00:00Z"},
+        }
     }
 
     # Textual compose happens during run, but we can mock query_one
