@@ -12,7 +12,6 @@ from textual.app import App, ComposeResult
 from textual.containers import Grid
 from textual.widgets import Footer, Header, Static
 
-from panoptes.utils.config.client import get_config
 from panoptes.utils.telemetry import TelemetryClient
 
 app = typer.Typer(no_args_is_help=True)
@@ -109,24 +108,10 @@ class TelemetryDisplay(Static):
 class WeatherDisplay(TelemetryDisplay):
     """Display weather telemetry."""
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        try:
-            self.thresholds = get_config("environment.weather.thresholds", default={})
-        except Exception:
-            self.thresholds = {}
-
     def update_data(self, data: dict[str, Any], timestamp: str | None = None) -> None:
         if not data:
             self.update("No weather data")
             return
-
-        # Try to fetch thresholds if not already loaded (e.g. if config server was down)
-        if not self.thresholds:
-            try:
-                self.thresholds = get_config("environment.weather.thresholds", default={})
-            except Exception:
-                pass
 
         is_safe = data.get("is_safe", False)
         safe_color = "green" if is_safe else "red"
@@ -140,13 +125,10 @@ class WeatherDisplay(TelemetryDisplay):
         temp_diff = sky_temp - ambient_temp
         table.add_row("Ambient Temp", f"{ambient_temp:.1f} C")
         table.add_row("Sky Temp", f"{sky_temp:.1f} C")
-
-        cloudy_threshold = self.thresholds.get("cloudy", "N/A")
-        table.add_row("Sky - Ambient", f"{temp_diff:.1f} C [italic blue]({cloudy_threshold})[/]")
+        table.add_row("Sky - Ambient", f"{temp_diff:.1f} C")
 
         wind_speed = self.get_val(data, "wind_speed")
-        wind_threshold = self.thresholds.get("windy", "N/A")
-        table.add_row("Wind Speed", f"{wind_speed:.1f} m/s [italic blue]({wind_threshold})[/]")
+        table.add_row("Wind Speed", f"{wind_speed:.1f} m/s")
 
         for key in ["cloud", "wind", "rain"]:
             condition = data.get(f"{key}_condition", "Unknown")
