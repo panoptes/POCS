@@ -38,10 +38,12 @@ class PowerReading(TelemetryBase):
     type: str = "power"
     ac_ok: bool | None = None
     battery_low: bool | None = None
-    mount: float | None = None
-    fans: float | None = None
-    weather_station: float | None = None
-    # Add other relays as needed based on specific hardware configuration
+    relay_0: float | None = None
+    relay_1: float | None = None
+    relay_2: float | None = None
+    relay_3: float | None = None
+    relay_4: float | None = None
+    relay_labels: dict[str, str] = Field(default_factory=dict)
 
 
 class SafetyStatus(TelemetryBase):

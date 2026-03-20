@@ -158,9 +158,21 @@ class PowerDisplay(TelemetryDisplay):
         batt_text = "LOW" if batt_low else "OK"
         table.add_row("Battery", f"[{batt_color}]{batt_text}[/]")
 
-        table.add_row("Mount Amps", f"{self.get_val(data, 'mount'):.2f} A")
-        table.add_row("Fans Amps", f"{self.get_val(data, 'fans'):.2f} A")
-        table.add_row("Weather Amps", f"{self.get_val(data, 'weather_station'):.2f} A")
+        # Show all five relays
+        relay_labels = data.get("relay_labels", {})
+        for i in range(5):
+            relay_key = f"relay_{i}"
+            label = relay_labels.get(relay_key, relay_key.upper())
+            val = self.get_val(data, relay_key, default=-1)
+
+            if val < 0:
+                status_text = "[red]OFF[/]"
+                amps_text = ""
+            else:
+                status_text = "[green]ON[/]"
+                amps_text = f"{val:.2f} A"
+
+            table.add_row(label, f"{status_text} {amps_text}")
 
         self.update(Panel(table, title="Power", subtitle=self.get_footer(timestamp)))
 

@@ -255,7 +255,18 @@ class PowerBoard(PanBase):
 
         # Record to telemetry server.
         try:
-            reading = PowerReading(**recent_values)
+            # Map from label back to relay index for PowerReading.
+            relay_data = {
+                "ac_ok": recent_values.get("ac_ok"),
+                "battery_low": recent_values.get("battery_low"),
+                "relay_labels": {},
+            }
+            for relay in self.relays:
+                relay_key = relay.name.lower()
+                relay_data[relay_key] = recent_values.get(relay.label)
+                relay_data["relay_labels"][relay_key] = relay.label
+
+            reading = PowerReading(**relay_data)
             self.record_telemetry(reading, event_type=collection_name or self.arduino_board_name)
         except Exception as e:
             self.logger.warning(f"Could not record power telemetry: {e!r}")
