@@ -401,7 +401,7 @@ def setup_mount(
                         # Add a newline to the end of the file.
                         udev_str += "\n"
 
-                        udev_fn = Path("92-panoptes.rules")
+                        udev_fn = Path("92-panoptes-mount.rules")
                         udev_fn.write_text(udev_str)
                         write_port = "/dev/mount"
 
