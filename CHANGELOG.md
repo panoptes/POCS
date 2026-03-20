@@ -2,6 +2,10 @@
 
 # Unreleased
 
+### Fixed
+
+- Fixed `pocs power` CLI commands causing Pydantic validation errors in the power service by correctly sending JSON payloads. #1411
+
 ### Added
 
 - Calibration frame commands for taking bias frames and flat fields

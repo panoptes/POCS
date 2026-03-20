@@ -177,7 +177,7 @@ def control(
 
     try:
         relay_command = RelayCommand(relay=relay, command=command)
-        res = requests.post(url, data=relay_command.json())
+        res = requests.post(url, json=relay_command.model_dump())
         content = res.json() if res.ok else res.content.decode()
         print(content)
     except requests.exceptions.ConnectionError:
