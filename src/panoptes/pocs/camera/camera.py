@@ -627,7 +627,10 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             name=f"{self.name}PollExposureThread",
             target=self._poll_exposure,
             args=(readout_args, seconds),
-            kwargs=dict(timeout=timeout_duration, interval=self.readout_time),
+            kwargs=dict(
+                timeout=timeout_duration,
+                interval=get_quantity_value(self.readout_time, u.second)
+            ),
         )
         readout_thread.start()
 
@@ -879,9 +882,13 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         If the timeout is reached, an `error.Timeout` is raised.
         """
         if timeout is None:
-            timer_duration = self.timeout + self.readout_time + get_quantity_value(exposure_time, u.second)
+            timer_duration = (
+                get_quantity_value(self.timeout, u.second) +
+                get_quantity_value(self.readout_time, u.second) +
+                get_quantity_value(exposure_time, u.second)
+            )
         else:
-            timer_duration = timeout
+            timer_duration = get_quantity_value(timeout, u.second)
         self.logger.debug(f"Polling exposure with timeout of {timer_duration} seconds.")
         timer = CountdownTimer(duration=timer_duration, name=f"{self.name}PollExposure")
         timer.sleep(max_sleep=get_quantity_value(exposure_time, unit="second"))
@@ -890,7 +897,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
                 if timer.expired():
                     msg = f"Timeout ({timer.duration=}) waiting for exposure on {self}"
                     raise error.Timeout(msg)
-                timer.sleep(max_sleep=interval)
+                timer.sleep(max_sleep=get_quantity_value(interval, u.second))
         except Exception as err:
             # Error returned by driver at some point while polling
             self.logger.error(f"Error while waiting for exposure on {self}: {err!r}")
