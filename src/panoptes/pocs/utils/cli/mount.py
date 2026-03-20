@@ -403,7 +403,7 @@ def setup_mount(
 
                         udev_fn = Path("92-panoptes.rules")
                         udev_fn.write_text(udev_str)
-                        write_port = "/dev/ioptron"
+                        write_port = "/dev/mount"
 
                         # Use sudo to write the udev entry to the correct location.
                         subprocess.run(
