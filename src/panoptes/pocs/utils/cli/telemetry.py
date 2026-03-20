@@ -53,11 +53,20 @@ def stop(
 
 @app.command(name="current", help="Display the current telemetry reading.")
 def current(
+    event_type: str = typer.Argument(None, help="The type of telemetry data to display."),
+    follow: bool = typer.Option(False, "--follow", "-f", help="Follow the telemetry stream."),
+    interval: float = typer.Option(2.0, help="The interval between updates when following."),
     host: str = typer.Option("localhost", help="Telemetry server host."),
     port: int = typer.Option(6562, help="Telemetry server port."),
 ):
     """Display the current telemetry reading."""
     cmd = ["panoptes-utils", "telemetry", "current", "--host", host, "--port", str(port)]
+    if event_type:
+        cmd.append(event_type)
+    if follow:
+        cmd.append("--follow")
+        cmd.append("--interval")
+        cmd.append(str(interval))
     subprocess.run(cmd)
 
 
