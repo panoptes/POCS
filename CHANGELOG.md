@@ -2,6 +2,8 @@
 
 # Unreleased
 
+## 0.8.1 - 2026-03-20
+
 ### Fixed
 
 - Fixed `pocs power` CLI commands causing Pydantic validation errors in the power service by correctly sending JSON payloads. #1411
