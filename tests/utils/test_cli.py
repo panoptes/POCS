@@ -27,6 +27,7 @@ def test_no_args_shows_help(cli_runner):
     assert "config" in result.output
     assert "mount" in result.output
     assert "camera" in result.output
+    assert "telemetry" in result.output
 
 
 def test_help_flag_shows_help(cli_runner):

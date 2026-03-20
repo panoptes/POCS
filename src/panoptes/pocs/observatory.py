@@ -33,6 +33,7 @@ from panoptes.pocs.scheduler.observation.compound import Observation as Compound
 from panoptes.pocs.scheduler.scheduler import BaseScheduler
 from panoptes.pocs.utils.cloud import upload_image as image_uploader
 from panoptes.pocs.utils.location import create_location_from_config
+from panoptes.pocs.utils.telemetry import ImageMetadata
 
 
 class Observatory(PanBase):
@@ -669,7 +670,14 @@ class Observatory(PanBase):
             if record_observations:
                 self.logger.debug(f"Adding current observation to db: {image_id}")
                 metadata["status"] = "complete"
-                self.db.insert_current("images", metadata, store_permanently=False)
+
+                # Record to telemetry server.
+                try:
+                    # Filter metadata to match model.
+                    image_metadata = ImageMetadata(**metadata)
+                    self.record_telemetry(image_metadata)
+                except Exception as e:
+                    self.logger.warning(f"Could not record image telemetry: {e!r}")
 
     def analyze_recent(self):
         """Analyze the most recent exposure
@@ -701,8 +709,7 @@ class Observatory(PanBase):
             self.logger.debug(f"Offset Info: {self.current_offset_info}")
 
             # Store the offset information
-            self.db.insert_current(
-                "offset_info",
+            self.record_telemetry(
                 {
                     "image_id": image_id,
                     "d_ra": self.current_offset_info.delta_ra.value,
@@ -710,7 +717,7 @@ class Observatory(PanBase):
                     "magnitude": self.current_offset_info.magnitude.value,
                     "unit": "arcsec",
                 },
-                store_permanently=False,
+                event_type="offset_info",
             )
 
         except error.SolveError:

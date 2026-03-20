@@ -194,7 +194,7 @@ def test_is_weather_safe_no_simulator(pocs):
     os.environ["POCSTIME"] = t0_str
 
     # Insert a dummy weather record
-    pocs.db.insert_current("weather", {"safe": True, "timestamp": t0_str})
+    pocs.record_telemetry({"safe": True, "timestamp": t0_str}, event_type="weather")
     assert pocs.is_weather_safe() is True
 
     # Set a time 185 seconds later
@@ -217,22 +217,18 @@ def test_no_ac_power(pocs):
     for v in [True, 12.4, 0.0, False]:
         has_power = bool(v)
 
-        # Add a fake power entry in data base
-        pocs.db.insert_current("power", {"main": v})
+        # Add a fake power entry via telemetry
+        pocs.record_telemetry({"main": v, "timestamp": current_time().isot}, event_type="power")
 
-        # Check for safe entry in database
+        # Check for safe entry
         assert pocs.has_ac_power() == has_power
         assert pocs.is_safe() == has_power
 
-        # Check for stale entry in database
+        # Check for stale entry
         assert pocs.has_ac_power(stale=0.1) is False
 
         # But double check it still matches longer entry
         assert pocs.has_ac_power() == has_power
-
-        # Remove entry and try again
-        pocs.db.clear_current("power")
-        assert pocs.has_ac_power() is False
 
 
 def test_power_down_while_running(pocs):
@@ -308,7 +304,7 @@ def test_pocs_park_to_ready_with_observations(pocs):
 def test_pocs_park_to_ready_without_observations(pocs):
     os.environ["POCSTIME"] = "2020-01-01 08:00:00"
     pocs.logger.warning("Inserting safe weather reading")
-    pocs.db.insert_current("weather", {"safe": True})
+    pocs.record_telemetry({"safe": True, "timestamp": current_time().isot}, event_type="weather")
 
     assert pocs.is_safe() is True
     assert pocs.state == "sleeping"
@@ -416,7 +412,7 @@ def test_unsafe_park(observatory, valid_observation, pocstime_night):
     pocs.observatory.scheduler.clear_available_observations()
     pocs.observatory.scheduler.add_observation(valid_observation)
     observatory.logger.warning("Inserting safe weather reading")
-    observatory.db.insert_current("weather", {"safe": True})
+    observatory.record_telemetry({"safe": True, "timestamp": current_time().isot}, event_type="weather")
 
     assert pocs.connected is True
     assert pocs.is_initialized is False
@@ -450,7 +446,7 @@ def test_unsafe_park(observatory, valid_observation, pocstime_night):
     while pocs.state != "slewing":
         pass
     pocs.logger.info("Inserting bad weather record.")
-    observatory.db.insert_current("weather", {"safe": False})
+    observatory.record_telemetry({"safe": False, "timestamp": current_time().isot}, event_type="weather")
 
     # No longer safe, so should transition to parking then sleep.
     pocs.logger.info("Waiting for shutdown.")

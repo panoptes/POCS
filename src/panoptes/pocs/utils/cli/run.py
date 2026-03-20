@@ -81,7 +81,8 @@ def get_pocs(context: typer.Context):
     pocs.logger.debug("POCS created from config")
     pocs.logger.debug("Sending POCS config to cloud")
     try:
-        pocs.db.insert_current("config", pocs.get_config())
+        config = pocs.get_config()
+        pocs.record_telemetry(config, event_type="config")
     except Exception as e:
         pocs.logger.warning(f"Unable to send config to cloud: {e}")
 

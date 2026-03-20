@@ -21,6 +21,7 @@ from panoptes.pocs.observatory import Observatory
 from panoptes.pocs.scheduler.observation.base import Observation
 from panoptes.pocs.state.machine import PanStateMachine
 from panoptes.pocs.utils import error
+from panoptes.pocs.utils.telemetry import ObservatoryStatus, SafetyStatus
 
 
 class POCS(PanStateMachine, PanBase):
@@ -203,15 +204,36 @@ class POCS(PanStateMachine, PanBase):
                 coarse system metrics (e.g., free space), and the observatory status.
         """
         try:
+            obs_status = self.observatory.status
             status = {
                 "state": self.state,
                 "next_state": self.next_state,
                 "system": {
                     "free_space": str(self._free_space),
                 },
-                "observatory": self.observatory.status,
+                "observatory": obs_status,
             }
-            self.db.insert_current("status", status, store_permanently=False)
+
+            # Record to telemetry server.
+            try:
+                # Map observatory status to the model.
+                mount_status = obs_status.get("mount", {})
+                observer_status = obs_status.get("observer", {})
+                telemetry_status = ObservatoryStatus(
+                    state=self.state,
+                    next_state=self.next_state,
+                    mount_ra=mount_status.get("current_ra"),
+                    mount_dec=mount_status.get("current_dec"),
+                    mount_state=mount_status.get("state"),
+                    is_parked=mount_status.get("is_parked", True),
+                    sun_alt=observer_status.get("local_sun_position", -90.0),
+                    moon_alt=observer_status.get("local_moon_alt", -90.0),
+                    moon_illumination=observer_status.get("local_moon_illumination", 0.0),
+                )
+                self.record_telemetry(telemetry_status)
+            except Exception as e:
+                self.logger.warning(f"Could not record observatory telemetry: {e!r}")
+
             return status
         except Exception as e:  # pragma: no cover
             self.logger.warning(f"Can't get status: {e!r}")
@@ -427,8 +449,12 @@ class POCS(PanStateMachine, PanBase):
             )
         safe = all([v for k, v in is_safe_values.items() if k not in ignore])
 
-        # Insert safety reading
-        self.db.insert_current("safety", is_safe_values, store_permanently=False)
+        # Record to telemetry server.
+        try:
+            safety_reading = SafetyStatus(**is_safe_values)
+            self.record_telemetry(safety_reading)
+        except Exception as e:
+            self.logger.warning(f"Could not record safety telemetry: {e!r}")
 
         if not safe:
             if no_warning is False:
@@ -493,30 +519,41 @@ class POCS(PanStateMachine, PanBase):
         if self._in_simulator("weather"):
             return True
 
-        # Get current weather readings from database
+        # Get current weather readings from telemetry server.
         is_safe = False
         try:
-            record = self.db.get_current("weather")
-            if record is None:
+            record = self.telemetry.current_event("weather")
+            if not record or "data" not in record:
                 return False
 
+            data = record["data"]
             is_safe = False
             for key in ["safe", "is_safe"]:
                 with suppress(KeyError):
-                    is_safe = bool(record["data"][key])
+                    is_safe = bool(data[key])
 
             tz = ZoneInfo(self.get_config("location.timezone", default="UTC"))
 
-            timestamp = Time(record["data"]["timestamp"].replace(tzinfo=tz))
-            age = (current_time().datetime - timestamp.datetime).total_seconds()
+            # Use helper to get timestamp (prefers mocked time in data).
+            date = self._get_telemetry_timestamp(record)
+            if not date:
+                self.logger.warning(f"Could not extract timestamp from telemetry record: {record!r}")
+                return False
+
+            timestamp = Time(date)
+            # Ensure we have a timezone-aware datetime for comparison.
+            if timestamp.datetime.tzinfo is None:
+                timestamp = Time(timestamp.datetime.replace(tzinfo=tz))
+
+            age = (current_time().datetime - timestamp.datetime.replace(tzinfo=None)).total_seconds()
 
             self.logger.debug(f"Weather Safety: {is_safe=} {age=:.0f}s [{timestamp}]")
 
         except Exception as e:  # pragma: no cover
-            self.logger.error(f"No weather record in database: {e!r}")
+            self.logger.error(f"Error checking weather telemetry: {e!r}")
         else:
             if age >= stale:
-                self.logger.warning("Weather record looks stale, marking unsafe.")
+                self.logger.warning(f"Weather record looks stale ({age=:.0f}s), marking unsafe.")
                 is_safe = False
 
         return is_safe
@@ -536,7 +573,11 @@ class POCS(PanStateMachine, PanBase):
         Returns:
             bool: True if enough space
         """
-        directory = directory or os.getenv("PANDIR")
+        directory = directory or os.getenv("PANDIR") or "."
+        if not os.path.exists(directory):
+            self.logger.warning(f"Directory {directory!r} does not exist, assuming enough space.")
+            return True
+
         req_space = required_space.to(u.gigabyte)
         self._free_space = get_free_space(directory=directory)
 
@@ -561,10 +602,9 @@ class POCS(PanStateMachine, PanBase):
     def has_ac_power(self, stale=90):
         """Check for system AC power.
 
-        Power readings are done by the arduino and are placed in the metadata
-        database. This method looks for entries saved with type `power` and key
-        `main` the `current` collection. The method will also return False if
-        the record is older than `stale` seconds.
+        Power readings are done by the arduino and are recorded as telemetry.
+        This method checks the current 'power' event from the telemetry server.
+        The method will also return False if the record is older than `stale` seconds.
 
         Args:
             stale (int, optional): Number of seconds before record is stale,
@@ -580,26 +620,37 @@ class POCS(PanStateMachine, PanBase):
         if self._in_simulator("power"):
             return True
 
-        # Get current power readings from database
+        # Get current power readings from telemetry server.
         try:
-            record = self.db.get_current("power")
-            if record is None:
-                self.logger.warning('No mains "power" reading found in database.')
+            record = self.telemetry.current_event("power")
+            if not record or "data" not in record:
+                self.logger.warning('No "power" record found.')
+                return False
 
+            data = record["data"]
             has_power = False  # Assume not.
             for power_key in ["main", "mains", "ac_ok"]:  # Legacy support.
                 with suppress(KeyError):
-                    has_power = bool(record["data"][power_key])
+                    has_power = bool(data[power_key])
 
-            date = record["date"].replace(tzinfo=None)  # current_time is timezone naive
+            # Use helper to get timestamp (prefers mocked time in data).
+            date = self._get_telemetry_timestamp(record)
+            if not date:
+                self.logger.warning(f"Could not extract timestamp from telemetry record: {record!r}")
+                return False
+
+            # Ensure naive datetime for comparison with current_time().datetime (which is naive).
+            if date.tzinfo is not None:
+                date = date.replace(tzinfo=None)
+
             age = (current_time().datetime - date).total_seconds()
 
             self.logger.debug(f"Power Safety: {has_power} [{age:.0f}s old - {date:%m-%d %H:%M:%S}]")
 
         except (TypeError, KeyError) as e:
-            self.logger.warning(f"No record found in DB: {e!r}")
+            self.logger.warning(f"No valid record found: {e!r}")
         except Exception as e:  # pragma: no cover
-            self.logger.error(f"Error checking weather: {e!r}")
+            self.logger.error(f"Error checking power: {e!r}")
         else:
             if age > stale:
                 self.logger.warning("Power record looks stale, marking unsafe.")

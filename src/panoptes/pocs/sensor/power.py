@@ -22,6 +22,7 @@ from panoptes.utils.serializers import from_json, to_json
 from panoptes.utils.time import current_time
 
 from panoptes.pocs.base import PanBase
+from panoptes.pocs.utils.telemetry import PowerReading
 
 
 class PinState(IntEnum):
@@ -234,7 +235,8 @@ class PowerBoard(PanBase):
     def to_dataframe(self, **kwargs):
         """Make a dataframe from the latest readings."""
         try:
-            columns = ["time", "ac_ok", "battery_low"] + list(self.relay_labels.keys())
+            relay_cols = [r.label for r in self.relays]
+            columns = ["time", "ac_ok", "battery_low"] + relay_cols
             df0 = pd.DataFrame(self.arduino_board.readings, columns=columns)
             df0.set_index(["time"], inplace=True)
         except Exception:
@@ -242,7 +244,7 @@ class PowerBoard(PanBase):
 
         return df0
 
-    def record(self, collection_name: str = None):
+    def record(self, collection_name: str | None = None):
         """Record the rolling mean of the power readings in the database.
 
         Args:
@@ -252,14 +254,37 @@ class PowerBoard(PanBase):
         """
         recent_values = self.readings
 
-        collection_name = collection_name or self.arduino_board_name
-        self.db.insert_current(collection_name, recent_values, store_permanently=False)
+        # Record to telemetry server.
+        try:
+            # Map from label back to relay index for PowerReading.
+            relay_data = {
+                "ac_ok": recent_values.get("ac_ok"),
+                "battery_low": recent_values.get("battery_low"),
+                "relay_labels": {},
+            }
+            for relay in self.relays:
+                relay_key = relay.name.lower()
+                # Try to get value by label, fallback to relay name.
+                val = recent_values.get(relay.label)
+                if val is None:
+                    val = recent_values.get(relay.name)
+
+                relay_data[relay_key] = val
+                relay_data["relay_labels"][relay_key] = relay.label
+
+            reading = PowerReading(**relay_data)
+            self.record_telemetry(reading, event_type=collection_name or self.arduino_board_name)
+        except Exception as e:
+            self.logger.warning(f"Could not record power telemetry: {e!r}")
 
         return recent_values
 
     def setup_relays(self, relays: dict[str, dict]):
         """Setup the relays."""
-        for relay_name, relay_config in relays.items():
+        relays = relays or {}
+        for relay_member in TruckerRelayIndex:
+            relay_name = relay_member.name
+            relay_config = relays.get(relay_name, {})
             relay_index = TruckerRelayIndex[relay_name]
             relay_label = relay_config.get("label") or relay_name
             default_state = PinState[relay_config.get("default_state", "off").upper()]
@@ -268,7 +293,7 @@ class PowerBoard(PanBase):
             self.logger.debug(f"Creating {relay_label=} for {relay_config!r}")
             relay = Relay(
                 name=relay_name,
-                label=relay_config.get("label", ""),
+                label=relay_label,
                 relay_index=relay_index,
                 default_state=default_state,
             )
@@ -335,15 +360,18 @@ class PowerBoard(PanBase):
             self.logger.debug("Did not get a full valid reading")
             return
 
-        # Todo: make sure not receiving stale or out of order data using `uptime`.
         # Create a list for the new data row and add common time and AC reading.
         new_data = [current_time().to_datetime(), data.get(ac_key, -1), data.get(battery_key, -1)]
-        for relay_index, read_relay in enumerate(self.relays):
-            # Update the state of the pin.
-            read_relay.state = PinState(data[relay_key][relay_index])
-            if read_relay.state == PinState.OFF:
-                # Give a negative value for off rather than zero.
-                data[values_key][relay_index] = -1
+        for relay_member in TruckerRelayIndex:
+            relay_index = relay_member.value
+            # If the relay is configured, update its state and potentially the value.
+            if relay_index < len(self.relays):
+                read_relay = self.relays[relay_index]
+                read_relay.state = PinState(data[relay_key][relay_index])
+                if read_relay.state == PinState.OFF:
+                    # Give a negative value for off rather than zero.
+                    data[values_key][relay_index] = -1
+
             # Record the new value.
             new_data.append(data[values_key][relay_index])
 

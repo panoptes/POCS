@@ -66,11 +66,19 @@ class RemoteMonitor(PanBase):
         sensor_data["date"] = current_time(flatten=True)
 
         if store_result and len(sensor_data) > 0:
-            self.db.insert_current(self.sensor_name, sensor_data, store_permanently=False)
+            # Record to telemetry server.
+            try:
+                self.record_telemetry(sensor_data, event_type=self.sensor_name)
+            except Exception as e:
+                self.logger.warning(f"Could not record remote sensor telemetry: {e!r}")
 
             # Make a separate power entry
             if "power" in sensor_data:
-                self.db.insert_current("power", sensor_data["power"], store_permanently=False)
+                # Record separate power telemetry.
+                try:
+                    self.record_telemetry(sensor_data["power"], event_type="power")
+                except Exception as e:
+                    self.logger.warning(f"Could not record remote power telemetry: {e!r}")
 
         self.logger.debug(f"Remote data: {sensor_data}")
 

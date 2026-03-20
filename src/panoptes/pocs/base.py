@@ -10,13 +10,13 @@ from typing import Any
 from requests.exceptions import ConnectionError
 
 from panoptes.utils.config import client
-from panoptes.utils.database import PanDB
+from panoptes.utils.telemetry import TelemetryClient
 
 from panoptes.pocs import __version__, hardware
 from panoptes.pocs.utils.logger import get_logger
 
-# Global database.
-PAN_DB_OBJ = None
+# Global telemetry client.
+PAN_TELEMETRY_OBJ = None
 
 # Cache for config values that are `remember`ed.
 PAN_CONFIG_CACHE = {}
@@ -25,7 +25,7 @@ PAN_CONFIG_CACHE = {}
 class PanBase:
     """Base class for other classes within the PANOPTES ecosystem
 
-    Defines common properties for each class (e.g. logger, config, db).
+    Defines common properties for each class (e.g. logger, config).
     """
 
     def __init__(self, config_host=None, config_port=None, *args, **kwargs):
@@ -43,16 +43,77 @@ class PanBase:
             log_dir=kwargs.get("log_dir", log_dir), cloud_logging_level=cloud_logging_level
         )
 
-        global PAN_DB_OBJ
-        if PAN_DB_OBJ is None:
-            # If the user requests a db_type then update runtime config.
-            db_name = kwargs.get("db_name", self.get_config("db.name", default="panoptes"))
-            db_folder = kwargs.get("db_folder", self.get_config("db.folder", default="json_store"))
-            db_type = kwargs.get("db_type", self.get_config("db.type", default="file"))
+        global PAN_TELEMETRY_OBJ
+        if PAN_TELEMETRY_OBJ is None:
+            telemetry_host = kwargs.get(
+                "telemetry_host",
+                os.getenv("PANOPTES_TELEMETRY_HOST", self.get_config("telemetry.host", default="localhost")),
+            )
+            telemetry_port = kwargs.get(
+                "telemetry_port",
+                os.getenv("PANOPTES_TELEMETRY_PORT", self.get_config("telemetry.port", default=6562)),
+            )
+            PAN_TELEMETRY_OBJ = TelemetryClient(host=telemetry_host, port=telemetry_port)
 
-            PAN_DB_OBJ = PanDB(db_name=db_name, storage_dir=db_folder, db_type=db_type)
+        self.telemetry = PAN_TELEMETRY_OBJ
 
-        self.db = PAN_DB_OBJ
+    def record_telemetry(self, model, **kwargs):
+        """Record a telemetry event.
+
+        This method centralizes data recording using the telemetry server.
+
+        Args:
+            model (pydantic.BaseModel | dict): The telemetry model or data to record.
+            **kwargs: Passed to `post_event`.
+        """
+        # Get event_type from kwargs if provided, then pop it.
+        event_type = kwargs.pop("event_type", "unknown")
+
+        if hasattr(model, "model_dump"):
+            data = model.model_dump(mode="json")
+            # Prefer model's type if available.
+            event_type = getattr(model, "type", event_type)
+        else:
+            data = model
+
+        # Record to telemetry server.
+        try:
+            return self.telemetry.post_event(event_type, data, **kwargs)
+        except Exception as e:
+            self.logger.warning(f"Could not record to telemetry server: {e!r}")
+
+    def _get_telemetry_timestamp(self, record):
+        """Helper to extract a timestamp from a telemetry record.
+
+        Prefer 'timestamp' in the data payload (useful for mocked time in tests),
+        falling back to the 'ts' field in the record envelope.
+
+        Args:
+            record (dict): The telemetry record from `current_event`.
+
+        Returns:
+            datetime.datetime | None: The extracted timestamp or None if not found.
+        """
+        if not record:
+            return None
+
+        data = record.get("data", {})
+        ts = data.get("timestamp") or record.get("ts")
+
+        if ts is None:
+            return None
+
+        from datetime import datetime
+
+        if isinstance(ts, str):
+            try:
+                return datetime.fromisoformat(ts.replace("Z", "+00:00"))
+            except Exception:
+                return None
+        elif isinstance(ts, datetime):
+            return ts
+
+        return None
 
     def get_config(
         self, key: str, default: Any | None = None, remember: bool = False, *args, **kwargs
