@@ -10,6 +10,7 @@
 
 ### Added
 
+- Added ability to decouple POCS hardware (Mount, Camera, Scheduler) into standalone FastAPI services. Hardware objects can now run as remote servers using `panoptes.pocs.services.*_api` and be accessed by the Observatory using remote proxies (`panoptes.pocs.mount.remote`, `panoptes.pocs.camera.remote`, `panoptes.pocs.scheduler.remote`) by specifying their endpoints in `pocs.yaml`.
 - Calibration frame commands for taking bias frames and flat fields
     - `pocs camera take-bias`: Takes bias frames (zero exposure), stacks them, and reports statistics (default: 10 frames)
     - `pocs run take-flats`: Takes flat field images with automatic exposure adjustment and mount positioning

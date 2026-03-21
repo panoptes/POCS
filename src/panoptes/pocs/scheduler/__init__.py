@@ -71,6 +71,10 @@ def create_scheduler_from_config(config=None, observer=None, iers_url=None, *arg
 
             constraints = create_constraints_from_config(config=scheduler_config)
 
+            # Pass endpoint_url if this is a remote scheduler
+            if "endpoint_url" in scheduler_config:
+                kwargs["endpoint_url"] = scheduler_config["endpoint_url"]
+
             # Create the Scheduler instance
             pocs_scheduler = module.Scheduler(
                 observer, fields_file=str(fields_path), constraints=constraints, *args, **kwargs

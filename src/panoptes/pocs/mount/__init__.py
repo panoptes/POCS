@@ -95,6 +95,10 @@ def create_mount_from_config(mount_info=None, earth_location=None, *args, **kwar
     except error.NotFound as e:
         raise error.MountNotFound(e)
 
+    # If it's a remote mount, pass the endpoint_url
+    if "endpoint_url" in mount_info:
+        kwargs["endpoint_url"] = mount_info["endpoint_url"]
+
     # Make the mount include site information
     mount = module.Mount(location=earth_location, *args, **kwargs)
 
