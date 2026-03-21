@@ -12,16 +12,25 @@ from panoptes.pocs.utils.logger import get_logger
 logger = get_logger()
 
 
+import asyncio
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """FastAPI lifespan context manager that manages the scheduler instance."""
     app.state.scheduler = None
-    try:
-        app.state.scheduler = create_scheduler_from_config(client_mode=False)
-        if app.state.scheduler:
-            logger.success("Scheduler created and initialized with fields.")
-    except Exception:
-        logger.exception("Failed to create scheduler from config")
+    
+    # Attempt to initialize hardware during startup.
+    # We retry a few times in case the config server is still starting up.
+    for i in range(10):
+        try:
+            logger.info(f"Startup attempt {i+1}/10 to create scheduler.")
+            app.state.scheduler = create_scheduler_from_config(client_mode=False)
+            if app.state.scheduler:
+                logger.success("Scheduler created and initialized with fields.")
+                break
+        except Exception as e:
+            logger.warning(f"Scheduler creation attempt {i+1} failed: {e!r}")
+            await asyncio.sleep(2)
     yield
 
 
@@ -31,6 +40,17 @@ app = FastAPI(lifespan=lifespan)
 def get_scheduler(request: Request):
     """Retrieve the scheduler instance from the FastAPI application state."""
     scheduler = getattr(request.app.state, "scheduler", None)
+    
+    # If scheduler not initialized, try once more lazily.
+    if scheduler is None:
+        logger.info("Scheduler not initialized, attempting lazy creation.")
+        try:
+            scheduler = create_scheduler_from_config(client_mode=False)
+            if scheduler:
+                request.app.state.scheduler = scheduler
+        except Exception as e:
+            logger.error(f"Lazy scheduler creation failed: {e!r}")
+
     if scheduler is None:
         raise HTTPException(status_code=503, detail="Scheduler not initialized")
     return scheduler

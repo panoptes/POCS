@@ -11,21 +11,27 @@ from panoptes.pocs.utils.logger import get_logger
 logger = get_logger()
 
 
+import asyncio
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """FastAPI lifespan context manager that manages the mount instance."""
     app.state.mount = None
-    try:
-        app.state.mount = create_mount_from_config(client_mode=False)
-        if app.state.mount:
-            logger.info("Mount created, attempting to initialize.")
-            try:
+    
+    # Attempt to initialize hardware during startup.
+    # We retry a few times in case the config server is still starting up.
+    for i in range(10):
+        try:
+            logger.info(f"Startup attempt {i+1}/10 to create mount.")
+            app.state.mount = create_mount_from_config(client_mode=False)
+            if app.state.mount:
+                logger.info("Mount created, attempting to initialize.")
                 app.state.mount.initialize()
                 logger.success("Mount initialized successfully.")
-            except Exception as e:
-                logger.error(f"Failed to initialize mount on startup: {e!r}")
-    except Exception:
-        logger.exception("Failed to create mount from config")
+                break
+        except Exception as e:
+            logger.warning(f"Mount initialization attempt {i+1} failed: {e!r}")
+            await asyncio.sleep(2)
 
     try:
         yield
@@ -45,6 +51,18 @@ app = FastAPI(lifespan=lifespan)
 def get_mount(request: Request):
     """Retrieve the mount instance from the FastAPI application state."""
     mount = getattr(request.app.state, "mount", None)
+    
+    # If the mount is not initialized (e.g. failed on startup), try again once.
+    if mount is None:
+        logger.info("Mount not initialized, attempting lazy creation.")
+        try:
+            mount = create_mount_from_config(client_mode=False)
+            if mount:
+                mount.initialize()
+                request.app.state.mount = mount
+        except Exception as e:
+            logger.error(f"Lazy mount creation failed: {e!r}")
+
     if mount is None:
         raise HTTPException(status_code=503, detail="Mount not initialized")
     return mount

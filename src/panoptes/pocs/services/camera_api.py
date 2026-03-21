@@ -12,24 +12,33 @@ from panoptes.pocs.utils.logger import get_logger
 logger = get_logger()
 
 
+import asyncio
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """FastAPI lifespan context manager that manages the camera instances."""
     app.state.cameras = {}
-    try:
-        cameras = create_cameras_from_config(client_mode=False) or {}
-        if cameras:
-            logger.info(f"Created {len(cameras)} cameras, attempting to connect.")
-            for cam_name, cam in cameras.items():
-                try:
-                    if not cam.is_connected:
-                        cam.connect()
-                    logger.success(f"Camera {cam_name} connected.")
-                except Exception as e:
-                    logger.error(f"Failed to connect camera {cam_name}: {e!r}")
-        app.state.cameras = cameras
-    except Exception:
-        logger.exception("Failed to create cameras from config")
+    
+    # Attempt to initialize hardware during startup.
+    # We retry a few times in case the config server is still starting up.
+    for i in range(10):
+        try:
+            logger.info(f"Startup attempt {i+1}/10 to create cameras.")
+            cameras = create_cameras_from_config(client_mode=False) or {}
+            if cameras:
+                logger.info(f"Created {len(cameras)} cameras, attempting to connect.")
+                for cam_name, cam in cameras.items():
+                    try:
+                        if not cam.is_connected:
+                            cam.connect()
+                        logger.success(f"Camera {cam_name} connected.")
+                    except Exception as e:
+                        logger.error(f"Failed to connect camera {cam_name}: {e!r}")
+                app.state.cameras = cameras
+                break
+        except Exception as e:
+            logger.warning(f"Camera creation attempt {i+1} failed: {e!r}")
+            await asyncio.sleep(2)
     yield
 
 
@@ -38,7 +47,22 @@ app = FastAPI(lifespan=lifespan)
 
 def get_cameras(request: Request):
     """Retrieve the cameras dictionary from the FastAPI application state."""
-    return getattr(request.app.state, "cameras", {})
+    cameras = getattr(request.app.state, "cameras", {})
+    
+    # If no cameras initialized, try once more lazily.
+    if not cameras:
+        logger.info("No cameras initialized, attempting lazy creation.")
+        try:
+            cameras = create_cameras_from_config(client_mode=False) or {}
+            if cameras:
+                for cam_name, cam in cameras.items():
+                    if not cam.is_connected:
+                        cam.connect()
+                request.app.state.cameras = cameras
+        except Exception as e:
+            logger.error(f"Lazy camera creation failed: {e!r}")
+            
+    return cameras
 
 
 def get_camera(request: Request, name: str):
