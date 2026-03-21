@@ -14,7 +14,7 @@ Gemini CLI must rigorously adhere to the standards, workflows, and architectural
 - **Testing:** Every change MUST include corresponding `pytest` tests. Maintain high coverage.
 - **Package Management:** Use `uv` for all dependency and environment management.
 - **Logging:** Use `loguru` via `self.logger` (from `PanBase`) or direct import for standalone utilities.
-- **Configuration:** The `panoptes-config-server` MUST be running for POCS or its tests to function correctly.
+- **Configuration:** The `panoptes-utils config` server MUST be running for POCS or its tests to function correctly.
 
 ## Project-Specific Workflow Mandates
 

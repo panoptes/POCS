@@ -20,6 +20,9 @@
 
 ### Changed
 
+- Updated `conf_files/pocs-supervisord.conf`, `GEMINI.md`, `AGENTS.md`, and `README.md` to use the new `panoptes-utils config` subcommand instead of the removed `panoptes-config-server`.
+- Updated `conftest.py` to use the default POCS config server port `6563` (previously `8765`) for test setup.
+- Upgraded `panoptes-utils` dependency to `0.3.2`.
 - Upgraded `fastapi` from `<0.106.0` to the latest stable release (v0.135.1). #1408
 - Observation exposure time defaults: when `exptime` is not specified in field files, observations now use the 
   `cameras.defaults.exptime` configuration value instead of a hardcoded 120 seconds. This allows setting 

@@ -62,7 +62,7 @@ def pytest_configure(config):
     config_file = "tests/testing.yaml"
 
     host = "localhost"
-    port = "8765"
+    port = "6563"
 
     os.environ["PANOPTES_CONFIG_HOST"] = host
     os.environ["PANOPTES_CONFIG_PORT"] = port

@@ -103,9 +103,9 @@ from panoptes.pocs.core import POCS
 
 os.environ['PANDIR'] = '/var/panoptes'
 conf_server = config_server('conf_files/pocs.yaml')
-I 01-20 01:01:10.886 Starting panoptes-config-server with  config_file='conf_files/pocs.yaml'
-S 01-20 01:01:10.926 Config server Loaded 17 top-level items
-I 01-20 01:01:10.928 Config items saved to flask config-server
+I 01-20 01:01:10.886 Starting panoptes-utils config server with config_file='conf_files/pocs.yaml'
+S 01-20 01:01:10.926 Config server loaded 17 top-level items
+I 01-20 01:01:10.928 Config items saved to server state
 I 01-20 01:01:10.934 Starting panoptes config server with localhost:6563
 
 pocs = POCS.from_config(simulators=['all'])

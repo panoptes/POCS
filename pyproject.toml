@@ -39,7 +39,7 @@ dependencies = [
     "httpx",
     "human-readable",
     "numpy>=2",
-    "panoptes-utils[config,images]>=0.2.53",
+    "panoptes-utils[config,images]>=0.3.2",
     "pandas",
     "pick",
     "Pillow>=10.0.1",
