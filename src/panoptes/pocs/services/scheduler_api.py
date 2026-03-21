@@ -98,14 +98,14 @@ def get_observation(request: Request, time: str | None = None):
     return {"result": None}
 
 
-@app.api_route("/clear_available_observations", methods=["GET", "POST"])
+@app.post("/clear_available_observations")
 def clear_available_observations(request: Request):
     scheduler = get_scheduler(request)
     scheduler.clear_available_observations()
     return {"result": True}
 
 
-@app.api_route("/reset_observed_list", methods=["GET", "POST"])
+@app.post("/reset_observed_list")
 def reset_observed_list(request: Request):
     scheduler = get_scheduler(request)
     scheduler.reset_observed_list()
@@ -126,7 +126,7 @@ def add_observation(request: Request, config: ObservationConfig):
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@app.api_route("/remove_observation", methods=["GET", "POST"])
+@app.post("/remove_observation")
 def remove_observation(request: Request, field_name: str):
     scheduler = get_scheduler(request)
     scheduler.remove_observation(field_name)
