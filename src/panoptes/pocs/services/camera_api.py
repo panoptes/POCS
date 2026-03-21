@@ -97,7 +97,7 @@ def status(request: Request, name: str):
     return serialize_all_objects(status)
 
 
-@app.post("/{name}/connect")
+@app.api_route("/{name}/connect", methods=["GET", "POST"])
 def connect(request: Request, name: str):
     cam = get_camera(request, name)
     cam.connect()
@@ -166,14 +166,14 @@ def process_exposure(request: Request, name: str, params: ProcessParams, backgro
     return {"result": True, "message": "Processing in background"}
 
 
-@app.post("/{name}/set_target_temperature")
+@app.api_route("/{name}/set_target_temperature", methods=["GET", "POST"])
 def set_target_temperature(request: Request, name: str, target: float):
     cam = get_camera(request, name)
     cam.target_temperature = target
     return {"result": True}
 
 
-@app.post("/{name}/set_cooling_enabled")
+@app.api_route("/{name}/set_cooling_enabled", methods=["GET", "POST"])
 def set_cooling_enabled(request: Request, name: str, enabled: bool):
     cam = get_camera(request, name)
     cam.cooling_enabled = enabled

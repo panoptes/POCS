@@ -75,19 +75,19 @@ def status(request: Request):
     return serialize_all_objects({"result": mount.status})
 
 
-@app.post("/connect")
+@app.api_route("/connect", methods=["GET", "POST"])
 def connect(request: Request):
     mount = get_mount(request)
     return {"result": mount.connect()}
 
 
-@app.post("/initialize")
+@app.api_route("/initialize", methods=["GET", "POST"])
 def initialize(request: Request):
     mount = get_mount(request)
     return {"result": mount.initialize()}
 
 
-@app.post("/disconnect")
+@app.api_route("/disconnect", methods=["GET", "POST"])
 def disconnect(request: Request):
     mount = get_mount(request)
     return {"result": mount.disconnect()}
@@ -174,7 +174,7 @@ def get_current_coordinates(request: Request):
     return {"result": None}
 
 
-@app.post("/slew_to_target")
+@app.api_route("/slew_to_target", methods=["GET", "POST"])
 def slew_to_target(
     request: Request, background_tasks: BackgroundTasks, blocking: bool = False, timeout: float = 180.0
 ):
@@ -197,7 +197,7 @@ def slew_to_coordinates(request: Request, coords_data: Coordinates, background_t
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@app.post("/slew_to_home")
+@app.api_route("/slew_to_home", methods=["GET", "POST"])
 def slew_to_home(
     request: Request, background_tasks: BackgroundTasks, blocking: bool = False, timeout: float = 180.0
 ):
@@ -209,27 +209,27 @@ def slew_to_home(
         return {"result": True, "message": "Slewing to home in background"}
 
 
-@app.post("/search_for_home")
+@app.api_route("/search_for_home", methods=["GET", "POST"])
 def search_for_home(request: Request, background_tasks: BackgroundTasks):
     mount = get_mount(request)
     background_tasks.add_task(mount.search_for_home)
     return {"result": True, "message": "Searching for home in background"}
 
 
-@app.post("/park")
+@app.api_route("/park", methods=["GET", "POST"])
 def park(request: Request, background_tasks: BackgroundTasks):
     mount = get_mount(request)
     background_tasks.add_task(mount.park)
     return {"result": True, "message": "Parking in background"}
 
 
-@app.post("/unpark")
+@app.api_route("/unpark", methods=["GET", "POST"])
 def unpark(request: Request):
     mount = get_mount(request)
     return {"result": mount.unpark()}
 
 
-@app.post("/set_tracking_rate")
+@app.api_route("/set_tracking_rate", methods=["GET", "POST"])
 def set_tracking_rate(request: Request, direction: str = "ra", delta: float = 1.0):
     mount = get_mount(request)
     mount.set_tracking_rate(direction=direction, delta=delta)
