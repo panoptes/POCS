@@ -63,7 +63,7 @@ def list_connected_gphoto2_cameras(endpoint: AnyHttpUrl | None = None):
 
 
 def create_cameras_from_config(
-    config=None, cameras=None, auto_primary=True, recreate_existing=False, *args, **kwargs
+    config=None, cameras=None, auto_primary=True, recreate_existing=False, *args, client_mode=True, **kwargs
 ):
     """Create camera object(s) based on the config.
 
@@ -81,6 +81,9 @@ def create_cameras_from_config(
             existing camera with the same `uid` is already assigned. Should currently
             only affect cameras that use the `sdk` (i.g. not DSLRs). Default False
             raises an exception if camera is already assigned.
+        client_mode: If True (default), intercept configs with an `endpoint_url` and
+            return a proxy object (`RemoteCamera`) instead of the physical driver.
+            Set to False in the hardware service API to instantiate the physical device.
         *args (list): Passed to `get_config`.
         **kwargs (dict): Can pass a `cameras` object that overrides the info in
             the configuration file. Can also pass `auto_detect`(bool) to try and
@@ -134,6 +137,11 @@ def create_cameras_from_config(
         device_config.update(cfg)
 
         cam_name = device_config.setdefault("name", f"Cam{cam_num:02d}")
+        
+        # Intercept client mode with an endpoint URL
+        if client_mode and "endpoint_url" in device_config:
+            logger.debug(f"Client mode enabled and endpoint_url found, using remote proxy for {cam_name}")
+            device_config["model"] = "remote"
 
         # Check for proper connection method.
         model = device_config["model"]
@@ -151,7 +159,10 @@ def create_cameras_from_config(
         logger.debug(f"Creating camera: {model}")
 
         try:
-            module = load_module(model)
+            module_name = model
+            if model == "remote":
+                module_name = f"panoptes.pocs.camera.{model}"
+            module = load_module(module_name)
             logger.debug(f"Camera module: module={module!r}")
 
             if recreate_existing:

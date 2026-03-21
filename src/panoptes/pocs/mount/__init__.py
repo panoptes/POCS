@@ -12,7 +12,9 @@ from panoptes.pocs.utils.logger import get_logger
 logger = get_logger()
 
 
-def create_mount_from_config(mount_info=None, earth_location=None, *args, **kwargs) -> AbstractMount:
+def create_mount_from_config(
+    mount_info=None, earth_location=None, *args, client_mode=True, **kwargs
+) -> AbstractMount:
     """Create a mount instance based on the provided config.
 
     Creates an instance of the AbstractMount sub-class in the module specified in the config.
@@ -26,6 +28,9 @@ def create_mount_from_config(mount_info=None, earth_location=None, *args, **kwar
             location of the mount on the Earth. If not specified, the config must include the
             observatory's location (Latitude, Longitude and Altitude above mean sea level).
             Useful for testing.
+        client_mode: If True (default), intercept configs with an `endpoint_url` and
+            return a proxy object (`RemoteMount`) instead of the physical driver.
+            Set to False in the hardware service API to instantiate the physical device.
         *args: Other positional args will be passed to the concrete class specified in the config.
         **kwargs: Other keyword args will be passed to the concrete class specified in the config.
 
@@ -61,39 +66,50 @@ def create_mount_from_config(mount_info=None, earth_location=None, *args, **kwar
     if not driver or not isinstance(driver, str):
         raise error.MountNotFound("Mount info in config is missing a driver name.")
 
+    if client_mode and "endpoint_url" in mount_info:
+        logger.debug(f"Client mode enabled and endpoint_url found, using remote proxy for {driver}")
+        driver = "panoptes.pocs.mount.remote"
+
     logger.debug(f"Mount: {brand=} {driver=} {model=}")
 
     # Check if we should be using a simulator
     use_simulator = "mount" in get_config("simulator", default=[])
     logger.debug(f"Mount is simulator: {use_simulator}")
 
-    # Create simulator if requested
-    if use_simulator or ("simulator" in driver):
+    # Create simulator if requested (but skip if we are proxying to a remote service)
+    is_remote_proxy = client_mode and "endpoint_url" in mount_info
+    if not is_remote_proxy and (use_simulator or ("simulator" in driver)):
         logger.debug("Creating mount simulator")
         return create_mount_simulator(mount_info=mount_info, earth_location=earth_location)
 
-    # See if we have a serial connection
-    try:
-        port = mount_info["serial"]["port"]
-        logger.info(f"Looking for {driver} on {port}.")
-        if (port is None or len(glob(port)) == 0) and not port.startswith("socket"):
-            if port == "loop://":
-                logger.warning("Using loop:// for mount connection.")
+    # Skip serial port check if we have an endpoint_url (remote mount)
+    if "endpoint_url" not in mount_info:
+        # See if we have a serial connection
+        try:
+            port = mount_info["serial"]["port"]
+            logger.info(f"Looking for {driver} on {port}.")
+            if (port is None or len(glob(port)) == 0) and not port.startswith("socket"):
+                if port == "loop://":
+                    logger.warning("Using loop:// for mount connection.")
+                else:
+                    raise error.MountNotFound(msg=f"Mount {port=} not available.")
+        except KeyError:
+            # See Issue 866
+            if model == "bisque":
+                logger.debug("Driver specifies a bisque type mount, no serial port needed.")
             else:
-                raise error.MountNotFound(msg=f"Mount {port=} not available.")
-    except KeyError:
-        # See Issue 866
-        if model == "bisque":
-            logger.debug("Driver specifies a bisque type mount, no serial port needed.")
-        else:
-            msg = "Mount port not specified in config file. Use simulator=mount for simulator."
-            raise error.MountNotFound(msg=msg)
+                msg = "Mount port not specified in config file. Use simulator=mount for simulator."
+                raise error.MountNotFound(msg=msg)
 
     logger.debug(f"Loading mount {driver=}")
     try:
         module = load_module(driver)
     except error.NotFound as e:
         raise error.MountNotFound(e)
+
+    # If it's a remote mount, pass the endpoint_url
+    if "endpoint_url" in mount_info:
+        kwargs["endpoint_url"] = mount_info["endpoint_url"]
 
     # Make the mount include site information
     mount = module.Mount(location=earth_location, *args, **kwargs)

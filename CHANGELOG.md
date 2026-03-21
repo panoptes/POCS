@@ -10,6 +10,7 @@
 
 ### Added
 
+- Added ability to decouple POCS hardware (Mount, Camera, Scheduler) into standalone FastAPI services. Hardware objects can now run as remote servers using `panoptes.pocs.services.*_api` and be accessed by the Observatory using remote proxies (`panoptes.pocs.mount.remote`, `panoptes.pocs.camera.remote`, `panoptes.pocs.scheduler.remote`) by specifying their endpoints in `pocs.yaml`.
 - Calibration frame commands for taking bias frames and flat fields
     - `pocs camera take-bias`: Takes bias frames (zero exposure), stacks them, and reports statistics (default: 10 frames)
     - `pocs run take-flats`: Takes flat field images with automatic exposure adjustment and mount positioning
@@ -19,6 +20,9 @@
 
 ### Changed
 
+- Updated `conf_files/pocs-supervisord.conf`, `GEMINI.md`, `AGENTS.md`, and `README.md` to use the new `panoptes-utils config` subcommand instead of the removed `panoptes-config-server`.
+- Updated `conftest.py` to use the default POCS config server port `6563` (previously `8765`) for test setup.
+- Upgraded `panoptes-utils` dependency to `0.3.2`.
 - Upgraded `fastapi` from `<0.106.0` to the latest stable release (v0.135.1). #1408
 - Observation exposure time defaults: when `exptime` is not specified in field files, observations now use the 
   `cameras.defaults.exptime` configuration value instead of a hardcoded 120 seconds. This allows setting 

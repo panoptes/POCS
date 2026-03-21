@@ -36,9 +36,10 @@ dependencies = [
     "click>=8.2.1",
     "fastapi[standard]",
     "GitPython",
+    "httpx",
     "human-readable",
     "numpy>=2",
-    "panoptes-utils[config,images]>=0.2.53",
+    "panoptes-utils[config,images]>=0.3.2",
     "pandas",
     "pick",
     "Pillow>=10.0.1",
@@ -92,6 +93,7 @@ testing = [
     "pytest-loguru",
     "pytest-remotedata>=0.3.1",
     "responses",
+    "respx>=0.22.0",
 ]
 lint = [
     "ruff",

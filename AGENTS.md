@@ -208,10 +208,10 @@ manage configuration. The server provides centralized configuration access acros
 
 ```bash
 # For normal development
-panoptes-config-server --host 0.0.0.0 --port 6563 run --config-file conf_files/pocs.yaml
+panoptes-utils config run --host 0.0.0.0 --port 6563 --config-file conf_files/pocs.yaml
 
 # For testing (use testing config)
-panoptes-config-server --host 0.0.0.0 --port 6563 run --config-file tests/testing.yaml
+panoptes-utils config run --host 0.0.0.0 --port 6563 --config-file tests/testing.yaml
 ```
 
 **Notes:**
@@ -677,10 +677,10 @@ When making changes, update:
 
 ```bash
 # Start config server (required before running POCS)
-panoptes-config-server --host 0.0.0.0 --port 6563 run --config-file conf_files/pocs.yaml
+panoptes-utils config run --host 0.0.0.0 --port 6563 --config-file conf_files/pocs.yaml
 
 # Start config server for testing
-panoptes-config-server --host 0.0.0.0 --port 6563 run --config-file tests/testing.yaml
+panoptes-utils config run --host 0.0.0.0 --port 6563 --config-file tests/testing.yaml
 
 # Install dependencies
 uv sync

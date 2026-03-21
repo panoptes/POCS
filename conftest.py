@@ -56,12 +56,13 @@ os.chmod(log_file_path, stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO)
 def pytest_configure(config):
     """Set up the testing."""
     from astropy.utils.iers import conf
+
     conf.auto_max_age = None
     logger.info("Setting up the config server.")
     config_file = "tests/testing.yaml"
 
     host = "localhost"
-    port = "8765"
+    port = "6563"
 
     os.environ["PANOPTES_CONFIG_HOST"] = host
     os.environ["PANOPTES_CONFIG_PORT"] = port
