@@ -15,11 +15,21 @@ logger = get_logger()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """FastAPI lifespan context manager that manages the camera instances."""
+    app.state.cameras = {}
     try:
-        app.state.cameras = create_cameras_from_config(client_mode=False) or {}
+        cameras = create_cameras_from_config(client_mode=False) or {}
+        if cameras:
+            logger.info(f"Created {len(cameras)} cameras, attempting to connect.")
+            for cam_name, cam in cameras.items():
+                try:
+                    if not cam.is_connected:
+                        cam.connect()
+                    logger.success(f"Camera {cam_name} connected.")
+                except Exception as e:
+                    logger.error(f"Failed to connect camera {cam_name}: {e!r}")
+        app.state.cameras = cameras
     except Exception:
         logger.exception("Failed to create cameras from config")
-        app.state.cameras = {}
     yield
 
 

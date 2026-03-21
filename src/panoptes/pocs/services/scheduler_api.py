@@ -15,11 +15,13 @@ logger = get_logger()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """FastAPI lifespan context manager that manages the scheduler instance."""
+    app.state.scheduler = None
     try:
         app.state.scheduler = create_scheduler_from_config(client_mode=False)
+        if app.state.scheduler:
+            logger.success("Scheduler created and initialized with fields.")
     except Exception:
         logger.exception("Failed to create scheduler from config")
-        app.state.scheduler = None
     yield
 
 

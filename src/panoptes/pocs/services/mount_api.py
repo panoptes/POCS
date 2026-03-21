@@ -14,11 +14,19 @@ logger = get_logger()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """FastAPI lifespan context manager that manages the mount instance."""
+    app.state.mount = None
     try:
         app.state.mount = create_mount_from_config(client_mode=False)
+        if app.state.mount:
+            logger.info("Mount created, attempting to initialize.")
+            try:
+                app.state.mount.initialize()
+                logger.success("Mount initialized successfully.")
+            except Exception as e:
+                logger.error(f"Failed to initialize mount on startup: {e!r}")
     except Exception:
         logger.exception("Failed to create mount from config")
-        app.state.mount = None
+
     try:
         yield
     finally:
