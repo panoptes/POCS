@@ -93,6 +93,7 @@ testing = [
     "pytest-loguru",
     "pytest-remotedata>=0.3.1",
     "responses",
+    "respx>=0.22.0",
 ]
 lint = [
     "ruff",

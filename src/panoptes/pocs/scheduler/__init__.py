@@ -19,7 +19,7 @@ from panoptes.pocs.utils.logger import get_logger
 logger = get_logger()
 
 
-def create_scheduler_from_config(config=None, observer=None, iers_url=None, *args, **kwargs):
+def create_scheduler_from_config(config=None, observer=None, iers_url=None, *args, client_mode=True, **kwargs):
     """Construct a Scheduler instance based on configuration.
 
     Reads the 'scheduler' section from the config, ensures IERS tables are
@@ -31,6 +31,9 @@ def create_scheduler_from_config(config=None, observer=None, iers_url=None, *arg
         config (dict | None): Scheduler configuration; if None, fetched via get_config.
         observer (astroplan.Observer | None): Existing Observer; if None, created from config.
         iers_url (str | None): Optional override for the IERS A table URL.
+        client_mode: If True (default), intercept configs with an `endpoint_url` and
+            return a proxy object (`RemoteScheduler`) instead of the physical driver.
+            Set to False in the hardware service API to instantiate the physical device.
         *args: Additional positional args forwarded to the Scheduler constructor.
         **kwargs: Additional keyword args forwarded to the Scheduler constructor.
 
@@ -47,6 +50,10 @@ def create_scheduler_from_config(config=None, observer=None, iers_url=None, *arg
     if scheduler_config is None or len(scheduler_config) == 0:
         logger.info("No scheduler in config")
         return None
+
+    if client_mode and "endpoint_url" in scheduler_config:
+        logger.debug("Client mode enabled and endpoint_url found, using remote proxy for scheduler")
+        scheduler_config["type"] = "panoptes.pocs.scheduler.remote"
 
     download_iers_a_file(iers_url=iers_url)
 

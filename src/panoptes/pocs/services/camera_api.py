@@ -16,7 +16,7 @@ logger = get_logger()
 async def lifespan(app: FastAPI):
     """FastAPI lifespan context manager that manages the camera instances."""
     try:
-        app.state.cameras = create_cameras_from_config() or {}
+        app.state.cameras = create_cameras_from_config(client_mode=False) or {}
     except Exception:
         logger.exception("Failed to create cameras from config")
         app.state.cameras = {}

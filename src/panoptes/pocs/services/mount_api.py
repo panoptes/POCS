@@ -15,7 +15,7 @@ logger = get_logger()
 async def lifespan(app: FastAPI):
     """FastAPI lifespan context manager that manages the mount instance."""
     try:
-        app.state.mount = create_mount_from_config()
+        app.state.mount = create_mount_from_config(client_mode=False)
     except Exception:
         logger.exception("Failed to create mount from config")
         app.state.mount = None
