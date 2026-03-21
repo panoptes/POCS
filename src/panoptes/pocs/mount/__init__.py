@@ -72,22 +72,24 @@ def create_mount_from_config(mount_info=None, earth_location=None, *args, **kwar
         logger.debug("Creating mount simulator")
         return create_mount_simulator(mount_info=mount_info, earth_location=earth_location)
 
-    # See if we have a serial connection
-    try:
-        port = mount_info["serial"]["port"]
-        logger.info(f"Looking for {driver} on {port}.")
-        if (port is None or len(glob(port)) == 0) and not port.startswith("socket"):
-            if port == "loop://":
-                logger.warning("Using loop:// for mount connection.")
+    # Skip serial port check if we have an endpoint_url (remote mount)
+    if "endpoint_url" not in mount_info:
+        # See if we have a serial connection
+        try:
+            port = mount_info["serial"]["port"]
+            logger.info(f"Looking for {driver} on {port}.")
+            if (port is None or len(glob(port)) == 0) and not port.startswith("socket"):
+                if port == "loop://":
+                    logger.warning("Using loop:// for mount connection.")
+                else:
+                    raise error.MountNotFound(msg=f"Mount {port=} not available.")
+        except KeyError:
+            # See Issue 866
+            if model == "bisque":
+                logger.debug("Driver specifies a bisque type mount, no serial port needed.")
             else:
-                raise error.MountNotFound(msg=f"Mount {port=} not available.")
-    except KeyError:
-        # See Issue 866
-        if model == "bisque":
-            logger.debug("Driver specifies a bisque type mount, no serial port needed.")
-        else:
-            msg = "Mount port not specified in config file. Use simulator=mount for simulator."
-            raise error.MountNotFound(msg=msg)
+                msg = "Mount port not specified in config file. Use simulator=mount for simulator."
+                raise error.MountNotFound(msg=msg)
 
     logger.debug(f"Loading mount {driver=}")
     try:

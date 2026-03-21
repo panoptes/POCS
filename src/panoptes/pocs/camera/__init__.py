@@ -151,7 +151,10 @@ def create_cameras_from_config(
         logger.debug(f"Creating camera: {model}")
 
         try:
-            module = load_module(model)
+            module_name = model
+            if model == "remote":
+                module_name = f"panoptes.pocs.camera.{model}"
+            module = load_module(module_name)
             logger.debug(f"Camera module: module={module!r}")
 
             if recreate_existing:

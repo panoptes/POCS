@@ -1,27 +1,47 @@
+from contextlib import asynccontextmanager
 from typing import Any
+from urllib.parse import unquote
 
-from fastapi import BackgroundTasks, FastAPI, HTTPException
+import astropy.units as u
+from fastapi import BackgroundTasks, FastAPI, HTTPException, Request
 from pydantic import BaseModel
 
 from panoptes.pocs.camera import create_cameras_from_config
+from panoptes.pocs.utils.logger import get_logger
 
-app = FastAPI()
-
-# Global cameras dict
-cameras = {}
+logger = get_logger()
 
 
-@app.on_event("startup")
-async def startup_event():
-    global cameras
+def serialize_quantity(val):
+    """Helper to convert astropy Quantities to plain values."""
+    if isinstance(val, u.Quantity):
+        return val.value
+    return val
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """FastAPI lifespan context manager that manages the camera instances."""
     try:
-        cameras = create_cameras_from_config() or {}
-    except Exception as e:
-        print(f"Failed to create cameras: {e}")
-        cameras = {}
+        app.state.cameras = create_cameras_from_config() or {}
+    except Exception:
+        logger.exception("Failed to create cameras from config")
+        app.state.cameras = {}
+    yield
 
 
-def get_camera(name: str):
+app = FastAPI(lifespan=lifespan)
+
+
+def get_cameras(request: Request):
+    """Retrieve the cameras dictionary from the FastAPI application state."""
+    return getattr(request.app.state, "cameras", {})
+
+
+def get_camera(request: Request, name: str):
+    cameras = get_cameras(request)
+    # Decode camera name if it was URL-encoded by the proxy
+    name = unquote(name)
     cam = cameras.get(name)
     if not cam:
         raise HTTPException(status_code=404, detail=f"Camera {name} not found")
@@ -29,47 +49,48 @@ def get_camera(name: str):
 
 
 @app.get("/cameras")
-def list_cameras():
+def list_cameras(request: Request):
+    cameras = get_cameras(request)
     return {"result": list(cameras.keys())}
 
 
 @app.get("/{name}/status")
-def status(name: str):
-    cam = get_camera(name)
+def status(request: Request, name: str):
+    cam = get_camera(request, name)
     return {
         "uid": cam.uid,
         "is_connected": cam.is_connected,
         "is_exposing": cam.is_exposing,
         "is_ready": cam.is_ready,
-        "temperature": cam.temperature,
-        "target_temperature": cam.target_temperature,
+        "temperature": serialize_quantity(cam.temperature),
+        "target_temperature": serialize_quantity(cam.target_temperature),
         "cooling_enabled": cam.cooling_enabled,
-        "cooling_power": cam.cooling_power,
+        "cooling_power": serialize_quantity(cam.cooling_power),
     }
 
 
 @app.post("/{name}/connect")
-def connect(name: str):
-    cam = get_camera(name)
+def connect(request: Request, name: str):
+    cam = get_camera(request, name)
     cam.connect()
     return {"result": True}
 
 
 @app.get("/{name}/properties")
-def properties(name: str):
-    cam = get_camera(name)
+def properties(request: Request, name: str):
+    cam = get_camera(request, name)
     return {
         "uid": cam.uid,
         "is_connected": cam.is_connected,
-        "readout_time": cam.readout_time.value if hasattr(cam.readout_time, "value") else cam.readout_time,
+        "readout_time": serialize_quantity(cam.readout_time),
         "file_extension": cam.file_extension,
-        "egain": cam.egain,
-        "bit_depth": cam.bit_depth,
-        "temperature": cam.temperature,
-        "target_temperature": cam.target_temperature,
-        "temperature_tolerance": cam.temperature_tolerance,
+        "egain": serialize_quantity(cam.egain),
+        "bit_depth": serialize_quantity(cam.bit_depth),
+        "temperature": serialize_quantity(cam.temperature),
+        "target_temperature": serialize_quantity(cam.target_temperature),
+        "temperature_tolerance": serialize_quantity(cam.temperature_tolerance),
         "cooling_enabled": cam.cooling_enabled,
-        "cooling_power": cam.cooling_power,
+        "cooling_power": serialize_quantity(cam.cooling_power),
         "filter_type": cam.filter_type,
         "is_cooled_camera": cam.is_cooled_camera,
         "is_temperature_stable": cam.is_temperature_stable,
@@ -89,8 +110,8 @@ class ExposureParams(BaseModel):
 
 
 @app.post("/{name}/take_exposure")
-def take_exposure(name: str, params: ExposureParams):
-    cam = get_camera(name)
+def take_exposure(request: Request, name: str, params: ExposureParams):
+    cam = get_camera(request, name)
     try:
         cam.take_exposure(
             seconds=params.seconds,
@@ -110,21 +131,21 @@ class ProcessParams(BaseModel):
 
 
 @app.post("/{name}/process_exposure")
-def process_exposure(name: str, params: ProcessParams, background_tasks: BackgroundTasks):
-    cam = get_camera(name)
+def process_exposure(request: Request, name: str, params: ProcessParams, background_tasks: BackgroundTasks):
+    cam = get_camera(request, name)
     background_tasks.add_task(cam.process_exposure, params.metadata)
     return {"result": True, "message": "Processing in background"}
 
 
 @app.post("/{name}/set_target_temperature")
-def set_target_temperature(name: str, target: float):
-    cam = get_camera(name)
+def set_target_temperature(request: Request, name: str, target: float):
+    cam = get_camera(request, name)
     cam.target_temperature = target
     return {"result": True}
 
 
 @app.post("/{name}/set_cooling_enabled")
-def set_cooling_enabled(name: str, enabled: bool):
-    cam = get_camera(name)
+def set_cooling_enabled(request: Request, name: str, enabled: bool):
+    cam = get_camera(request, name)
     cam.cooling_enabled = enabled
     return {"result": True}

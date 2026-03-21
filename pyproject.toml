@@ -36,6 +36,7 @@ dependencies = [
     "click>=8.2.1",
     "fastapi[standard]",
     "GitPython",
+    "httpx",
     "human-readable",
     "numpy>=2",
     "panoptes-utils[config,images]>=0.2.53",

@@ -16,6 +16,10 @@ class Scheduler(BaseScheduler):
         *args,
         **kwargs,
     ):
+        # Initialize remote-specific attributes first because super().__init__ calls
+        # methods that might use the remote API (e.g. clear_available_observations).
+        self.endpoint_url = endpoint_url
+        self.client = httpx.Client(timeout=30.0)
         super().__init__(
             observer,
             fields_list=fields_list,
@@ -24,8 +28,6 @@ class Scheduler(BaseScheduler):
             *args,
             **kwargs,
         )
-        self.endpoint_url = endpoint_url
-        self.client = httpx.Client(timeout=30.0)
         self.logger.info(f"Initialized RemoteScheduler pointing to {self.endpoint_url}")
 
     def _get(self, path, params=None):
@@ -53,8 +55,13 @@ class Scheduler(BaseScheduler):
         status_dict = self._get("status")
         return status_dict or super().status
 
-    def has_valid_observations(self):
-        return self._get("has_valid_observations")
+    @property
+    def has_valid_observations(self) -> bool:
+        """Whether there are any valid observations, delegating to the remote scheduler when possible."""
+        result = self._get("has_valid_observations")
+        if result is None:
+            return super().has_valid_observations
+        return bool(result)
 
     def get_observation(self, *args, **kwargs):
         """Ask the remote scheduler for the next observation.
@@ -77,17 +84,33 @@ class Scheduler(BaseScheduler):
         return None
 
     def clear_available_observations(self):
+        """Clear available observations on both remote and local schedulers."""
+        result = self._post("clear_available_observations")
+        if not result:
+            self.logger.error("Failed to clear available observations on remote scheduler")
+            raise RuntimeError("Remote scheduler clear_available_observations failed")
         super().clear_available_observations()
-        self._post("clear_available_observations")
 
     def reset_observed_list(self):
+        """Reset the observed list on both remote and local schedulers."""
+        result = self._post("reset_observed_list")
+        if not result:
+            self.logger.error("Failed to reset observed list on remote scheduler")
+            raise RuntimeError("Remote scheduler reset_observed_list failed")
         super().reset_observed_list()
-        self._post("reset_observed_list")
 
     def add_observation(self, observation_config: dict, **kwargs):
+        """Add an observation to both remote and local schedulers."""
+        result = self._post("add_observation", json={"observation_config": observation_config})
+        if not result:
+            self.logger.error("Failed to add observation on remote scheduler")
+            raise RuntimeError("Remote scheduler add_observation failed")
         super().add_observation(observation_config, **kwargs)
-        self._post("add_observation", json={"observation_config": observation_config})
 
     def remove_observation(self, field_name):
+        """Remove an observation from both remote and local schedulers."""
+        result = self._post("remove_observation", params={"field_name": field_name})
+        if not result:
+            self.logger.error("Failed to remove observation on remote scheduler")
+            raise RuntimeError("Remote scheduler remove_observation failed")
         super().remove_observation(field_name)
-        self._post("remove_observation", params={"field_name": field_name})

@@ -1,4 +1,5 @@
 import threading
+from urllib.parse import quote
 
 import httpx
 
@@ -23,11 +24,13 @@ class Camera(AbstractCamera):
         super().__init__(name=name, model=model, port=port, primary=primary, *args, **kwargs)
         self.endpoint_url = endpoint_url
         self.client = httpx.Client(timeout=300.0)
+        # URL-safe camera name for routing
+        self.safe_name = quote(self.name)
         self.logger.info(f"Initialized RemoteCamera {name} pointing to {self.endpoint_url}")
 
     def _get(self, path):
         try:
-            response = self.client.get(f"{self.endpoint_url}/{self.name}/{path}")
+            response = self.client.get(f"{self.endpoint_url}/{self.safe_name}/{path}")
             response.raise_for_status()
             if "result" in response.json():
                 return response.json()["result"]
@@ -38,7 +41,9 @@ class Camera(AbstractCamera):
 
     def _post(self, path, json=None, params=None):
         try:
-            response = self.client.post(f"{self.endpoint_url}/{self.name}/{path}", json=json, params=params)
+            response = self.client.post(
+                f"{self.endpoint_url}/{self.safe_name}/{path}", json=json, params=params
+            )
             response.raise_for_status()
             return response.json().get("result", True)
         except Exception as e:
@@ -131,8 +136,6 @@ class Camera(AbstractCamera):
         """Proxy processing logic to remote node."""
         self._post("process_exposure", json={"metadata": metadata})
 
-    # The following are abstract methods that shouldn't be called directly
-    # but must be implemented to avoid TypeError on instantiation.
     def _set_target_temperature(self, target):
         pass
 
