@@ -209,6 +209,13 @@ def slew_to_home(
         return {"result": True, "message": "Slewing to home in background"}
 
 
+@app.post("/search_for_home")
+def search_for_home(request: Request, background_tasks: BackgroundTasks):
+    mount = get_mount(request)
+    background_tasks.add_task(mount.search_for_home)
+    return {"result": True, "message": "Searching for home in background"}
+
+
 @app.post("/park")
 def park(request: Request, background_tasks: BackgroundTasks):
     mount = get_mount(request)

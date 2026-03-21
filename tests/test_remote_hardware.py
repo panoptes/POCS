@@ -56,6 +56,12 @@ def test_remote_mount(location, respx_mock):
     status = mount.status
     assert status["is_connected"] is True
 
+    # Test search_for_home
+    respx_mock.post(f"{url}/search_for_home").mock(
+        return_value=httpx.Response(200, json={"result": True, "message": "Searching for home in background"})
+    )
+    assert mount.search_for_home() is True
+
 
 @respx.mock
 def test_remote_camera(respx_mock):

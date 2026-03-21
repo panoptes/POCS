@@ -133,6 +133,9 @@ class Mount(AbstractMount):
     def slew_to_home(self, blocking=False, timeout=180.0):
         return self._post("slew_to_home", params={"blocking": blocking, "timeout": timeout})
 
+    def search_for_home(self):
+        return self._post("search_for_home")
+
     def park(self, *args, **kwargs):
         return self._post("park")
 
