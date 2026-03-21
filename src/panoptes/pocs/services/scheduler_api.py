@@ -84,7 +84,17 @@ def get_observation(request: Request, time: str | None = None):
     obs = scheduler.get_observation(time=t)
 
     if obs:
+        # The dispatch scheduler returns a tuple of (Observation, merit) or (name, merit).
+        if isinstance(obs, tuple):
+            obs = obs[0]
+
+        # If it's a string, it's the name.
+        if isinstance(obs, str):
+            return {"result": obs}
+
+        # Otherwise it should be an Observation object.
         return {"result": obs.name}
+
     return {"result": None}
 
 
