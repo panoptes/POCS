@@ -2,21 +2,14 @@ from contextlib import asynccontextmanager
 from typing import Any
 from urllib.parse import unquote
 
-import astropy.units as u
 from fastapi import BackgroundTasks, FastAPI, HTTPException, Request
 from pydantic import BaseModel
 
+from panoptes.utils.serializers import serialize_all_objects
 from panoptes.pocs.camera import create_cameras_from_config
 from panoptes.pocs.utils.logger import get_logger
 
 logger = get_logger()
-
-
-def serialize_quantity(val):
-    """Helper to convert astropy Quantities to plain values."""
-    if isinstance(val, u.Quantity):
-        return val.value
-    return val
 
 
 @asynccontextmanager
@@ -57,16 +50,17 @@ def list_cameras(request: Request):
 @app.get("/{name}/status")
 def status(request: Request, name: str):
     cam = get_camera(request, name)
-    return {
+    status = {
         "uid": cam.uid,
         "is_connected": cam.is_connected,
         "is_exposing": cam.is_exposing,
         "is_ready": cam.is_ready,
-        "temperature": serialize_quantity(cam.temperature),
-        "target_temperature": serialize_quantity(cam.target_temperature),
+        "temperature": cam.temperature,
+        "target_temperature": cam.target_temperature,
         "cooling_enabled": cam.cooling_enabled,
-        "cooling_power": serialize_quantity(cam.cooling_power),
+        "cooling_power": cam.cooling_power,
     }
+    return serialize_all_objects(status)
 
 
 @app.post("/{name}/connect")
@@ -79,18 +73,18 @@ def connect(request: Request, name: str):
 @app.get("/{name}/properties")
 def properties(request: Request, name: str):
     cam = get_camera(request, name)
-    return {
+    properties = {
         "uid": cam.uid,
         "is_connected": cam.is_connected,
-        "readout_time": serialize_quantity(cam.readout_time),
+        "readout_time": cam.readout_time,
         "file_extension": cam.file_extension,
-        "egain": serialize_quantity(cam.egain),
-        "bit_depth": serialize_quantity(cam.bit_depth),
-        "temperature": serialize_quantity(cam.temperature),
-        "target_temperature": serialize_quantity(cam.target_temperature),
-        "temperature_tolerance": serialize_quantity(cam.temperature_tolerance),
+        "egain": cam.egain,
+        "bit_depth": cam.bit_depth,
+        "temperature": cam.temperature,
+        "target_temperature": cam.target_temperature,
+        "temperature_tolerance": cam.temperature_tolerance,
         "cooling_enabled": cam.cooling_enabled,
-        "cooling_power": serialize_quantity(cam.cooling_power),
+        "cooling_power": cam.cooling_power,
         "filter_type": cam.filter_type,
         "is_cooled_camera": cam.is_cooled_camera,
         "is_temperature_stable": cam.is_temperature_stable,
@@ -98,6 +92,7 @@ def properties(request: Request, name: str):
         "is_ready": cam.is_ready,
         "can_take_internal_darks": cam.can_take_internal_darks,
     }
+    return serialize_all_objects(properties)
 
 
 class ExposureParams(BaseModel):

@@ -1,5 +1,6 @@
 import httpx
 from astropy.coordinates import SkyCoord
+from panoptes.utils.serializers import from_json
 
 from panoptes.pocs.mount.mount import AbstractMount
 
@@ -22,7 +23,10 @@ class Mount(AbstractMount):
         try:
             response = self.client.get(f"{self.endpoint_url}/{path}")
             response.raise_for_status()
-            return response.json().get("result")
+            data = from_json(response.text)
+            if isinstance(data, dict) and "result" in data:
+                return data["result"]
+            return data
         except Exception as e:
             self.logger.error(f"Remote mount GET {path} failed: {e}")
             return None
@@ -31,7 +35,10 @@ class Mount(AbstractMount):
         try:
             response = self.client.post(f"{self.endpoint_url}/{path}", json=json, params=params)
             response.raise_for_status()
-            return response.json().get("result")
+            data = from_json(response.text)
+            if isinstance(data, dict) and "result" in data:
+                return data["result"]
+            return data.get("result", True) if isinstance(data, dict) else data
         except Exception as e:
             self.logger.error(f"Remote mount POST {path} failed: {e}")
             return None
@@ -92,7 +99,10 @@ class Mount(AbstractMount):
         try:
             response = self.client.get(f"{self.endpoint_url}/status")
             response.raise_for_status()
-            return response.json()
+            data = from_json(response.text)
+            if isinstance(data, dict) and "result" in data:
+                return data["result"]
+            return data
         except Exception as e:
             self.logger.error(f"Remote mount GET status failed: {e}")
             return {}

@@ -1,10 +1,12 @@
+import os
 from unittest.mock import patch
 
-import astropy.units as u
 import httpx
 import pytest
 import respx
 from astropy.coordinates import EarthLocation
+from astroplan import Observer
+import astropy.units as u
 
 from panoptes.pocs.camera import create_cameras_from_config
 from panoptes.pocs.camera.remote import Camera as RemoteCamera
@@ -50,21 +52,25 @@ def test_remote_mount(location, respx_mock):
 
     mount = RemoteMount(location=location, endpoint_url=url)
     assert mount.connect() is True
+    # status property now automatically unwraps 'result'
     status = mount.status
-    assert status["result"]["is_connected"] is True
+    assert status["is_connected"] is True
 
 
 @respx.mock
 def test_remote_camera(respx_mock):
     url = "http://localhost:8002"
     cam_name = "TestCam"
+    # Use "deg" instead of "deg_C" because from_json only auto-reconstructs m, deg, s
     respx_mock.get(f"{url}/TestCam/status").mock(
-        return_value=httpx.Response(200, json={"result": {"is_connected": True, "temperature": 20.0}})
+        return_value=httpx.Response(200, json={"result": {"is_connected": True, "temperature": "20.0 deg"}})
     )
 
     cam = RemoteCamera(name=cam_name, endpoint_url=url)
     assert cam.is_connected is True
-    assert cam.temperature == 20.0
+    # from_json should turn "20.0 deg" into a Quantity
+    assert isinstance(cam.temperature, u.Quantity)
+    assert cam.temperature.value == 20.0
 
 
 @respx.mock
@@ -76,8 +82,6 @@ def test_remote_scheduler(location, respx_mock):
     respx_mock.get(f"{url}/has_valid_observations").mock(
         return_value=httpx.Response(200, json={"result": True})
     )
-
-    from astroplan import Observer
 
     observer = Observer(location=location)
     scheduler = RemoteScheduler(observer=observer, endpoint_url=url)
@@ -97,7 +101,13 @@ def test_create_remote_mount_from_config(location):
 
 def test_create_remote_camera_from_config():
     camera_config = {
-        "devices": [{"model": "remote", "name": "RemoteCam", "endpoint_url": "http://remote-camera:8002"}]
+        "devices": [
+            {
+                "model": "remote",
+                "name": "RemoteCam",
+                "endpoint_url": "http://remote-camera:8002",
+            }
+        ]
     }
     cameras = create_cameras_from_config(config=camera_config)
     assert "RemoteCam" in cameras
@@ -118,11 +128,7 @@ def test_create_remote_scheduler_from_config(mock_constraints, location, respx_m
         "endpoint_url": url,
         "fields_file": "simple.yaml",
     }
-    from astroplan import Observer
-
     observer = Observer(location=location)
-
-    import os
 
     fields_path = "/tmp/conf_files/fields/simple.yaml"
     os.makedirs(os.path.dirname(fields_path), exist_ok=True)

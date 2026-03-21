@@ -4,6 +4,7 @@ from astropy.coordinates import SkyCoord
 from fastapi import BackgroundTasks, FastAPI, HTTPException, Request
 from pydantic import BaseModel
 
+from panoptes.utils.serializers import serialize_all_objects
 from panoptes.pocs.mount import create_mount_from_config
 from panoptes.pocs.utils.logger import get_logger
 
@@ -45,7 +46,7 @@ def get_mount(request: Request):
 def status(request: Request):
     mount = get_mount(request)
     # mount.status is a @property, so we don't call it.
-    return {"result": mount.status}
+    return serialize_all_objects({"result": mount.status})
 
 
 @app.post("/connect")

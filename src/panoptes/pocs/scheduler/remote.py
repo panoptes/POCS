@@ -1,4 +1,7 @@
+from typing import Any
+
 import httpx
+from panoptes.utils.serializers import from_json
 
 from panoptes.pocs.scheduler.scheduler import BaseScheduler
 
@@ -34,9 +37,10 @@ class Scheduler(BaseScheduler):
         try:
             response = self.client.get(f"{self.endpoint_url}/{path}", params=params)
             response.raise_for_status()
-            if "result" in response.json():
-                return response.json()["result"]
-            return response.json()
+            data = from_json(response.text)
+            if isinstance(data, dict) and "result" in data:
+                return data["result"]
+            return data
         except Exception as e:
             self.logger.error(f"Remote scheduler GET {path} failed: {e}")
             return None
@@ -45,7 +49,10 @@ class Scheduler(BaseScheduler):
         try:
             response = self.client.post(f"{self.endpoint_url}/{path}", json=json, params=params)
             response.raise_for_status()
-            return response.json().get("result", True)
+            data = from_json(response.text)
+            if isinstance(data, dict) and "result" in data:
+                return data["result"]
+            return data.get("result", True) if isinstance(data, dict) else data
         except Exception as e:
             self.logger.error(f"Remote scheduler POST {path} failed: {e}")
             return None

@@ -1,9 +1,10 @@
 import threading
+from typing import Any
 from urllib.parse import quote
 
 import httpx
-
 from panoptes.utils import error
+from panoptes.utils.serializers import from_json
 
 from panoptes.pocs.camera.camera import AbstractCamera
 
@@ -32,9 +33,10 @@ class Camera(AbstractCamera):
         try:
             response = self.client.get(f"{self.endpoint_url}/{self.safe_name}/{path}")
             response.raise_for_status()
-            if "result" in response.json():
-                return response.json()["result"]
-            return response.json()
+            data = from_json(response.text)
+            if isinstance(data, dict) and "result" in data:
+                return data["result"]
+            return data
         except Exception as e:
             self.logger.error(f"Remote camera GET {path} failed: {e}")
             return None
@@ -45,7 +47,10 @@ class Camera(AbstractCamera):
                 f"{self.endpoint_url}/{self.safe_name}/{path}", json=json, params=params
             )
             response.raise_for_status()
-            return response.json().get("result", True)
+            data = from_json(response.text)
+            if isinstance(data, dict) and "result" in data:
+                return data["result"]
+            return data.get("result", True) if isinstance(data, dict) else data
         except Exception as e:
             self.logger.error(f"Remote camera POST {path} failed: {e}")
             return None

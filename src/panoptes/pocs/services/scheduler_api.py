@@ -5,6 +5,7 @@ from astropy.time import Time
 from fastapi import FastAPI, HTTPException, Request
 from pydantic import BaseModel
 
+from panoptes.utils.serializers import serialize_all_objects
 from panoptes.pocs.scheduler import create_scheduler_from_config
 from panoptes.pocs.utils.logger import get_logger
 
@@ -37,15 +38,14 @@ def get_scheduler(request: Request):
 def status(request: Request):
     scheduler = get_scheduler(request)
     # scheduler.status contains live objects, so we return a subset for JSON serialization.
-    return {
-        "result": {
-            "num_observations": len(scheduler.observations),
-            "has_valid_observations": scheduler.has_valid_observations,
-            "current_observation": scheduler.current_observation.name
-            if scheduler.current_observation
-            else None,
-        }
+    status = {
+        "num_observations": len(scheduler.observations),
+        "has_valid_observations": scheduler.has_valid_observations,
+        "current_observation": scheduler.current_observation.name
+        if scheduler.current_observation
+        else None,
     }
+    return serialize_all_objects({"result": status})
 
 
 @app.get("/has_valid_observations")
