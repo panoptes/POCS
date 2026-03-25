@@ -15,7 +15,7 @@ Welcome to POCS documentation!
 
 [PANOPTES](https://www.projectpanoptes.org) is an open source citizen science project
 designed to find [transiting exoplanets](https://spaceplace.nasa.gov/transits/en/) with
-digital cameras. The goal of PANOPTES is to establish a global network of of robotic
+digital cameras. The goal of PANOPTES is to establish a global network of robotic
 cameras run by amateur astronomers and schools (or anyone!) in order to monitor,
 as continuously as possible, a very large number of stars. For more general information
 about the project, including the science case and resources for interested individuals, see the
@@ -44,7 +44,7 @@ New to POCS? Start here:
 
 ### POCS Environment
 
-If you are running a PANOPTES unit then you will most likely want an  entire PANOPTES environment, which includes the necessary tools for operation of a complete unit.
+If you are running a PANOPTES unit then you will most likely want an entire PANOPTES environment, which includes the necessary tools for operation of a complete unit.
 
 There is a bash shell script that will install an entire working POCS system on your computer.  Some
 folks even report that it works on a Mac.
@@ -67,7 +67,7 @@ The install script will ask a few questions at the beginning of the process. If 
 the answer the default is probably okay.
 
 In addition to installing `POCS`, the install script will create the Config Server
-and Power Monitor services, which will automatically  be restarted upon reboot of the computer.
+and Power Monitor services, which will automatically be restarted upon reboot of the computer.
 
 
 ### POCS Module
