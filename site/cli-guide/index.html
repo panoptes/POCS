@@ -1,0 +1,1792 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+        <link rel="prev" href="../architecture-for-beginners/">
+      
+      
+        <link rel="next" href="../glossary/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>CLI Guide - PANOPTES Observatory Control System</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#pocs-command-line-interface-cli-guide" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="PANOPTES Observatory Control System" class="md-header__button md-logo" aria-label="PANOPTES Observatory Control System" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            PANOPTES Observatory Control System
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              CLI Guide
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="PANOPTES Observatory Control System" class="md-nav__button md-logo" aria-label="PANOPTES Observatory Control System" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    PANOPTES Observatory Control System
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../conceptual-overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Conceptual Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../architecture-for-beginners/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI Guide
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#quick-start" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Quick Start
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configuration-commands" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuration Commands
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Configuration Commands">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pocs-config-setup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        pocs config setup
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pocs-config-get" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        pocs config get
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pocs-config-set" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        pocs config set
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pocs-config-status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        pocs config status
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#observing-commands" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Observing Commands
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Observing Commands">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pocs-run-auto" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        pocs run auto
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pocs-run-alignment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        pocs run alignment
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pocs-run-take-flats" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        pocs run take-flats
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mount-commands" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Mount Commands
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Mount Commands">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pocs-mount-slew-to-target" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        pocs mount slew-to-target
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pocs-mount-search-home" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        pocs mount search-home
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pocs-mount-park" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        pocs mount park
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pocs-mount-slew-home" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        pocs mount slew-home
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pocs-mount-set-park" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        pocs mount set-park
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#camera-commands" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Camera Commands
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Camera Commands">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pocs-camera-take-pics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        pocs camera take-pics
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pocs-camera-take-bias" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        pocs camera take-bias
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pocs-camera-setup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        pocs camera setup
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#other-commands" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Other Commands
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Other Commands">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#weather-commands" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Weather Commands
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sensor-commands" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sensor Commands
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#common-workflows" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Common Workflows
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Common Workflows">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#first-time-setup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        First-Time Setup
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#testing-hardware" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Testing Hardware
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#daily-observing-routine" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Daily Observing Routine
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#troubleshooting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Troubleshooting
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Troubleshooting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#configuration-server-not-running" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuration Server Not Running
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mount-not-responding" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Mount Not Responding
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#camera-not-found" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Camera Not Found
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#permission-errors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Permission Errors
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#advanced-usage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Advanced Usage
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Advanced Usage">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#simulator-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Simulator Mode
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#getting-help" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Getting Help
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#next-steps" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Next Steps
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../glossary/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Glossary
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contributing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../authors/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Authors
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../license/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    License
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#quick-start" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Quick Start
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configuration-commands" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuration Commands
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Configuration Commands">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pocs-config-setup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        pocs config setup
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pocs-config-get" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        pocs config get
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pocs-config-set" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        pocs config set
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pocs-config-status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        pocs config status
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#observing-commands" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Observing Commands
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Observing Commands">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pocs-run-auto" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        pocs run auto
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pocs-run-alignment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        pocs run alignment
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pocs-run-take-flats" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        pocs run take-flats
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mount-commands" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Mount Commands
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Mount Commands">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pocs-mount-slew-to-target" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        pocs mount slew-to-target
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pocs-mount-search-home" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        pocs mount search-home
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pocs-mount-park" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        pocs mount park
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pocs-mount-slew-home" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        pocs mount slew-home
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pocs-mount-set-park" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        pocs mount set-park
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#camera-commands" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Camera Commands
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Camera Commands">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pocs-camera-take-pics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        pocs camera take-pics
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pocs-camera-take-bias" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        pocs camera take-bias
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pocs-camera-setup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        pocs camera setup
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#other-commands" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Other Commands
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Other Commands">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#weather-commands" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Weather Commands
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sensor-commands" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sensor Commands
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#common-workflows" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Common Workflows
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Common Workflows">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#first-time-setup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        First-Time Setup
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#testing-hardware" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Testing Hardware
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#daily-observing-routine" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Daily Observing Routine
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#troubleshooting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Troubleshooting
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Troubleshooting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#configuration-server-not-running" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuration Server Not Running
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mount-not-responding" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Mount Not Responding
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#camera-not-found" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Camera Not Found
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#permission-errors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Permission Errors
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#advanced-usage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Advanced Usage
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Advanced Usage">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#simulator-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Simulator Mode
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#getting-help" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Getting Help
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#next-steps" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Next Steps
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="pocs-command-line-interface-cli-guide">POCS Command Line Interface (CLI) Guide</h1>
+<p>Complete reference for using the <code>pocs</code> command line tool.</p>
+<h2 id="quick-start">Quick Start</h2>
+<p>If you're new to POCS, start with these essential commands:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># 1. First-time setup (interactive wizard)</span>
+pocs<span class="w"> </span>config<span class="w"> </span>setup
+
+<span class="c1"># 2. Test your mount</span>
+pocs<span class="w"> </span>mount<span class="w"> </span>setup
+pocs<span class="w"> </span>mount<span class="w"> </span>search-home
+pocs<span class="w"> </span>mount<span class="w"> </span>park
+pocs<span class="w"> </span>mount<span class="w"> </span>slew-home
+pocs<span class="w"> </span>mount<span class="w"> </span>slew-to-target<span class="w"> </span>--target<span class="w"> </span>M42<span class="w"> </span><span class="c1"># Pick a target that&#39;s up</span>
+pocs<span class="w"> </span>mount<span class="w"> </span>park
+
+<span class="c1"># 3. Test your camera</span>
+pocs<span class="w"> </span>camera<span class="w"> </span>setup
+pocs<span class="w"> </span>camera<span class="w"> </span>take-pics
+
+<span class="c1"># 4. Run automated observing</span>
+pocs<span class="w"> </span>run<span class="w"> </span>auto
+</code></pre></div>
+<p>For detailed workflows, see <a href="#common-workflows">Common Workflows</a> below.</p>
+<hr />
+<h2 id="configuration-commands">Configuration Commands</h2>
+<h3 id="pocs-config-setup"><code>pocs config setup</code></h3>
+<p><strong>Interactive configuration wizard</strong> - The first command you should run after installation.</p>
+<div class="highlight"><pre><span></span><code>pocs<span class="w"> </span>config<span class="w"> </span>setup
+</code></pre></div>
+<p>This will ask a series of questions to set up your observatory configuration, including (pre-filled defaults in parentheses, press Enter):</p>
+<div class="highlight"><pre><span></span><code>Setting<span class="w"> </span>up<span class="w"> </span>configuration<span class="w"> </span><span class="k">for</span><span class="w"> </span>your<span class="w"> </span>PANOPTES<span class="w"> </span>unit.
+This<span class="w"> </span>will<span class="w"> </span>overwrite<span class="w"> </span>any<span class="w"> </span>existing<span class="w"> </span>configuration.<span class="w"> </span>Proceed?<span class="w"> </span><span class="o">[</span>y/n<span class="o">]</span><span class="w"> </span><span class="o">(</span>n<span class="o">)</span>:<span class="w"> </span>y
+Enter<span class="w"> </span>the<span class="w"> </span>base<span class="w"> </span>directory<span class="w"> </span><span class="k">for</span><span class="w"> </span>POCS<span class="w"> </span><span class="o">(</span>/home/panoptes/POCS<span class="o">)</span>:<span class="w"> </span>
+Enter<span class="w"> </span>the<span class="w"> </span>user-friendly<span class="w"> </span>name<span class="w"> </span><span class="k">for</span><span class="w"> </span>this<span class="w"> </span>unit<span class="w"> </span><span class="o">(</span>Generic<span class="w"> </span>PANOPTES<span class="w"> </span>Unit<span class="o">)</span>:<span class="w"> </span>SuperUnit
+Enter<span class="w"> </span>the<span class="w"> </span>PANOPTES<span class="w"> </span>ID<span class="w"> </span><span class="k">for</span><span class="w"> </span>this<span class="w"> </span>unit.<span class="w"> </span>If<span class="w"> </span>you<span class="w"> </span><span class="k">do</span><span class="w"> </span>not<span class="w"> </span>have<span class="w"> </span>one<span class="w"> </span>yet<span class="w"> </span>just<span class="w"> </span>use<span class="w"> </span>the<span class="w"> </span>default:<span class="w"> </span><span class="o">(</span>PAN000<span class="o">)</span>:<span class="w"> </span>
+Enter<span class="w"> </span>the<span class="w"> </span>latitude<span class="w"> </span><span class="k">for</span><span class="w"> </span>this<span class="w"> </span>unit,<span class="w"> </span>e.g.<span class="w"> </span><span class="s2">&quot;19.5 deg&quot;</span>:<span class="w"> </span><span class="o">(</span><span class="m">19</span>.54<span class="w"> </span>deg<span class="o">)</span>:<span class="w"> </span>
+Enter<span class="w"> </span>the<span class="w"> </span>longitude<span class="w"> </span><span class="k">for</span><span class="w"> </span>this<span class="w"> </span>unit,<span class="w"> </span>e.g.<span class="w"> </span><span class="s2">&quot;-154.12 deg&quot;</span>:<span class="w"> </span><span class="o">(</span>-155.58<span class="w"> </span>deg<span class="o">)</span>:<span class="w"> </span>
+Enter<span class="w"> </span>the<span class="w"> </span>elevation<span class="w"> </span><span class="k">for</span><span class="w"> </span>this<span class="w"> </span>unit.<span class="w"> </span>Use<span class="w"> </span><span class="s2">&quot; ft&quot;</span><span class="w"> </span>or<span class="w"> </span><span class="s2">&quot; m&quot;</span><span class="w"> </span><span class="k">for</span><span class="w"> </span>units,<span class="w"> </span>e.g.<span class="w"> </span><span class="s2">&quot;3400 m&quot;</span><span class="w"> </span>or<span class="w"> </span><span class="s2">&quot;12000 ft&quot;</span>:<span class="w"> </span><span class="o">(</span><span class="m">3400</span>.0<span class="w"> </span>m<span class="o">)</span>:<span class="w"> </span>
+Enter<span class="w"> </span>the<span class="w"> </span>timezone<span class="w"> </span><span class="k">for</span><span class="w"> </span>this<span class="w"> </span>unit<span class="w"> </span><span class="o">(</span>UTC<span class="o">)</span>:<span class="w"> </span>HST
+Enter<span class="w"> </span>the<span class="w"> </span>GMT<span class="w"> </span>offset<span class="w"> </span><span class="k">for</span><span class="w"> </span>this<span class="w"> </span>unit<span class="w"> </span><span class="k">in</span><span class="w"> </span>minutes,<span class="w"> </span>e.g.<span class="w"> </span><span class="m">60</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="m">1</span><span class="w"> </span>hour<span class="w"> </span>ahead,<span class="w"> </span>-120<span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="m">2</span><span class="w"> </span>hours<span class="w"> </span>behind:<span class="w"> </span><span class="o">(</span>-600<span class="o">)</span>:<span class="w"> </span>
+</code></pre></div>
+<p><strong>For beginners:</strong> This is the easiest way to get started!</p>
+<h3 id="pocs-config-get"><code>pocs config get</code></h3>
+<p>View configuration settings.</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># View all settings</span>
+pocs<span class="w"> </span>config<span class="w"> </span>get
+
+<span class="c1"># View specific setting</span>
+pocs<span class="w"> </span>config<span class="w"> </span>get<span class="w"> </span>location.latitude
+pocs<span class="w"> </span>config<span class="w"> </span>get<span class="w"> </span>name
+</code></pre></div>
+<h3 id="pocs-config-set"><code>pocs config set</code></h3>
+<p>Modify configuration settings.</p>
+<div class="highlight"><pre><span></span><code>pocs<span class="w"> </span>config<span class="w"> </span><span class="nb">set</span><span class="w"> </span>name<span class="w"> </span><span class="s2">&quot;My Observatory&quot;</span>
+pocs<span class="w"> </span>config<span class="w"> </span><span class="nb">set</span><span class="w"> </span>location.latitude<span class="w"> </span><span class="m">19</span>.54
+</code></pre></div>
+<h3 id="pocs-config-status"><code>pocs config status</code></h3>
+<p>Check if the configuration server is running.</p>
+<div class="highlight"><pre><span></span><code>pocs<span class="w"> </span>config<span class="w"> </span>status
+</code></pre></div>
+<hr />
+<h2 id="observing-commands">Observing Commands</h2>
+<h3 id="pocs-run-auto"><code>pocs run auto</code></h3>
+<p><strong>Main command for automated observing</strong> - Runs the full observation sequence.</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># Run with real hardware</span>
+pocs<span class="w"> </span>run<span class="w"> </span>auto
+
+<span class="c1"># Run in simulator mode (for testing without hardware)</span>
+pocs<span class="w"> </span>run<span class="w"> </span>auto<span class="w"> </span>--simulator<span class="w"> </span>all
+</code></pre></div>
+<p>What it does:
+1. Initializes observatory
+2. Checks safety conditions
+3. Schedules targets
+4. Slews to targets
+5. Takes observations
+6. Repeats until sunrise or stopped</p>
+<p><strong>For beginners:</strong> Start with simulator mode to learn how POCS works!</p>
+<h3 id="pocs-run-alignment"><code>pocs run alignment</code></h3>
+<p>Run polar alignment sequence.</p>
+<div class="highlight"><pre><span></span><code>pocs<span class="w"> </span>run<span class="w"> </span>alignment
+</code></pre></div>
+<p>Helps align your mount to the celestial pole for better tracking.</p>
+<h3 id="pocs-run-take-flats"><code>pocs run take-flats</code></h3>
+<p>Take flat field calibration images.</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># Take evening flats (default)</span>
+pocs<span class="w"> </span>run<span class="w"> </span>take-flats
+
+<span class="c1"># Take morning flats</span>
+pocs<span class="w"> </span>run<span class="w"> </span>take-flats<span class="w"> </span>--which<span class="w"> </span>morning
+
+<span class="c1"># Custom altitude/azimuth coordinates</span>
+pocs<span class="w"> </span>run<span class="w"> </span>take-flats<span class="w"> </span>--alt<span class="w"> </span><span class="m">45</span>.0<span class="w"> </span>--az<span class="w"> </span><span class="m">270</span>.0
+
+<span class="c1"># Adjust exposure settings</span>
+pocs<span class="w"> </span>run<span class="w"> </span>take-flats<span class="w"> </span>--initial-exptime<span class="w"> </span><span class="m">5</span>.0<span class="w"> </span>--max-exposures<span class="w"> </span><span class="m">15</span>
+</code></pre></div>
+<p>Options:
+- <code>--which, -w</code>: Either 'evening' or 'morning' (default: evening)
+- <code>--alt, -a</code>: Altitude for flats in degrees (default: 70 if not specified)
+- <code>--az, -z</code>: Azimuth for flats in degrees (default: 180° opposite the sun position if not specified)
+- <code>--min-counts</code>: Minimum ADU count (default: 1000)
+- <code>--max-counts</code>: Maximum ADU count (default: 12000)
+- <code>--target-adu</code>: Target ADU as percentage of (min + max) (default: 0.5)
+- <code>--initial-exptime, -e</code>: Initial exposure time in seconds (default: 3.0)
+- <code>--min-exptime</code>: Minimum exposure time in seconds (default: 0.0)
+- <code>--max-exptime</code>: Maximum exposure time in seconds (default: 60.0)
+- <code>--max-exposures, -n</code>: Maximum number of flats to take (default: 10)
+- <code>--no-tracking/--tracking</code>: Control tracking during flats. Use <code>--no-tracking</code> (default) to stop tracking for drift flats, or <code>--tracking</code> to keep tracking enabled</p>
+<p>What it does:
+1. Slews mount to specified altitude/azimuth, or defaults (70° altitude, 180° opposite sun azimuth)
+2. Stops tracking by default (for drift flats), unless <code>--tracking</code> is used
+3. Takes series of flat field images
+4. Automatically adjusts exposure time to achieve target ADU counts</p>
+<p><strong>For Beginners:</strong> Flat fields are important calibration images taken of a uniformly illuminated surface (like the twilight sky) to correct for dust, vignetting, and variations in pixel sensitivity.</p>
+<hr />
+<h2 id="mount-commands">Mount Commands</h2>
+<p>Control your telescope mount directly.</p>
+<h3 id="pocs-mount-slew-to-target"><code>pocs mount slew-to-target</code></h3>
+<p>Point the mount at a specific target.</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># By common name</span>
+pocs<span class="w"> </span>mount<span class="w"> </span>slew-to-target<span class="w"> </span>--target<span class="w"> </span>M42
+pocs<span class="w"> </span>mount<span class="w"> </span>slew-to-target<span class="w"> </span>--target<span class="w"> </span><span class="s2">&quot;Orion Nebula&quot;</span>
+pocs<span class="w"> </span>mount<span class="w"> </span>slew-to-target<span class="w"> </span>--target<span class="w"> </span>Polaris
+
+<span class="c1"># By coordinates (RA/Dec in degrees)</span>
+pocs<span class="w"> </span>mount<span class="w"> </span>slew-to-target<span class="w"> </span>--ra<span class="w"> </span><span class="m">83</span>.82<span class="w"> </span>--dec<span class="w"> </span>-5.39
+</code></pre></div>
+<h3 id="pocs-mount-search-home"><code>pocs mount search-home</code></h3>
+<p>Search for the home position using the mount's homing sensors.</p>
+<div class="highlight"><pre><span></span><code>pocs<span class="w"> </span>mount<span class="w"> </span>search-home
+</code></pre></div>
+<h3 id="pocs-mount-park"><code>pocs mount park</code></h3>
+<p>Park the mount in its safe position.</p>
+<div class="highlight"><pre><span></span><code>pocs<span class="w"> </span>mount<span class="w"> </span>park
+</code></pre></div>
+<p><strong>Always park your mount</strong> when finished observing or before shutting down!</p>
+<h3 id="pocs-mount-slew-home"><code>pocs mount slew-home</code></h3>
+<p>Move mount to home position.</p>
+<div class="highlight"><pre><span></span><code>pocs<span class="w"> </span>mount<span class="w"> </span>slew-home
+</code></pre></div>
+<p>The home position is typically the starting point for calibration and alignment.</p>
+<h3 id="pocs-mount-set-park"><code>pocs mount set-park</code></h3>
+<p>Set the current position as the park position.</p>
+<div class="highlight"><pre><span></span><code>pocs<span class="w"> </span>mount<span class="w"> </span>set-park
+</code></pre></div>
+<p>Use this to define where the mount should go when parked.</p>
+<hr />
+<h2 id="camera-commands">Camera Commands</h2>
+<p>Control your cameras directly.</p>
+<h3 id="pocs-camera-take-pics"><code>pocs camera take-pics</code></h3>
+<p>Take test images.</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># Take one image with default settings</span>
+pocs<span class="w"> </span>camera<span class="w"> </span>take-pics
+
+<span class="c1"># Take multiple images with custom exposure time</span>
+pocs<span class="w"> </span>camera<span class="w"> </span>take-pics<span class="w"> </span>--num-images<span class="w"> </span><span class="m">5</span><span class="w"> </span>--exptime<span class="w"> </span><span class="m">10</span>.0
+
+<span class="c1"># Specify which camera (if you have multiple)</span>
+pocs<span class="w"> </span>camera<span class="w"> </span>take-pics<span class="w"> </span>--camera<span class="w"> </span>Cam00
+</code></pre></div>
+<p><strong>For beginners:</strong> Great for testing your camera setup!</p>
+<h3 id="pocs-camera-take-bias"><code>pocs camera take-bias</code></h3>
+<p>Take bias calibration frames (zero exposure time).</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># Take 10 bias frames (default)</span>
+pocs<span class="w"> </span>camera<span class="w"> </span>take-bias
+
+<span class="c1"># Take more bias frames for better statistics</span>
+pocs<span class="w"> </span>camera<span class="w"> </span>take-bias<span class="w"> </span>--num-images<span class="w"> </span><span class="m">20</span>
+
+<span class="c1"># Specify output directory</span>
+pocs<span class="w"> </span>camera<span class="w"> </span>take-bias<span class="w"> </span>--output-dir<span class="w"> </span>/path/to/bias/frames
+</code></pre></div>
+<p>Options:
+- <code>--num-images/-n</code>: Number of bias frames to capture (default: 10)
+- <code>--output-dir</code>: Output directory for bias frames (default: <code>/home/panoptes/images/bias</code>)
+- <code>--convert</code>: Convert to FITS if needed (default: True)
+- <code>--verbose</code>: Print detailed processing output (default: False)</p>
+<p>What it does:
+1. Takes bias frames with zero exposure time
+2. Stacks them into a master bias frame
+3. Reports statistics (sigma-clipped mean, median, std, min, max)</p>
+<p><strong>For beginners:</strong> Bias frames are calibration images taken with zero exposure time to measure the baseline signal from your camera's electronics. They're essential for image processing and noise reduction.</p>
+<h3 id="pocs-camera-setup"><code>pocs camera setup</code></h3>
+<p>Initialize and configure cameras.</p>
+<div class="highlight"><pre><span></span><code>pocs<span class="w"> </span>camera<span class="w"> </span>setup
+</code></pre></div>
+<hr />
+<h2 id="other-commands">Other Commands</h2>
+<h3 id="weather-commands">Weather Commands</h3>
+<p>Check weather conditions:</p>
+<div class="highlight"><pre><span></span><code>pocs<span class="w"> </span>weather<span class="w"> </span>status
+</code></pre></div>
+<h3 id="sensor-commands">Sensor Commands</h3>
+<p>Check environmental sensors:</p>
+<div class="highlight"><pre><span></span><code>pocs<span class="w"> </span>sensor<span class="w"> </span>status
+</code></pre></div>
+<hr />
+<h2 id="common-workflows">Common Workflows</h2>
+<h3 id="first-time-setup">First-Time Setup</h3>
+<div class="highlight"><pre><span></span><code><span class="c1"># 1. Run interactive setup</span>
+pocs<span class="w"> </span>config<span class="w"> </span>setup
+
+<span class="c1"># 2. Verify configuration</span>
+pocs<span class="w"> </span>config<span class="w"> </span>get
+
+<span class="c1"># 3. Find mount home position</span>
+pocs<span class="w"> </span>mount<span class="w"> </span>search-home
+
+<span class="c1"># 4. Test camera (in simulator mode)</span>
+pocs<span class="w"> </span>camera<span class="w"> </span>take-pics<span class="w"> </span>--num-images<span class="w"> </span><span class="m">1</span>
+
+<span class="c1"># 5. Park mount</span>
+pocs<span class="w"> </span>mount<span class="w"> </span>park
+</code></pre></div>
+<h3 id="testing-hardware">Testing Hardware</h3>
+<p>Before your first real observation:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># 1. Start with mount parked</span>
+pocs<span class="w"> </span>mount<span class="w"> </span>park
+
+<span class="c1"># 2. Test slewing to a bright star</span>
+pocs<span class="w"> </span>mount<span class="w"> </span>slew-to-target<span class="w"> </span>--target<span class="w"> </span>Polaris
+
+<span class="c1"># 3. Take a test image</span>
+pocs<span class="w"> </span>camera<span class="w"> </span>take-pics<span class="w"> </span>--num-images<span class="w"> </span><span class="m">3</span><span class="w"> </span>--exptime<span class="w"> </span><span class="m">2</span>.0
+
+<span class="c1"># 4. Park mount when done</span>
+pocs<span class="w"> </span>mount<span class="w"> </span>park
+</code></pre></div>
+<h3 id="daily-observing-routine">Daily Observing Routine</h3>
+<div class="highlight"><pre><span></span><code><span class="c1"># 1. Run automated observing</span>
+pocs<span class="w"> </span>run<span class="w"> </span>auto
+</code></pre></div>
+<hr />
+<h2 id="troubleshooting">Troubleshooting</h2>
+<h3 id="configuration-server-not-running">Configuration Server Not Running</h3>
+<p><strong>Error:</strong> "Cannot connect to config server"</p>
+<p><strong>Solution:</strong>
+<div class="highlight"><pre><span></span><code><span class="c1"># Start the config server</span>
+pocs<span class="w"> </span>config<span class="w"> </span>status
+
+<span class="c1"># If not running, restart it</span>
+pocs<span class="w"> </span>config<span class="w"> </span>setup
+</code></pre></div></p>
+<h3 id="mount-not-responding">Mount Not Responding</h3>
+<p><strong>Problem:</strong> Mount commands don't work</p>
+<p><strong>Solutions:</strong>
+1. Check mount is powered on and connected
+2. Verify configuration: <code>pocs config get mount</code>
+3. Try simulator mode first: <code>pocs run auto --simulator all</code>
+4. Check USB/serial connections</p>
+<h3 id="camera-not-found">Camera Not Found</h3>
+<p><strong>Problem:</strong> Camera commands fail</p>
+<p><strong>Solutions:</strong>
+1. Check camera is powered and connected
+2. Verify configuration: <code>pocs config get cameras</code>
+3. Try simulator mode: use <code>--simulator camera</code> flag
+4. Check USB connections and drivers</p>
+<h3 id="permission-errors">Permission Errors</h3>
+<p><strong>Problem:</strong> "Permission denied" errors</p>
+<p><strong>Solutions:</strong>
+1. Make sure you're in the correct user groups (dialout, plugdev)
+2. Check file permissions in POCS directories
+3. May need to run <code>pocs config setup</code> again</p>
+<hr />
+<h2 id="advanced-usage">Advanced Usage</h2>
+<h3 id="simulator-mode">Simulator Mode</h3>
+<p>Test POCS without physical hardware:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># Simulate all components</span>
+pocs<span class="w"> </span>run<span class="w"> </span>auto<span class="w"> </span>--simulator<span class="w"> </span>all
+
+<span class="c1"># Simulate specific components</span>
+pocs<span class="w"> </span>run<span class="w"> </span>auto<span class="w"> </span>--simulator<span class="w"> </span>mount
+pocs<span class="w"> </span>run<span class="w"> </span>auto<span class="w"> </span>--simulator<span class="w"> </span>camera
+pocs<span class="w"> </span>run<span class="w"> </span>auto<span class="w"> </span>--simulator<span class="w"> </span>weather
+</code></pre></div>
+<h3 id="getting-help">Getting Help</h3>
+<p>Get help for any command:</p>
+<div class="highlight"><pre><span></span><code>pocs<span class="w"> </span>--help
+pocs<span class="w"> </span>config<span class="w"> </span>--help
+pocs<span class="w"> </span>mount<span class="w"> </span>--help
+pocs<span class="w"> </span>camera<span class="w"> </span>--help
+pocs<span class="w"> </span>run<span class="w"> </span>alignment<span class="w"> </span>--help
+</code></pre></div>
+<hr />
+<h2 id="next-steps">Next Steps</h2>
+<ul>
+<li><strong>New to POCS?</strong> Read <a href="../conceptual-overview/">Conceptual Overview</a></li>
+<li><strong>Want to understand the architecture?</strong> See <a href="../architecture-for-beginners/">Architecture for Beginners</a></li>
+<li><strong>Ready for Python API?</strong> Check <a href="https://github.com/panoptes/POCS/blob/main/examples/README.md">https://github.com/panoptes/POCS/blob/main/examples/README.md</a></li>
+<li><strong>Need term definitions?</strong> Browse the <a href="../glossary/">Glossary</a></li>
+</ul>
+<hr />
+<p><strong>Questions?</strong> Check the main <a href="https://github.com/panoptes/POCS/blob/main/README.md">README</a> or visit the PANOPTES forum.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": [], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

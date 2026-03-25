@@ -178,10 +178,10 @@ But POCS hides most complexity behind simple interfaces.
 ### "Where do I start?"
 
 1. Read this document (you're doing it!)
-2. Run [examples/beginner_simulation.py](../examples/beginner_simulation.py)
-3. Explore [notebooks/TestPOCS.ipynb](../notebooks/TestPOCS.ipynb)
-4. Read [docs/architecture-for-beginners.md](architecture-for-beginners.md)
-5. Look at [src/panoptes/pocs/core.py](../src/panoptes/pocs/core.py)
+2. Run [https://github.com/panoptes/POCS/blob/main/examples/beginner_simulation.py](https://github.com/panoptes/POCS/blob/main/examples/beginner_simulation.py)
+3. Explore [https://github.com/panoptes/POCS/tree/main/notebooks](https://github.com/panoptes/POCS/tree/main/notebooks)
+4. Read [architecture-for-beginners.md](architecture-for-beginners.md)
+5. Look at [https://github.com/panoptes/POCS/blob/main/src/panoptes/pocs/core.py](https://github.com/panoptes/POCS/blob/main/src/panoptes/pocs/core.py)
 
 ### "What if I break something?"
 
@@ -241,7 +241,7 @@ The CLI guide includes:
 
 After understanding these concepts:
 
-1. **Install POCS** - [Follow installation instructions in README](../README.md#install)
+1. **Install POCS** - [Follow installation instructions in README](https://github.com/panoptes/POCS/blob/main/README.md#install)
 2. **Configure your unit** - Run `pocs config setup`
 3. **Test hardware** - Use `pocs mount` and `pocs camera` commands
 4. **Run simulations** - Try `pocs run auto` with simulators
