@@ -1,6 +1,18 @@
 site_name: PANOPTES Observatory Control System
+site_url: https://panoptes.github.io/POCS/
+repo_url: https://github.com/panoptes/POCS
+repo_name: panoptes/POCS
+edit_uri: edit/main/docs/
+
 theme:
   name: material
+  palette:
+    primary: deep orange
+    accent: light blue
+  features:
+    - navigation.sections
+    - navigation.top
+    - content.code.copy
 
 plugins:
   - search
@@ -13,11 +25,19 @@ plugins:
             docstring_style: google
 
 markdown_extensions:
+  - attr_list
+  - md_in_html
   - pymdownx.snippets:
       base_path: "."
   - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
 
 nav:
+  - Project PANOPTES Hub: https://panoptes.github.io/
   - Home: index.md
   - Conceptual Overview: conceptual-overview.md
   - Architecture: architecture-for-beginners.md
