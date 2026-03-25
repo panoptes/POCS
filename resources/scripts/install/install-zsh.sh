@@ -28,10 +28,8 @@ function write_zsh_plugins() {
   cat >"${HOME}/.zsh_plugins.txt" <<EOT
 # oh-my-zsh plugins
 ohmyzsh/ohmyzsh path:plugins/git
-ohmyzsh/ohmyzsh path:plugins/sudo
-ohmyzsh/ohmyzsh path:plugins/docker
-ohmyzsh/ohmyzsh path:plugins/docker-compose
 ohmyzsh/ohmyzsh path:plugins/python
+ohmyzsh/ohmyzsh path:plugins/sudo
 
 # zsh-users plugins
 zsh-users/zsh-autosuggestions
