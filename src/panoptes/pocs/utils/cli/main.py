@@ -70,6 +70,33 @@ def main(
         print(f"Command options from main: {context.params!r}")
 
 
+@app.command(name="version")
+def show_version():
+    """Show the version of POCS and related packages."""
+    from importlib.metadata import PackageNotFoundError, version
+
+    # We try to get the git version for POCS if we are in a repo
+    pocs_version = "unknown"
+    try:
+        project_root = find_project_root()
+        if project_root:
+            repo = Repo(project_root)
+            pocs_version = repo.git.describe("--tags", "--always", "--dirty")
+    except Exception:
+        try:
+            pocs_version = version("panoptes-pocs")
+        except PackageNotFoundError:
+            pass
+
+    print(f"panoptes-pocs: [green]{pocs_version}[/]")
+
+    try:
+        utils_version = version("panoptes-utils")
+        print(f"panoptes-utils: [green]{utils_version}[/]")
+    except PackageNotFoundError:
+        print("panoptes-utils: [red]not found[/]")
+
+
 @app.command(name="update")
 def update_repo():
     """Update POCS.

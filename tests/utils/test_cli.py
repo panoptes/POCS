@@ -76,3 +76,12 @@ def test_config_subcommand_no_args_shows_help(cli_runner):
     # Should show help for config subcommand
     assert "Usage:" in result.output
     assert "Commands" in result.output or "Options" in result.output
+
+
+def test_version_command(cli_runner):
+    """Test that 'pocs version' shows the version information."""
+    result = cli_runner.invoke(app, ["version"])
+
+    assert result.exit_code == 0
+    assert "panoptes-pocs" in result.output
+    assert "panoptes-utils" in result.output
