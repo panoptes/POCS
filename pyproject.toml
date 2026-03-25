@@ -57,7 +57,7 @@ dependencies = [
 
 [project.urls]
 Homepage = "https://github.com/panoptes/POCS"
-Documentation = "https://panoptes-pocs.readthedocs.org"
+Documentation = "https://panoptes.github.io/POCS/"
 Forum = "https://forum.projectpanoptes.org"
 
 [project.scripts]

@@ -196,7 +196,7 @@ With real hardware: POCS has safety checks:
 ### "How do I get help?"
 
 - **Forum**: https://forum.projectpanoptes.org (friendly community!)
-- **Documentation**: https://pocs.readthedocs.io
+- **Documentation**: https://panoptes.github.io/POCS/
 - **Code issues**: https://github.com/panoptes/POCS/issues
 - **Live chat**: Join via the forum
 

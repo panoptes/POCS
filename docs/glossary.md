@@ -245,7 +245,7 @@ That's OK! You don't need to know all these terms to start using POCS. Learn the
 
 **Quick help:**
 - Ask on the forum: https://forum.projectpanoptes.org
-- Check the docs: https://pocs.readthedocs.io
+- Check the docs: https://panoptes.github.io/POCS/
 - Search the code: `grep -r "term_you_dont_know" src/`
 
 Remember: Every expert was once a beginner who kept asking questions! 🌟

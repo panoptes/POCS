@@ -614,7 +614,7 @@ When making changes, update:
 
 ## Getting Help
 
-- **Documentation:** https://pocs.readthedocs.io
+- **Documentation:** https://panoptes.github.io/POCS/
 - **Forum:** https://forum.projectpanoptes.org
 - **Issues:** https://github.com/panoptes/POCS/issues
 - **Code of Conduct:** `CODE_OF_CONDUCT.md`

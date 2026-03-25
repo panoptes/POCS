@@ -8,7 +8,7 @@ Welcome to POCS documentation!
 
 [![GHA Status](https://github.com/panoptes/POCS/actions/workflows/pythontest.yaml/badge.svg?branch=develop)](https://github.com/panoptes/POCS/actions/workflows/pythontest.yaml)
 [![codecov](https://codecov.io/gh/panoptes/POCS/graph/badge.svg?token=0FGBB0iVy6)](https://codecov.io/gh/panoptes/POCS)
-[![Documentation Status](https://readthedocs.org/projects/pocs/badge/?version=latest)](https://pocs.readthedocs.io/en/latest/?badge=latest) 
+[![Documentation Status](https://img.shields.io/github/actions/workflow/status/panoptes/POCS/docs.yml?branch=main&label=docs)](https://panoptes.github.io/POCS//en/latest/?badge=latest) 
 [![PyPI version](https://badge.fury.io/py/panoptes-pocs.svg)](https://badge.fury.io/py/panoptes-pocs)
 
 # Project PANOPTES
@@ -27,7 +27,7 @@ about the project, including the science case and resources for interested indiv
 POCS (PANOPTES Observatory Control System) is the main software driver for a
 PANOPTES unit, responsible for high-level control of the unit.
 
-For more information, see the full documentation at: https://pocs.readthedocs.io.
+For more information, see the full documentation at: https://panoptes.github.io/POCS/.
 
 ## Beginner Resources
 
@@ -126,7 +126,7 @@ S 01-20 01:01:28.390 Unit says: Looks like we're missing some required hardware.
 Out[10]: False
 ```
 
-For a more realistic usage, see the full documentation at: [https://pocs.readthedocs.io](https://pocs.readthedocs.io).
+For a more realistic usage, see the full documentation at: [https://panoptes.github.io/POCS/](https://panoptes.github.io/POCS/).
 
 For actually deploying a PANOPTES unit, refer to the [Operating Guide](https://projectpanoptes.gitbook.io/pocs-user-guide/operation/operating-guides).
 
@@ -260,7 +260,7 @@ Links
 
 - PANOPTES Homepage: https://www.projectpanoptes.org
 - Forum: https://forum.projectpanoptes.org
-- Documentation: https://pocs.readthedocs.io
+- Documentation: https://panoptes.github.io/POCS/
 - Source Code: https://github.com/panoptes/POCS
 
 [Testing]: #testing

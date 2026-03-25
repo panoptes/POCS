@@ -428,7 +428,7 @@ There are a lot of changes included in this release, highlights below:
     - Two docker containers run from the `aag-weather` image and have
       a `docker/docker-compose-aag.yaml` file to start.
 - Config items related to the configuration system have been moved to
-  the [Config Server](https://panoptes-utils.readthedocs.io/en/latest/#config-server)
+  the [Config Server](https://panoptes.github.io/panoptes-utils//en/latest/#config-server)
   in `panoptes-utils` repo.
     - The main interface for POCS related items is through
       `self.get_config`, which can take a key and a default, e.g.
