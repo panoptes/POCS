@@ -12,6 +12,10 @@
 - Updated `AGENTS.md` and `GEMINI.md` to mandate the use of Markdown and MkDocs for all future documentation.
 - Added GitHub Actions workflow for automated documentation deployment to GitHub Pages.
 
+### Fixed
+
+- Fixed `zsh-autosuggestions` not working in the `install-zsh.sh` script by ensuring history is configured before plugins are loaded. #1416
+
 ## 0.8.1 - 2026-03-20
 
 ### Fixed

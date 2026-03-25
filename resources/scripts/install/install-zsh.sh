@@ -28,10 +28,8 @@ function write_zsh_plugins() {
   cat >"${HOME}/.zsh_plugins.txt" <<EOT
 # oh-my-zsh plugins
 ohmyzsh/ohmyzsh path:plugins/git
-ohmyzsh/ohmyzsh path:plugins/sudo
-ohmyzsh/ohmyzsh path:plugins/docker
-ohmyzsh/ohmyzsh path:plugins/docker-compose
 ohmyzsh/ohmyzsh path:plugins/python
+ohmyzsh/ohmyzsh path:plugins/sudo
 
 # zsh-users plugins
 zsh-users/zsh-autosuggestions
@@ -45,6 +43,24 @@ function write_zshrc() {
 
 export PATH="\$HOME/bin:\$HOME/.local/bin:/usr/local/bin:\$PATH"
 export PANDIR="${PANDIR}"
+
+# History configuration
+HISTFILE="\${HOME}/.zsh_history"
+HISTSIZE=10000
+SAVEHIST=10000
+setopt append_history        # Append to history file instead of replacing
+setopt inc_append_history    # Write to history file immediately, not on shell exit
+setopt hist_ignore_dups      # Don't record duplicate consecutive commands
+setopt hist_ignore_space     # Don't record commands that start with a space
+unsetopt share_history       # Don't share history between terminals in real-time
+
+# Common aliases
+alias ll='ls -lh'
+alias la='ls -lAh'
+alias df='df -h'
+alias du='du -h'
+alias free='free -h'
+alias mkdir='mkdir -p'
 
 # Initialize zsh completion system before loading plugins
 autoload -Uz compinit
@@ -70,24 +86,6 @@ fi
 
 # Source the plugins file.
 source \$zsh_plugins
-
-# Common aliases
-alias ll='ls -lh'
-alias la='ls -lAh'
-alias df='df -h'
-alias du='du -h'
-alias free='free -h'
-alias mkdir='mkdir -p'
-
-# History configuration
-HISTFILE="\${HOME}/.zsh_history"
-HISTSIZE=10000
-SAVEHIST=10000
-setopt append_history        # Append to history file instead of replacing
-setopt inc_append_history    # Write to history file immediately, not on shell exit
-setopt hist_ignore_dups      # Don't record duplicate consecutive commands
-setopt hist_ignore_space     # Don't record commands that start with a space
-unsetopt share_history       # Don't share history between terminals in real-time
 
 # Starship prompt
 if command -v starship &>/dev/null; then
