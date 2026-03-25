@@ -320,7 +320,7 @@ pocs.initialize()
 ## Getting Help
 
 - **Forum:** https://forum.projectpanoptes.org
-- **Docs:** https://pocs.readthedocs.io
+- **Docs:** https://panoptes.github.io/POCS/
 - **Code questions:** GitHub issues
 - **Live chat:** Join our community chat
 

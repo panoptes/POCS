@@ -556,6 +556,7 @@ When making changes, update:
 - Architecture docs for structural changes
 - CLI guide for new commands
 - Examples for new features
+- All documentation must be written in Markdown for MkDocs. Do not use reStructuredText (.rst) or Sphinx.
 - A Changelog (`CHANGELOG.md`) entry should exist for every feature or bug fix. Minor changes (e.g., documentation updates, internal refactoring) may not require an entry.
 - Changelog entries should be categorized under appropriate sections (Added, Changed, Fixed, Removed) and reference PR
   numbers.
@@ -613,7 +614,7 @@ When making changes, update:
 
 ## Getting Help
 
-- **Documentation:** https://pocs.readthedocs.io
+- **Documentation:** https://panoptes.github.io/POCS/
 - **Forum:** https://forum.projectpanoptes.org
 - **Issues:** https://github.com/panoptes/POCS/issues
 - **Code of Conduct:** `CODE_OF_CONDUCT.md`

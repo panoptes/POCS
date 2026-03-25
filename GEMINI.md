@@ -10,7 +10,7 @@ Gemini CLI must rigorously adhere to the standards, workflows, and architectural
 
 - **Code Style:** Use Ruff for linting and formatting. Use double quotes and 110-character line limits.
 - **Type Safety:** Python 3.12+ type hints are required for all function signatures.
-- **Documentation:** Use Google-style docstrings for all public classes and functions.
+- **Documentation:** Use Google-style docstrings for all public classes and functions. All documentation must be written in Markdown for MkDocs. Do not use reStructuredText (.rst) or Sphinx.
 - **Testing:** Every change MUST include corresponding `pytest` tests. Maintain high coverage.
 - **Package Management:** Use `uv` for all dependency and environment management.
 - **Logging:** Use `loguru` via `self.logger` (from `PanBase`) or direct import for standalone utilities.
