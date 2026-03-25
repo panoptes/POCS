@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.8.2dev
+## [Unreleased]
 
 ### Added
 

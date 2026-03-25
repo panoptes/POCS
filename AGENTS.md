@@ -416,7 +416,7 @@ panoptes-utils config run --host 0.0.0.0 --port 6563 --config-file tests/testing
 - **Test failures:** Fix on the release branch before merging to `main`.
 - **Twine check failures:** Usually due to missing or malformed metadata in `pyproject.toml`.
 
-**Automation Notes for AI Agents:**
+**Automation Notes for AI Agents (During Release Process):**
 
 - Parse version from `git describe --tags --abbrev=0`
 - Calculate next version based on changelog entries or commit messages
@@ -558,6 +558,8 @@ When making changes, update:
 - Examples for new features
 - All documentation must be written in Markdown for MkDocs. Do not use reStructuredText (.rst) or Sphinx.
 - A Changelog (`CHANGELOG.md`) entry should exist for every feature or bug fix. Minor changes (e.g., documentation updates, internal refactoring) may not require an entry.
+- All new entries should be added under an `## [Unreleased]` section at the top of the file. If this section does not exist, create it.
+- Do NOT create a new version heading for individual PRs; new version headings should only be created when performing a release.
 - Changelog entries should be categorized under appropriate sections (Added, Changed, Fixed, Removed) and reference PR
   numbers.
 - Changelog entries should be clear and concise, describing the change and its impact, ideally less than one line.
