@@ -1,6 +1,12 @@
 # Changelog
 
-# Unreleased
+## 0.9.0 - 2026-03-24
+
+### Changed
+
+- **Documentation Migration:** Transitioned from Sphinx/reStructuredText to MkDocs/Markdown with the Material theme. #1414
+- Updated `AGENTS.md` and `GEMINI.md` to mandate the use of Markdown and MkDocs for all future documentation.
+- Added GitHub Actions workflow for automated documentation deployment to GitHub Pages.
 
 ## 0.8.1 - 2026-03-20
 
@@ -422,7 +428,7 @@ There are a lot of changes included in this release, highlights below:
     - Two docker containers run from the `aag-weather` image and have
       a `docker/docker-compose-aag.yaml` file to start.
 - Config items related to the configuration system have been moved to
-  the [Config Server](https://panoptes-utils.readthedocs.io/en/latest/#config-server)
+  the [Config Server](https://panoptes.github.io/panoptes-utils//en/latest/#config-server)
   in `panoptes-utils` repo.
     - The main interface for POCS related items is through
       `self.get_config`, which can take a key and a default, e.g.

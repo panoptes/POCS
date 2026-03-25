@@ -92,7 +92,7 @@ After trying these examples:
 ## Help and Documentation
 
 - **CLI help**: Run any command with `--help`, e.g. `pocs mount --help`
-- **Full docs**: https://pocs.readthedocs.io
+- **Full docs**: https://panoptes.github.io/POCS/
 - **Forum**: https://forum.projectpanoptes.org
 - **Architecture guide**: [docs/architecture-for-beginners.md](../docs/architecture-for-beginners.md)
 - **Glossary**: [docs/glossary.md](../docs/glossary.md)
