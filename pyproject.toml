@@ -96,9 +96,14 @@ testing = [
 lint = [
     "ruff",
 ]
+docs = [
+    "mkdocs-material",
+    "mkdocstrings[python]",
+]
 dev = [
     { include-group = "testing" },
     { include-group = "lint" },
+    { include-group = "docs" },
 ]
 
 [tool.setuptools]

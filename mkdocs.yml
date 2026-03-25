@@ -1,0 +1,30 @@
+site_name: PANOPTES Observatory Control System
+theme:
+  name: material
+
+plugins:
+  - search
+  - mkdocstrings:
+      default_handler: python
+      handlers:
+        python:
+          paths: [src]
+          options:
+            docstring_style: google
+
+markdown_extensions:
+  - pymdownx.snippets:
+      base_path: "."
+  - pymdownx.superfences
+
+nav:
+  - Home: index.md
+  - Conceptual Overview: conceptual-overview.md
+  - Architecture: architecture-for-beginners.md
+  - CLI Guide: cli-guide.md
+  - Glossary: glossary.md
+  - API Reference: api.md
+  - Contributing: contributing.md
+  - Changelog: changelog.md
+  - Authors: authors.md
+  - License: license.md
