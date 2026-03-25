@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.9.1 - 2026-03-25
+
+### Added
+
+- Added `pocs version` command to display the current version of `panoptes-pocs` and `panoptes-utils`.
+
 ## 0.9.0 - 2026-03-24
 
 ### Changed
