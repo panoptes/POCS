@@ -5,6 +5,7 @@
 ### Added
 
 - Added `pocs version` command to display the current version of `panoptes-pocs` and `panoptes-utils`.
+- Improved `pocs camera take-bias` organization: each run now uses its own timestamped subfolder for both raw frames and the master bias.
 
 ### Changed
 
@@ -15,6 +16,7 @@
 ### Fixed
 
 - Fixed `zsh-autosuggestions` not working in the `install-zsh.sh` script by ensuring history is configured before plugins are loaded. #1416
+- Fixed `pocs camera take-bias` processing all files in the bias directory instead of just the current run.
 
 ## 0.8.1 - 2026-03-20
 

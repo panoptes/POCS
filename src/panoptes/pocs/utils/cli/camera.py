@@ -202,7 +202,7 @@ def take_pictures_cmd(
         typer.Abort("No cameras found, exiting.")
 
     print(f"Taking {num_images} images with {len(cameras)} cameras.")
-    return take_pictures(
+    _, results = take_pictures(
         cameras=cameras,
         num_images=num_images,
         exptime=exptime,
@@ -214,6 +214,7 @@ def take_pictures_cmd(
         pretty=pretty,
         verbose=verbose,
     )
+    return results
 
 
 @app.command(name="take-bias")
@@ -244,7 +245,7 @@ def take_bias_cmd(
     print(f"Taking {num_images} bias frames with {len(cameras)} cameras.")
 
     # Take the bias frames
-    take_pictures(
+    run_dir, results = take_pictures(
         cameras=cameras,
         num_images=num_images,
         exptime=0.0,  # Zero exposure time for bias frames
@@ -260,10 +261,7 @@ def take_bias_cmd(
     print("\n[bold cyan]Processing bias frames...[/bold cyan]")
 
     # Process each camera's bias frames
-    for cam_name in cameras.keys():
-        # Find all bias frames for this camera
-        bias_files = sorted(output_dir.glob(f"**/{cam_name}-*.fits"))
-
+    for cam_name, bias_files in results.items():
         if not bias_files:
             print(f"[yellow]No bias frames found for {cam_name}[/yellow]")
             continue
@@ -312,7 +310,7 @@ def take_bias_cmd(
         print(f"  Max value:            {max_val:.4f}")
 
         # Save the master bias frame
-        master_bias_path = output_dir / f"{cam_name}-master-bias.fits"
+        master_bias_path = run_dir / f"{cam_name}-master-bias.fits"
         try:
             # Use the first bias frame as a template for the header
             with fits.open(bias_files[0]) as hdul:
@@ -341,7 +339,7 @@ def take_pictures(
     solve: bool = False,
     pretty: bool = False,
     verbose: bool = False,
-) -> dict[str, list[Path]] | None:
+) -> tuple[Path, dict[str, list[Path]]]:
     """Capture images concurrently from one or more cameras with optional processing.
 
     Spawns a thread pool to trigger exposures across all cameras and a background
@@ -363,9 +361,8 @@ def take_pictures(
         verbose (bool): If True, print additional processing details.
 
     Returns:
-        dict[str, list[Path]] | None: Optional mapping of camera name to list of
-            produced files. Currently returns None; printed progress indicates
-            completion.
+        tuple[Path, dict[str, list[Path]]]: The actual output directory and a mapping
+            of camera name to list of produced files.
     """
     observation_start_time = current_time(flatten=True)
     output_dir = Path(output_dir) / str(observation_start_time)
@@ -465,7 +462,15 @@ def take_pictures(
         process_queue.join()
         t.join()
 
-    return None
+    # Collect results
+    results = {}
+    while not complete_queue.empty():
+        cam_name, file_path = complete_queue.get()
+        if cam_name not in results:
+            results[cam_name] = []
+        results[cam_name].append(file_path)
+
+    return output_dir, results
 
 
 def _take_pics(
