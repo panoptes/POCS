@@ -2502,7 +2502,7 @@ requires-dist = [
     { name = "pandas" },
     { name = "panoptes-aag", marker = "extra == 'weather'" },
     { name = "panoptes-pocs", extras = ["focuser", "google", "weather"], marker = "extra == 'all'" },
-    { name = "panoptes-utils", extras = ["config", "images"], specifier = ">=0.2.53" },
+    { name = "panoptes-utils", extras = ["config", "images"], specifier = "<3.0" },
     { name = "pick" },
     { name = "pillow", specifier = ">=10.0.1" },
     { name = "protobuf", marker = "extra == 'google'" },
