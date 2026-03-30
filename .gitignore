@@ -59,3 +59,4 @@ json_store
 .junie
 site/
 plans/
+.env
