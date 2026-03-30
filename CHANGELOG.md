@@ -17,6 +17,7 @@
 
 - Fixed `zsh-autosuggestions` not working in the `install-zsh.sh` script by ensuring history is configured before plugins are loaded. #1416
 - Fixed `pocs camera take-bias` processing all files in the bias directory instead of just the current run.
+- Fixed `namespaces = false` in `pyproject.toml` that broke the `panoptes` namespace package shared with `panoptes-utils`.
 
 ## 0.8.1 - 2026-03-20
 
