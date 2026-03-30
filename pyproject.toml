@@ -111,7 +111,7 @@ package-dir = {"" = "src"}
 
 [tool.setuptools.packages.find]
 where = ["src"]
-namespaces = false
+namespaces = true
 
 [tool.setuptools_scm]
 version_file = "src/panoptes/pocs/_version.py"
