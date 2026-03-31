@@ -34,11 +34,10 @@ For more information, see the full documentation at: https://panoptes.github.io/
 New to POCS? Start here:
 
 - **CLI Guide:** See [cli-guide.md](cli-guide.md) for complete command line reference
-- **Command Line Examples:** Quick start at [https://github.com/panoptes/POCS/blob/main/examples/README.md](https://github.com/panoptes/POCS/blob/main/examples/README.md)
+- **Examples:** Quick start at [examples.md](examples.md)
 - **Conceptual Overview:** Read [conceptual-overview.md](conceptual-overview.md) to understand POCS without installing
 - **Architecture Guide:** Read [architecture-for-beginners.md](architecture-for-beginners.md) to understand how POCS works  
 - **Glossary:** Check [glossary.md](glossary.md) for definitions of all terms
-- **Python Examples:** Run [https://github.com/panoptes/POCS/blob/main/examples/beginner_simulation.py](https://github.com/panoptes/POCS/blob/main/examples/beginner_simulation.py) for API tutorial (advanced)
 
 ## Install
 

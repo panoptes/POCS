@@ -59,6 +59,7 @@ nav:
   - Project PANOPTES Hub: https://panoptes.github.io/
   - Home: index.md
   - Conceptual Overview: conceptual-overview.md
+  - Examples: examples.md
   - Architecture: architecture-for-beginners.md
   - CLI Guide: cli-guide.md
   - Glossary: glossary.md

@@ -4,6 +4,7 @@
 
 ### Added
 
+- **Documentation Examples:** Consolidated example scripts and guides into the official documentation. Added a new `docs/examples.md` page that includes an interactive Jupyter Notebook-style walkthrough and CLI quick-start guide.
 - Added `pocs version` command to display the current version of `panoptes-pocs` and `panoptes-utils`.
 - Improved `pocs camera take-bias` organization: each run now uses its own timestamped subfolder for both raw frames and the master bias.
 
@@ -12,6 +13,10 @@
 - **Documentation Migration:** Transitioned from Sphinx/reStructuredText to MkDocs/Markdown with the Material theme. #1414
 - Updated `AGENTS.md` and `GEMINI.md` to mandate the use of Markdown and MkDocs for all future documentation.
 - Added GitHub Actions workflow for automated documentation deployment to GitHub Pages.
+
+### Removed
+
+- Removed the `examples/` directory and moved its content to an interactive Jupyter walkthrough in `docs/examples.md`.
 
 ### Fixed
 
