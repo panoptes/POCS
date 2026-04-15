@@ -10,6 +10,7 @@
 
 ### Changed
 
+- Switched from triangular (`develop`/`main`) workflow to a single-branch (`main`) workflow. Feature branches are now created directly from `main`. #1418
 - **Documentation Migration:** Transitioned from Sphinx/reStructuredText to MkDocs/Markdown with the Material theme. #1414
 - Updated `AGENTS.md` and `GEMINI.md` to mandate the use of Markdown and MkDocs for all future documentation.
 - Added GitHub Actions workflow for automated documentation deployment to GitHub Pages.
