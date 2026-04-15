@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+
+- Added `pocs weather setup` subcommand that detects a newly-connected weather station USB serial device and writes a udev rule to `/etc/udev/rules.d/92-panoptes-weather.rules` creating a stable `/dev/weather` symlink. Supports optional power-cycling via the power service (`--power-cycle`) or interactive prompting for manual power-cycle.
+
 ## 0.8.2 - 2026-04-15
 
 ### Added
