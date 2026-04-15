@@ -267,7 +267,7 @@ panoptes-config-server --host 0.0.0.0 --port 6563 run --config-file tests/testin
 **Prerequisites:**
 
 - Ensure you have write access to the repository
-- Ensure all CI tests are passing on `develop` branch
+- Ensure all CI tests are passing on the `main` branch
 - Determine the new version number (see Version Numbering below)
 
 **Version Numbering:**
@@ -281,10 +281,10 @@ panoptes-config-server --host 0.0.0.0 --port 6563 run --config-file tests/testin
 
 **Release Process:**
 
-1. **Ensure `develop` is clean:**
+1. **Ensure `main` is clean:**
    ```bash
-   git checkout develop
-   git pull origin develop
+   git checkout main
+   git pull origin main
    git status  # Should show "nothing to commit, working tree clean"
    ```
 
@@ -299,9 +299,9 @@ panoptes-config-server --host 0.0.0.0 --port 6563 run --config-file tests/testin
    echo "New version: $NEW_VERSION"
    ```
 
-3. **Create release branch:**
+3. **Create release branch from `main`:**
    ```bash
-   git checkout -b release-${NEW_VERSION} origin/develop
+   git checkout -b release-${NEW_VERSION} origin/main
    ```
 
 4. **Update `CHANGELOG.md`:**
@@ -326,82 +326,27 @@ panoptes-config-server --host 0.0.0.0 --port 6563 run --config-file tests/testin
    git commit -m "Update CHANGELOG for ${NEW_VERSION}"
    ```
 
-6. **Merge release branch into `main`:**
+6. **Push the release branch and open a PR against `main`:**
+   ```bash
+   git push -u origin release-${NEW_VERSION}
+   ```
+   - Get the PR approved and merged into `main`. Ensure all CI checks pass before merging.
+
+7. **Tag `main` with new version:**
+   - Once the PR is merged, switch to `main`, pull the latest changes, and verify the build before tagging.
    ```bash
    git checkout main
    git pull origin main
-   git merge --no-ff release-${NEW_VERSION} -m "Merge release-${NEW_VERSION}"
+   # Optionally verify: uv run pytest && uv run ruff check .
+   git tag -a ${NEW_VERSION} -m "Release ${NEW_VERSION}"
+   git push origin ${NEW_VERSION}
    ```
 
-7. **Resolve conflicts if necessary:**
-    - If conflicts occur, resolve them carefully
-    - Ensure `CHANGELOG.md` and `pyproject.toml` are correct
-    - Commit resolved conflicts:
-      ```bash
-      git add .
-      git commit -m "Resolve merge conflicts for ${NEW_VERSION}"
-      ```
-
-8. **Test and build on `main`:**
+8. **Clean up release branch:**
    ```bash
-   # Ensure environment is up to date
-   uv sync --all-extras --group dev
-   
-   # Run all tests (allow 5-10 minutes)
-   uv run pytest
-   
-   # Check code style
-   uv run ruff check .
-   uv run ruff format --check .
-   
-   # Build the package
-   uv build
+   git branch -d release-${NEW_VERSION}
+   git push origin --delete release-${NEW_VERSION}
    ```
-
-9. **Verify distribution files:**
-   ```bash
-   # Check the built distribution files
-   uv run --with twine twine check dist/*
-   
-   # Should show: "Checking dist/panoptes_pocs-X.Y.Z.tar.gz: PASSED"
-   # and "Checking dist/panoptes_pocs-X.Y.Z-py3-none-any.whl: PASSED"
-   ```
-
-10. **Tag `main` with new version:**
-    ```bash
-    git tag -a ${NEW_VERSION} -m "Release ${NEW_VERSION}"
-    ```
-
-11. **Push `main` and tags to origin:**
-    ```bash
-    git push origin main
-    git push origin ${NEW_VERSION}
-    ```
-
-12. **Merge release branch into `develop`:**
-    ```bash
-    git checkout develop
-    git pull origin develop
-    git merge --no-ff release-${NEW_VERSION} -m "Merge release-${NEW_VERSION} into develop"
-    ```
-
-13. **Tag `develop` with next development version:**
-    ```bash
-    # Set next development version (example: v0.8.11 -> v0.8.12.dev0)
-    NEXT_DEV_VERSION="v0.8.12.dev0"
-    git tag -a ${NEXT_DEV_VERSION} -m "Start development for ${NEXT_DEV_VERSION}"
-    ```
-
-14. **Push `develop` and tags to origin:**
-    ```bash
-    git push origin develop
-    git push origin ${NEXT_DEV_VERSION}
-    ```
-
-15. **Clean up release branch:**
-    ```bash
-    git branch -d release-${NEW_VERSION}
-    ```
 
 **Post-Release:**
 
@@ -412,7 +357,6 @@ panoptes-config-server --host 0.0.0.0 --port 6563 run --config-file tests/testin
 
 **Common Issues:**
 
-- **Merge conflicts:** Most common in `CHANGELOG.md`. Keep both sets of changes and organize chronologically.
 - **Test failures:** Fix on the release branch before merging to `main`.
 - **Twine check failures:** Usually due to missing or malformed metadata in `pyproject.toml`.
 

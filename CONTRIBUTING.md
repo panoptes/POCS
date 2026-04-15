@@ -1,6 +1,6 @@
 # CONTRIBUTING GUIDE
 
-Please see the [code of conduct](https://github.com/panoptes/POCS/blob/develop/CODE_OF_CONDUCT.md) for our playground rules and follow them during all your contributions.
+Please see the [code of conduct](https://github.com/panoptes/POCS/blob/main/CODE_OF_CONDUCT.md) for our playground rules and follow them during all your contributions.
 
 ## Getting Started
 
@@ -17,38 +17,28 @@ We prefer that all changes to POCS have an associated [GitHub Issue in the proje
 
 ### Process
 
-1. Create a fork of the repository via github (button in top-right).
-2. Clone your fork to your local system:
+We use a single-branch workflow. The primary branch is `main`.
+
+> **External contributors:** If you do not have write access to the repository, fork it on GitHub first and clone your fork instead. Submit your pull request from a branch on your fork.
+
+1. Clone the repository (or your fork):
 
    ```bash
-   cd $PANDIR
-   git clone git@github.com:YOUR-GITHUB-NAME/POCS.git
+   git clone https://github.com/panoptes/POCS.git
    ```
 
-3. Set the "upstream" branch to `panoptes` and fetch the upstream changes:
+2. Create a feature branch from `main` with a descriptive name, e.g.:
 
    ```bash
-   cd POCS
-   git remote add upstream https://github.com/panoptes/POCS.git
-   git fetch upstream
+   git checkout -b new-camera-simulator main
+   git checkout -b issue-28 main
    ```
 
-4. Use a topic branch within your fork to make changes. All of our repositories have a default branch of `develop` when you first clone them, but your work should be in a separate branch (see note below). Your branch should be based off of the `upstream/develop` branch.
+3. Ensure that your code meets this project's standards (see Testing and Code Formatting below).
 
-   Create a branch with a descriptive name, e.g.:
+4. Run the testing suite locally to ensure that all tests are passing. See Testing below.
 
-   ```bash
-   git checkout -b new-camera-simulator upstream/develop
-   git checkout -b issue-28 upstream/develop
-   ```
-
-5. Ensure that your code meets this project's standards (see Testing and Code Formatting below).
-
-6. Run the testing suite locally to ensure that all tests are passing. See Testing below.
-
-7. Submit a pull request to the repository, be sure to reference the issue number it addresses.
-
-> See ["A successful Git branching model"](https://nvie.com/posts/a-successful-git-branching-model/) for details on how the repository is structured.
+5. Submit a pull request against `main`, and reference the issue number it addresses.
 
 ## Code Formatting
 
