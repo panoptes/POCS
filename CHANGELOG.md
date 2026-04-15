@@ -1,6 +1,29 @@
 # Changelog
 
-# Unreleased
+## [Unreleased]
+
+### Added
+
+- **Documentation Examples:** Consolidated example scripts and guides into the official documentation. Added a new `docs/examples.md` page that includes an interactive Jupyter Notebook-style walkthrough and CLI quick-start guide.
+- Added `pocs version` command to display the current version of `panoptes-pocs` and `panoptes-utils`.
+- Improved `pocs camera take-bias` organization: each run now uses its own timestamped subfolder for both raw frames and the master bias.
+
+### Changed
+
+- Switched from triangular (`develop`/`main`) workflow to a single-branch (`main`) workflow. Feature branches are now created directly from `main`. #1421
+- **Documentation Migration:** Transitioned from Sphinx/reStructuredText to MkDocs/Markdown with the Material theme. #1414
+- Updated `AGENTS.md` and `GEMINI.md` to mandate the use of Markdown and MkDocs for all future documentation.
+- Added GitHub Actions workflow for automated documentation deployment to GitHub Pages.
+
+### Removed
+
+- Removed the `examples/` directory and moved its content to an interactive Jupyter walkthrough in `docs/examples.md`.
+
+### Fixed
+
+- Fixed `zsh-autosuggestions` not working in the `install-zsh.sh` script by ensuring history is configured before plugins are loaded. #1416
+- Fixed `pocs camera take-bias` processing all files in the bias directory instead of just the current run.
+- Fixed `namespaces = false` in `pyproject.toml` that broke the `panoptes` namespace package shared with `panoptes-utils`.
 
 ## 0.8.1 - 2026-03-20
 
@@ -422,7 +445,7 @@ There are a lot of changes included in this release, highlights below:
     - Two docker containers run from the `aag-weather` image and have
       a `docker/docker-compose-aag.yaml` file to start.
 - Config items related to the configuration system have been moved to
-  the [Config Server](https://panoptes-utils.readthedocs.io/en/latest/#config-server)
+  the [Config Server](https://panoptes.github.io/panoptes-utils//en/latest/#config-server)
   in `panoptes-utils` repo.
     - The main interface for POCS related items is through
       `self.get_config`, which can take a key and a default, e.g.

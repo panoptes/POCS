@@ -428,9 +428,9 @@ pocs run alignment --help
 
 - **New to POCS?** Read [Conceptual Overview](conceptual-overview.md)
 - **Want to understand the architecture?** See [Architecture for Beginners](architecture-for-beginners.md)
-- **Ready for Python API?** Check [examples/README.md](../examples/README.md)
+- **Ready for Python API?** Check [https://github.com/panoptes/POCS/blob/main/examples/README.md](https://github.com/panoptes/POCS/blob/main/examples/README.md)
 - **Need term definitions?** Browse the [Glossary](glossary.md)
 
 ---
 
-**Questions?** Check the main [README](../README.md) or visit the PANOPTES forum.
+**Questions?** Check the main [README](https://github.com/panoptes/POCS/blob/main/README.md) or visit the PANOPTES forum.

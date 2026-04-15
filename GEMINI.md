@@ -10,7 +10,7 @@ Gemini CLI must rigorously adhere to the standards, workflows, and architectural
 
 - **Code Style:** Use Ruff for linting and formatting. Use double quotes and 110-character line limits.
 - **Type Safety:** Python 3.12+ type hints are required for all function signatures.
-- **Documentation:** Use Google-style docstrings for all public classes and functions.
+- **Documentation:** Use Google-style docstrings for all public classes and functions. All documentation must be written in Markdown for MkDocs. Do not use reStructuredText (.rst) or Sphinx.
 - **Testing:** Every change MUST include corresponding `pytest` tests. Maintain high coverage.
 - **Package Management:** Use `uv` for all dependency and environment management.
 - **Logging:** Use `loguru` via `self.logger` (from `PanBase`) or direct import for standalone utilities.
@@ -18,7 +18,7 @@ Gemini CLI must rigorously adhere to the standards, workflows, and architectural
 
 ## Project-Specific Workflow Mandates
 
-- **Changelog Requirement:** A `CHANGELOG.md` entry is required for **every feature or bug fix**. Minor changes (e.g., documentation tweaks, internal refactoring) do not necessarily require a changelog entry.
+- **Changelog Requirement:** A `CHANGELOG.md` entry is required for **every feature or bug fix**. All entries must be added under an `## [Unreleased]` section at the top of the file. Minor changes (e.g., documentation tweaks, internal refactoring) do not necessarily require a changelog entry.
 - **Commit Message Format:** Use the format `Brief description (#issue-number)`.
 - **Utility Preference:** ALWAYS check the [`panoptes-utils`](https://github.com/panoptes/panoptes-utils) library for existing functionality before implementing new utilities or importing external libraries.
 - **Simulator-First Testing:** POCS controls physical hardware. Always prioritize safety and use simulators for verification. Never bypass state machine transitions. Use the `--simulator` flag or appropriate configuration to ensure no real hardware commands are sent during development and testing.

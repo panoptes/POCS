@@ -384,58 +384,56 @@ def setup_mount(
 
                     write_port = port.device
 
-                    if typer.confirm("Do you want to make a udev entry?"):
-                        print("Creating udev entry for device")
-                        # Get info for writing udev entry.
-                        try:
-                            udev_str = (
-                                f'ACTION=="add", '
-                                f'SUBSYSTEM=="tty", '
-                                f'ATTRS{{idVendor}}=="{port.vid:04x}", '
-                                f'ATTRS{{idProduct}}=="{port.pid:04x}", '
-                            )
-                            if port.serial_number is not None:
-                                udev_str += f'ATTRS{{serial}}=="{port.serial_number}", '
+                    print("Creating udev entry for device")
+                    # Get info for writing udev entry.
+                    try:
+                        udev_str = (
+                            f'ACTION=="add", '
+                            f'SUBSYSTEM=="tty", '
+                            f'ATTRS{{idVendor}}=="{port.vid:04x}", '
+                            f'ATTRS{{idProduct}}=="{port.pid:04x}", '
+                        )
+                        if port.serial_number is not None:
+                            udev_str += f'ATTRS{{serial}}=="{port.serial_number}", '
 
-                            # The name we want it known by.
-                            udev_str += 'SYMLINK+="ioptron"'
-                            # Add a newline to the end of the file.
-                            udev_str += "\n"
+                        # The name we want it known by.
+                        udev_str += 'SYMLINK+="ioptron mount"'
+                        # Add a newline to the end of the file.
+                        udev_str += "\n"
 
-                            udev_fn = Path("92-panoptes.rules")
-                            udev_fn.write_text(udev_str)
-                            write_port = "/dev/ioptron"
+                        udev_fn = Path("92-panoptes-mount.rules")
+                        udev_fn.write_text(udev_str)
+                        write_port = "/dev/mount"
 
-                            # Use sudo to write the udev entry to the correct location.
-                            subprocess.run(
-                                ["sudo", "tee", f"/etc/udev/rules.d/{udev_fn}"],
-                                input=udev_str.encode(),
-                                check=True,
-                                stdout=subprocess.DEVNULL,
-                                stderr=subprocess.PIPE,
-                            )
+                        # Use sudo to write the udev entry to the correct location.
+                        subprocess.run(
+                            ["sudo", "tee", f"/etc/udev/rules.d/{udev_fn}"],
+                            input=udev_str.encode(),
+                            check=True,
+                            stdout=subprocess.DEVNULL,
+                            stderr=subprocess.PIPE,
+                        )
 
-                            print(f"Wrote udev entry to [green]/etc/udev/rules.d/{udev_fn}[/green].")
+                        print(f"Wrote udev entry to [green]/etc/udev/rules.d/{udev_fn}[/green].")
 
-                            # Reload the udev rules.
-                            subprocess.run(["sudo", "udevadm", "control", "--reload"], check=True)
-                            print(
-                                "Reloaded udev rules. Please unplug and replug the mount to use "
-                                "the new udev entry."
-                            )
+                        # Reload the udev rules.
+                        subprocess.run(["sudo", "udevadm", "control", "--reload"], check=True)
+                        print(
+                            "Reloaded udev rules. Please unplug and replug the mount to use "
+                            "the new udev entry."
+                        )
 
-                        except Exception:
-                            pass
+                    except Exception:
+                        pass
 
                     # Confirm the user wants to update the config.
-                    if typer.confirm("Do you want to update the config?"):
-                        print("Updating config.")
-                        set_config("mount.brand", "ioptron")
-                        set_config("mount.serial.port", write_port)
-                        set_config("mount.serial.baudrate", baudrate)
-                        set_config("mount.model", mount_type.name.lower())
-                        set_config("mount.driver", f"panoptes.pocs.mount.ioptron.{mount_type.name.lower()}")
-                        set_config("mount.commands_file", f"ioptron/{command_set}")
+                    print("Updating config.")
+                    set_config("mount.brand", "ioptron")
+                    set_config("mount.serial.port", write_port)
+                    set_config("mount.serial.baudrate", baudrate)
+                    set_config("mount.model", mount_type.name.lower())
+                    set_config("mount.driver", f"panoptes.pocs.mount.ioptron.{mount_type.name.lower()}")
+                    set_config("mount.commands_file", f"ioptron/{command_set}")
 
                     return typer.Exit()
             except serial.SerialTimeoutException:

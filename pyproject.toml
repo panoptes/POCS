@@ -38,7 +38,7 @@ dependencies = [
     "GitPython",
     "human-readable",
     "numpy>=2",
-    "panoptes-utils[config,images]>=0.2.53",
+    "panoptes-utils[config,images]<3.0",
     "pandas",
     "pick",
     "Pillow>=10.0.1",
@@ -57,7 +57,7 @@ dependencies = [
 
 [project.urls]
 Homepage = "https://github.com/panoptes/POCS"
-Documentation = "https://panoptes-pocs.readthedocs.org"
+Documentation = "https://panoptes.github.io/POCS/"
 Forum = "https://forum.projectpanoptes.org"
 
 [project.scripts]
@@ -96,9 +96,14 @@ testing = [
 lint = [
     "ruff",
 ]
+docs = [
+    "mkdocs-material",
+    "mkdocstrings[python]",
+]
 dev = [
     { include-group = "testing" },
     { include-group = "lint" },
+    { include-group = "docs" },
 ]
 
 [tool.setuptools]
@@ -106,7 +111,7 @@ package-dir = {"" = "src"}
 
 [tool.setuptools.packages.find]
 where = ["src"]
-namespaces = false
+namespaces = true
 
 [tool.setuptools_scm]
 version_file = "src/panoptes/pocs/_version.py"

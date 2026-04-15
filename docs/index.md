@@ -15,7 +15,7 @@ Welcome to POCS documentation!
 
 [PANOPTES](https://www.projectpanoptes.org) is an open source citizen science project
 designed to find [transiting exoplanets](https://spaceplace.nasa.gov/transits/en/) with
-digital cameras. The goal of PANOPTES is to establish a global network of of robotic
+digital cameras. The goal of PANOPTES is to establish a global network of robotic
 cameras run by amateur astronomers and schools (or anyone!) in order to monitor,
 as continuously as possible, a very large number of stars. For more general information
 about the project, including the science case and resources for interested individuals, see the
@@ -33,18 +33,17 @@ For more information, see the full documentation at: https://panoptes.github.io/
 
 New to POCS? Start here:
 
-- **CLI Guide:** See [docs/cli-guide.md](docs/cli-guide.md) for complete command line reference
-- **Command Line Examples:** Quick start at [examples/README.md](examples/README.md)
-- **Conceptual Overview:** Read [docs/conceptual-overview.md](docs/conceptual-overview.md) to understand POCS without installing
-- **Architecture Guide:** Read [docs/architecture-for-beginners.md](docs/architecture-for-beginners.md) to understand how POCS works  
-- **Glossary:** Check [docs/glossary.md](docs/glossary.md) for definitions of all terms
-- **Python Examples:** Run [examples/beginner_simulation.py](examples/beginner_simulation.py) for API tutorial (advanced)
+- **CLI Guide:** See [cli-guide.md](cli-guide.md) for complete command line reference
+- **Examples:** Quick start at [examples.md](examples.md)
+- **Conceptual Overview:** Read [conceptual-overview.md](conceptual-overview.md) to understand POCS without installing
+- **Architecture Guide:** Read [architecture-for-beginners.md](architecture-for-beginners.md) to understand how POCS works  
+- **Glossary:** Check [glossary.md](glossary.md) for definitions of all terms
 
 ## Install
 
 ### POCS Environment
 
-If you are running a PANOPTES unit then you will most likely want an  entire PANOPTES environment, which includes the necessary tools for operation of a complete unit.
+If you are running a PANOPTES unit then you will most likely want an entire PANOPTES environment, which includes the necessary tools for operation of a complete unit.
 
 There is a bash shell script that will install an entire working POCS system on your computer.  Some
 folks even report that it works on a Mac.
@@ -67,7 +66,7 @@ The install script will ask a few questions at the beginning of the process. If 
 the answer the default is probably okay.
 
 In addition to installing `POCS`, the install script will create the Config Server
-and Power Monitor services, which will automatically  be restarted upon reboot of the computer.
+and Power Monitor services, which will automatically be restarted upon reboot of the computer.
 
 
 ### POCS Module

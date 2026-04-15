@@ -57,3 +57,6 @@ temp*
 src/panoptes/pocs/_version.py
 json_store
 .junie
+site/
+plans/
+.env
