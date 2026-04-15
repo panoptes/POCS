@@ -330,13 +330,14 @@ panoptes-config-server --host 0.0.0.0 --port 6563 run --config-file tests/testin
    ```bash
    git push -u origin release-${NEW_VERSION}
    ```
-   - Get the PR approved and merged into `main`.
+   - Get the PR approved and merged into `main`. Ensure all CI checks pass before merging.
 
 7. **Tag `main` with new version:**
-   - Once the PR is merged, switch to `main` and pull the latest changes.
+   - Once the PR is merged, switch to `main`, pull the latest changes, and verify the build before tagging.
    ```bash
    git checkout main
    git pull origin main
+   # Optionally verify: uv run pytest && uv run ruff check .
    git tag -a ${NEW_VERSION} -m "Release ${NEW_VERSION}"
    git push origin ${NEW_VERSION}
    ```

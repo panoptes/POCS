@@ -19,7 +19,9 @@ We prefer that all changes to POCS have an associated [GitHub Issue in the proje
 
 We use a single-branch workflow. The primary branch is `main`.
 
-1. Clone the repository:
+> **External contributors:** If you do not have write access to the repository, fork it on GitHub first and clone your fork instead. Submit your pull request from a branch on your fork.
+
+1. Clone the repository (or your fork):
 
    ```bash
    git clone https://github.com/panoptes/POCS.git
