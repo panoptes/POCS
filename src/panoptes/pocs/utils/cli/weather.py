@@ -4,21 +4,20 @@ Provides commands to query status/config, restart the service, and set up
 the weather station udev rules for persistent device naming.
 """
 
+import glob as _glob
 import subprocess
-import time
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Annotated
 
 import human_readable
 import requests
+import serial
+import serial.tools.list_ports
 import typer
 from rich import print
 from rich.console import Console
 from rich.table import Table
-
-from panoptes.utils.serial.device import get_serial_port_info
 
 
 @dataclass
@@ -252,39 +251,29 @@ def get_page(page, base_url):
 
 @app.command(name="setup")
 def setup_weather(
-    power_cycle: Annotated[
-        bool,
-        typer.Option(
-            help="Attempt to power-cycle the weather station via the power service before detection.",
-        ),
-    ] = False,
-    power_host: str = typer.Option("localhost", help="Power service host for power-cycling."),
-    power_port: str = typer.Option("6564", help="Power service port for power-cycling."),
-    relay: str = typer.Option("weather_station", help="Power relay label for the weather station."),
-    wait: int = typer.Option(5, help="Seconds to wait between power off and power on during power-cycle."),
-    timeout: int = typer.Option(30, help="Seconds to wait for the device to appear after power-on."),
+    port_glob: str = typer.Option("/dev/ttyUSB*", help="Glob pattern for USB serial ports to scan."),
+    baud_rate: int = typer.Option(9600, help="Baud rate for the weather station serial port."),
+    read_timeout: float = typer.Option(2.0, help="Read timeout in seconds when probing each port."),
 ):
-    """Set up the weather station udev rules for persistent device naming.
+    """Scan USB serial ports for an AAG CloudWatcher and write a udev rule.
 
-    This command detects the weather station USB serial device and writes a udev
-    rule that creates a stable ``/dev/weather`` symlink.  Detection works by
-    snapshotting the available serial ports, optionally power-cycling the station,
-    and then watching for a newly-appeared port.
+    Each port matching ``port_glob`` is opened and sent the AAG
+    ``GET_INTERNAL_NAME`` command (``A!``).  A port that responds with the
+    expected ``!N `` response code is identified as the weather station.
 
-    The generated rule file is written to ``/etc/udev/rules.d/`` via ``sudo``,
-    then ``udevadm`` is invoked to reload rules so the symlink is created
-    immediately on the next plug-in.
+    Once found, a udev rule is written to
+    ``/etc/udev/rules.d/92-panoptes-weather.rules`` that creates a stable
+    ``/dev/weather`` symlink keyed on the device's USB vendor ID, product ID,
+    and serial number (when present).  ``udevadm`` is then called to reload
+    rules immediately.
+
+    The config server key ``environment.weather.serial_port`` is updated to
+    ``/dev/weather`` if the config server is reachable.
 
     Args:
-        power_cycle: When True, toggle the relay named ``relay`` off then on via
-            the power service at ``power_host:power_port`` before detecting the
-            device.
-        power_host: Hostname or IP address of the running power service.
-        power_port: TCP port of the running power service.
-        relay: Label (or index) of the power relay connected to the weather
-            station.
-        wait: Seconds to wait with the relay off before turning it back on.
-        timeout: Seconds to wait for the new serial device to appear.
+        port_glob: Shell glob for candidate ports, e.g. ``/dev/ttyUSB*``.
+        baud_rate: Serial baud rate; the AAG CloudWatcher uses 9600.
+        read_timeout: Per-port read timeout in seconds.
 
     Returns:
         None
@@ -292,84 +281,54 @@ def setup_weather(
     console = Console()
 
     # ------------------------------------------------------------------
-    # Snapshot ports that already exist before we do anything.
+    # Enumerate candidate ports.
     # ------------------------------------------------------------------
-    before_ports = {p.device for p in get_serial_port_info()}
+    port_paths = sorted(_glob.glob(port_glob))
+    if not port_paths:
+        console.print(f"[bold red]No devices found matching {port_glob!r}.[/bold red]")
+        raise typer.Exit(code=1)
+
+    console.print(f"Scanning {len(port_paths)} port(s): {', '.join(port_paths)}")
+
+    # Build a VID/PID/serial map from pyserial's port enumeration.
+    port_info_map = {p.device: p for p in serial.tools.list_ports.comports()}
 
     # ------------------------------------------------------------------
-    # Power-cycle via the power service if requested.
+    # Probe each port for the AAG handshake.
     # ------------------------------------------------------------------
-    if power_cycle:
-        power_url = f"http://{power_host}:{power_port}/control"
-        console.print(f"[cyan]Power-cycling relay [bold]{relay}[/bold] via {power_url}...[/cyan]")
+    found_device: str | None = None
+    for device in port_paths:
+        console.print(f"  Trying [cyan]{device}[/cyan]...", end=" ")
         try:
-            resp = requests.post(power_url, json={"relay": relay, "command": "turn_off"}, timeout=10)
-            if not resp.ok:
-                console.print(f"[yellow]Warning: power-off returned {resp.status_code}.[/yellow]")
-        except requests.exceptions.ConnectionError:
-            console.print(
-                f"[yellow]Warning: could not reach power service at {power_url}. "
-                "Continuing without power-cycle.[/yellow]"
-            )
-        else:
-            console.print(f"[dim]Waiting {wait}s with relay off...[/dim]")
-            time.sleep(wait)
-            try:
-                resp = requests.post(power_url, json={"relay": relay, "command": "turn_on"}, timeout=10)
-                if not resp.ok:
-                    console.print(f"[yellow]Warning: power-on returned {resp.status_code}.[/yellow]")
-                else:
-                    console.print("[green]Relay back on.[/green]")
-            except requests.exceptions.ConnectionError:
-                console.print(
-                    f"[yellow]Warning: could not reach power service at {power_url} for power-on.[/yellow]"
-                )
-    else:
-        console.print(
-            "[bold yellow]Please power-cycle the weather station now.[/bold yellow]\n"
-            "You can do this by running:\n"
-            f"  [cyan]pocs power off {relay} && pocs power on {relay}[/cyan]\n"
-            "or by manually unplugging and re-plugging the USB cable."
-        )
-        typer.confirm("Press Enter once the weather station has been power-cycled", default=True)
-
-    # ------------------------------------------------------------------
-    # Poll for a new serial port to appear.
-    # ------------------------------------------------------------------
-    new_port = None
-    deadline = time.monotonic() + timeout
-    with console.status(f"Waiting up to {timeout}s for a new serial device...", spinner="dots"):
-        while time.monotonic() < deadline:
-            current_ports = {p.device for p in get_serial_port_info()}
-            new_devices = current_ports - before_ports
-            if new_devices:
-                new_device = new_devices.pop()
-                # Find the full port info object.
-                for p in get_serial_port_info():
-                    if p.device == new_device:
-                        new_port = p
-                        break
+            with serial.Serial(device, baudrate=baud_rate, timeout=read_timeout) as ser:
+                ser.reset_input_buffer()
+                ser.reset_output_buffer()
+                # AAG GET_INTERNAL_NAME: command value 'A' + delimiter '!'
+                ser.write(b"A!")
+                response = ser.read(30)
+            if b"!N " in response:
+                console.print("[green]AAG CloudWatcher detected![/green]")
+                found_device = device
                 break
-            time.sleep(1)
+            else:
+                console.print("[dim]no response[/dim]")
+        except serial.SerialException as exc:
+            console.print(f"[dim]error: {exc}[/dim]")
+        except Exception as exc:
+            console.print(f"[dim]unexpected error: {exc}[/dim]")
 
-    if new_port is None:
+    if found_device is None:
         console.print(
-            f"[bold red]No new serial device detected within {timeout}s.[/bold red]\n"
-            "Please check that the weather station is connected and powered on,\n"
-            "then run this command again."
+            "[bold red]AAG CloudWatcher not found on any scanned port.[/bold red]\n"
+            "Make sure the weather station is connected and powered on."
         )
         raise typer.Exit(code=1)
 
-    console.print(f"[green]Detected new device:[/green] [bold]{new_port.device}[/bold]")
-    if new_port.description:
-        console.print(f"  Description : {new_port.description}")
-    if new_port.manufacturer:
-        console.print(f"  Manufacturer: {new_port.manufacturer}")
-
     # ------------------------------------------------------------------
-    # Build the udev rule string.
+    # Retrieve USB VID / PID / serial number for the udev rule.
     # ------------------------------------------------------------------
-    if new_port.vid is None or new_port.pid is None:
+    port_info = port_info_map.get(found_device)
+    if port_info is None or port_info.vid is None or port_info.pid is None:
         console.print(
             "[bold red]Could not read USB vendor/product ID from the device.[/bold red]\n"
             "The udev rule requires idVendor and idProduct; these are only\n"
@@ -377,17 +336,25 @@ def setup_weather(
         )
         raise typer.Exit(code=1)
 
+    if port_info.description:
+        console.print(f"  Description : {port_info.description}")
+    if port_info.manufacturer:
+        console.print(f"  Manufacturer: {port_info.manufacturer}")
+
+    # ------------------------------------------------------------------
+    # Build the udev rule string.
+    # ------------------------------------------------------------------
     udev_str = (
         f'ACTION=="add", '
         f'SUBSYSTEM=="tty", '
-        f'ATTRS{{idVendor}}=="{new_port.vid:04x}", '
-        f'ATTRS{{idProduct}}=="{new_port.pid:04x}", '
+        f'ATTRS{{idVendor}}=="{port_info.vid:04x}", '
+        f'ATTRS{{idProduct}}=="{port_info.pid:04x}", '
     )
-    if new_port.serial_number:
-        udev_str += f'ATTRS{{serial}}=="{new_port.serial_number}", '
+    if port_info.serial_number:
+        udev_str += f'ATTRS{{serial}}=="{port_info.serial_number}", '
     udev_str += 'SYMLINK+="weather"\n'
 
-    console.print("\n[bold]udev rule that will be written:[/bold]")
+    console.print("\n[bold]udev rule to be written:[/bold]")
     console.print(f"  [cyan]{udev_str.strip()}[/cyan]\n")
 
     # ------------------------------------------------------------------
@@ -414,7 +381,7 @@ def setup_weather(
     console.print(f"Wrote udev rule to [green]{udev_rules_dest}[/green].")
 
     # ------------------------------------------------------------------
-    # Reload udev rules so the symlink is active on next plug-in.
+    # Reload udev rules so the symlink is active on the next plug-in.
     # ------------------------------------------------------------------
     try:
         subprocess.run(["sudo", "udevadm", "control", "--reload"], check=True)
@@ -429,7 +396,7 @@ def setup_weather(
         )
 
     # ------------------------------------------------------------------
-    # Optionally update the config server.
+    # Update the config server if reachable.
     # ------------------------------------------------------------------
     try:
         from panoptes.utils.config.client import set_config
