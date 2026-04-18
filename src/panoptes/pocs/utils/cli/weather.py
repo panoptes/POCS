@@ -1,14 +1,19 @@
 """Typer CLI for interacting with the PANOPTES weather station service.
 
-Provides commands to query status/config and to restart the service.
+Provides commands to query status/config, restart the service, and set up
+the weather station udev rules for persistent device naming.
 """
 
+import glob as _glob
 import subprocess
 from dataclasses import dataclass
 from datetime import datetime
+from pathlib import Path
 
 import human_readable
 import requests
+import serial
+import serial.tools.list_ports
 import typer
 from rich import print
 from rich.console import Console
@@ -242,6 +247,193 @@ def get_page(page, base_url):
         console.print("\n[green]Try:[/green]")
         console.print("  • Running [bold]weather restart[/bold] to restart the weather service")
         exit(1)
+
+
+@app.command(name="setup")
+def setup_weather(
+    port_glob: str = typer.Option("/dev/ttyUSB*", help="Glob pattern for USB serial ports to scan."),
+    baud_rate: int = typer.Option(9600, help="Baud rate for the weather station serial port."),
+    read_timeout: float = typer.Option(2.0, help="Read timeout in seconds when probing each port."),
+):
+    """Scan USB serial ports for an AAG CloudWatcher and write a udev rule.
+
+    Each port matching ``port_glob`` is opened and sent the AAG
+    ``GET_INTERNAL_NAME`` command (``A!``).  A port that responds with the
+    expected ``!N `` response code is identified as the weather station.
+
+    Once found, a udev rule is written to
+    ``/etc/udev/rules.d/92-panoptes-weather.rules`` that creates a stable
+    ``/dev/weather`` symlink keyed on the device's USB vendor ID, product ID,
+    and serial number (when present).  ``udevadm`` is then called to reload
+    rules immediately.
+
+    The config server key ``environment.weather.serial_port`` is updated to
+    ``/dev/weather`` if the config server is reachable.
+
+    Args:
+        port_glob: Shell glob for candidate ports, e.g. ``/dev/ttyUSB*``.
+        baud_rate: Serial baud rate; the AAG CloudWatcher uses 9600.
+        read_timeout: Per-port read timeout in seconds.
+
+    Returns:
+        None
+    """
+    console = Console()
+
+    # ------------------------------------------------------------------
+    # Enumerate candidate ports.
+    # ------------------------------------------------------------------
+    port_paths = sorted(_glob.glob(port_glob))
+    if not port_paths:
+        console.print(f"[bold red]No devices found matching {port_glob!r}.[/bold red]")
+        raise typer.Exit(code=1)
+
+    console.print(f"Scanning {len(port_paths)} port(s): {', '.join(port_paths)}")
+
+    # Build a VID/PID/serial map from pyserial's port enumeration.
+    port_info_map = {p.device: p for p in serial.tools.list_ports.comports()}
+
+    # Resolve /dev/mount symlink so we can skip that port during probing.
+    mount_device: str | None = None
+    mount_symlink = Path("/dev/mount")
+    if mount_symlink.is_symlink():
+        try:
+            mount_device = str(mount_symlink.resolve())
+            console.print(f"[dim]/dev/mount → {mount_device}; skipping that port[/dim]")
+        except OSError:
+            pass
+
+    # ------------------------------------------------------------------
+    # Probe each port for the AAG handshake.
+    # ------------------------------------------------------------------
+    found_device: str | None = None
+    for device in port_paths:
+        if mount_device and Path(device).resolve() == Path(mount_device):
+            console.print(f"  Skipping [cyan]{device}[/cyan] (in use by mount)")
+            continue
+        console.print(f"  Trying [cyan]{device}[/cyan]...", end=" ")
+        try:
+            with serial.Serial(device, baudrate=baud_rate, timeout=read_timeout) as ser:
+                ser.reset_input_buffer()
+                ser.reset_output_buffer()
+                # AAG GET_INTERNAL_NAME: command value 'A' + delimiter '!'
+                ser.write(b"A!")
+                response = ser.read(30)
+            if b"!N " in response:
+                console.print("[green]AAG CloudWatcher detected![/green]")
+                found_device = device
+                break
+            else:
+                console.print("[dim]no response[/dim]")
+        except serial.SerialException as exc:
+            console.print(f"[dim]error: {exc}[/dim]")
+        except Exception as exc:
+            console.print(f"[dim]unexpected error: {exc}[/dim]")
+
+    if found_device is None:
+        console.print(
+            "[bold red]AAG CloudWatcher not found on any scanned port.[/bold red]\n"
+            "Make sure the weather station is connected and powered on."
+        )
+        raise typer.Exit(code=1)
+
+    # ------------------------------------------------------------------
+    # Retrieve USB VID / PID / serial number for the udev rule.
+    # ------------------------------------------------------------------
+    port_info = port_info_map.get(found_device)
+    if port_info is None:
+        resolved_found_device = str(Path(found_device).resolve())
+        if resolved_found_device != found_device:
+            port_info = port_info_map.get(resolved_found_device)
+    if port_info is None or port_info.vid is None or port_info.pid is None:
+        console.print(
+            "[bold red]Could not read USB vendor/product ID from the device.[/bold red]\n"
+            "The udev rule requires idVendor and idProduct; these are only\n"
+            "available for USB-attached devices."
+        )
+        raise typer.Exit(code=1)
+
+    if port_info.description:
+        console.print(f"  Description : {port_info.description}")
+    if port_info.manufacturer:
+        console.print(f"  Manufacturer: {port_info.manufacturer}")
+
+    # ------------------------------------------------------------------
+    # Build the udev rule string.
+    # ------------------------------------------------------------------
+    udev_str = (
+        f'ACTION=="add", '
+        f'SUBSYSTEM=="tty", '
+        f'ATTRS{{idVendor}}=="{port_info.vid:04x}", '
+        f'ATTRS{{idProduct}}=="{port_info.pid:04x}", '
+    )
+    if port_info.serial_number:
+        udev_str += f'ATTRS{{serial}}=="{port_info.serial_number}", '
+    udev_str += 'SYMLINK+="weather"\n'
+
+    console.print("\n[bold]udev rule to be written:[/bold]")
+    console.print(f"  [cyan]{udev_str.strip()}[/cyan]\n")
+
+    # ------------------------------------------------------------------
+    # Write the rule file via sudo.
+    # ------------------------------------------------------------------
+    udev_rules_name = "92-panoptes-weather.rules"
+    udev_rules_dest = Path(f"/etc/udev/rules.d/{udev_rules_name}")
+
+    try:
+        subprocess.run(
+            ["sudo", "tee", str(udev_rules_dest)],
+            input=udev_str.encode(),
+            check=True,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.PIPE,
+        )
+    except subprocess.CalledProcessError as exc:
+        console.print(
+            f"[bold red]Failed to write udev rule to {udev_rules_dest}.[/bold red]\n"
+            f"  {exc.stderr.decode().strip()}"
+        )
+        raise typer.Exit(code=1)
+
+    console.print(f"Wrote udev rule to [green]{udev_rules_dest}[/green].")
+
+    # ------------------------------------------------------------------
+    # Reload udev rules so the symlink is active on the next plug-in.
+    # ------------------------------------------------------------------
+    try:
+        subprocess.run(
+            ["sudo", "udevadm", "control", "--reload"],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        console.print(
+            "[green]✅ udev rules reloaded.[/green] Unplug and re-plug the weather station "
+            "to activate the [bold]/dev/weather[/bold] symlink."
+        )
+    except subprocess.CalledProcessError as exc:
+        error_output = (exc.stderr or "").strip()
+        stdout_output = (exc.stdout or "").strip()
+        details = error_output or stdout_output
+        detail_message = f"\n  {details}" if details else ""
+        console.print(
+            f"[yellow]Warning: failed to reload udev rules: {exc}[/yellow]{detail_message}\n"
+            "Run [bold]sudo udevadm control --reload[/bold] manually."
+        )
+
+    # ------------------------------------------------------------------
+    # Update the config server if reachable.
+    # ------------------------------------------------------------------
+    try:
+        from panoptes.utils.config.client import set_config
+
+        set_config("environment.weather.serial_port", "/dev/weather")
+        console.print("[green]Updated config:[/green] environment.weather.serial_port → /dev/weather")
+    except Exception as exc:
+        console.print(
+            f"[yellow]Could not update config server ({exc}). "
+            "You may need to set environment.weather.serial_port to /dev/weather manually.[/yellow]"
+        )
 
 
 @app.command(help="Restart the weather station service via supervisorctl")

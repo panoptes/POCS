@@ -627,10 +627,7 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             name=f"{self.name}PollExposureThread",
             target=self._poll_exposure,
             args=(readout_args, seconds),
-            kwargs=dict(
-                timeout=timeout_duration,
-                interval=get_quantity_value(self.readout_time, u.second)
-            ),
+            kwargs=dict(timeout=timeout_duration, interval=get_quantity_value(self.readout_time, u.second)),
         )
         readout_thread.start()
 
@@ -883,9 +880,9 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         """
         if timeout is None:
             timer_duration = (
-                get_quantity_value(self.timeout, u.second) +
-                get_quantity_value(self.readout_time, u.second) +
-                get_quantity_value(exposure_time, u.second)
+                get_quantity_value(self.timeout, u.second)
+                + get_quantity_value(self.readout_time, u.second)
+                + get_quantity_value(exposure_time, u.second)
             )
         else:
             timer_duration = get_quantity_value(timeout, u.second)
