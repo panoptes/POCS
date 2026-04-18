@@ -1,5 +1,6 @@
 """Tests for the `pocs weather` CLI commands, including the `setup` subcommand."""
 
+import subprocess
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -265,3 +266,225 @@ def test_setup_skips_mount_port(mock_glob, mock_serial_cls, mock_comports, mock_
     # serial.Serial should have been called exactly once (for USB1, not USB0)
     assert mock_serial_cls.call_count == 1
     assert mock_serial_cls.call_args[0][0] == "/dev/ttyUSB1"
+
+
+# ---------------------------------------------------------------------------
+# setup — OSError when resolving /dev/mount is silently ignored
+# ---------------------------------------------------------------------------
+
+
+@patch("subprocess.run")
+@patch("panoptes.pocs.utils.cli.weather.serial.tools.list_ports.comports")
+@patch("panoptes.pocs.utils.cli.weather.serial.Serial")
+@patch("panoptes.pocs.utils.cli.weather._glob.glob")
+def test_setup_mount_symlink_resolve_oserror(mock_glob, mock_serial_cls, mock_comports, mock_run, cli_runner):
+    """/dev/mount exists but resolve() raises OSError — probing continues normally."""
+    mock_glob.return_value = ["/dev/ttyUSB0"]
+    mock_comports.return_value = [_make_port_info("/dev/ttyUSB0")]
+    mock_serial_cls.return_value = _make_serial_cm(b"!N CloudWatcher  !\x11            0")
+    mock_run.return_value = MagicMock(returncode=0, stderr=b"")
+
+    broken_symlink = MagicMock(spec=Path)
+    broken_symlink.is_symlink.return_value = True
+    broken_symlink.resolve.side_effect = OSError("dangling symlink")
+
+    with (
+        patch("panoptes.pocs.utils.cli.weather.Path") as mock_path_cls,
+        patch("panoptes.utils.config.client.set_config"),
+    ):
+
+        def path_side_effect(arg):
+            if arg == "/dev/mount":
+                return broken_symlink
+            return Path(arg)
+
+        mock_path_cls.side_effect = path_side_effect
+        result = cli_runner.invoke(app, ["weather", "setup"])
+
+    assert result.exit_code == 0, result.output
+    assert "AAG CloudWatcher detected" in result.output
+
+
+# ---------------------------------------------------------------------------
+# setup — generic Exception in probe loop is caught and port is skipped
+# ---------------------------------------------------------------------------
+
+
+@patch("panoptes.pocs.utils.cli.weather.serial.tools.list_ports.comports")
+@patch("panoptes.pocs.utils.cli.weather.serial.Serial")
+@patch("panoptes.pocs.utils.cli.weather._glob.glob")
+def test_setup_generic_exception_skipped(mock_glob, mock_serial_cls, mock_comports, cli_runner):
+    """Generic Exception (not SerialException) during probe is caught; port is skipped."""
+    mock_glob.return_value = ["/dev/ttyUSB0"]
+    mock_comports.return_value = [_make_port_info("/dev/ttyUSB0")]
+    mock_serial_cls.side_effect = RuntimeError("unexpected hardware error")
+
+    result = cli_runner.invoke(app, ["weather", "setup"])
+
+    assert result.exit_code != 0
+    assert "unexpected error" in result.output
+
+
+# ---------------------------------------------------------------------------
+# setup — port_info found via resolved path (symlink fallback)
+# ---------------------------------------------------------------------------
+
+
+@patch("subprocess.run")
+@patch("panoptes.pocs.utils.cli.weather.serial.tools.list_ports.comports")
+@patch("panoptes.pocs.utils.cli.weather.serial.Serial")
+@patch("panoptes.pocs.utils.cli.weather._glob.glob")
+def test_setup_port_info_via_resolved_path(mock_glob, mock_serial_cls, mock_comports, mock_run, cli_runner):
+    """When comports reports the real path but glob yields a symlink, the port_info
+    is found by resolving the found device path."""
+    mock_glob.return_value = ["/dev/ttyUSB-sym"]
+    # comports reports the resolved (real) path, not the symlink
+    mock_comports.return_value = [_make_port_info("/dev/ttyUSB-real")]
+    mock_serial_cls.return_value = _make_serial_cm(b"!N CloudWatcher  !\x11            0")
+    mock_run.return_value = MagicMock(returncode=0, stderr=b"")
+
+    with (
+        patch("panoptes.pocs.utils.cli.weather.Path") as mock_path_cls,
+        patch("panoptes.utils.config.client.set_config"),
+    ):
+
+        def path_side_effect(arg):
+            if arg == "/dev/mount":
+                m = MagicMock(spec=Path)
+                m.is_symlink.return_value = False
+                return m
+            if arg == "/dev/ttyUSB-sym":
+                m = MagicMock(spec=Path)
+                m.resolve.return_value = Path("/dev/ttyUSB-real")
+                return m
+            return Path(arg)
+
+        mock_path_cls.side_effect = path_side_effect
+        result = cli_runner.invoke(app, ["weather", "setup"])
+
+    assert result.exit_code == 0, result.output
+    assert "AAG CloudWatcher detected" in result.output
+
+
+# ---------------------------------------------------------------------------
+# setup — port_info with no description or manufacturer (branch coverage)
+# ---------------------------------------------------------------------------
+
+
+@patch("subprocess.run")
+@patch("panoptes.pocs.utils.cli.weather.serial.tools.list_ports.comports")
+@patch("panoptes.pocs.utils.cli.weather.serial.Serial")
+@patch("panoptes.pocs.utils.cli.weather._glob.glob")
+def test_setup_no_description_no_manufacturer(
+    mock_glob, mock_serial_cls, mock_comports, mock_run, cli_runner
+):
+    """When the port has no description or manufacturer the info lines are omitted."""
+    mock_glob.return_value = ["/dev/ttyUSB0"]
+    mock_comports.return_value = [_make_port_info("/dev/ttyUSB0", description=None, manufacturer=None)]
+    mock_serial_cls.return_value = _make_serial_cm(b"!N CloudWatcher  !\x11            0")
+    mock_run.return_value = MagicMock(returncode=0, stderr=b"")
+
+    with patch("panoptes.utils.config.client.set_config"):
+        result = cli_runner.invoke(app, ["weather", "setup"])
+
+    assert result.exit_code == 0, result.output
+    assert "Description" not in result.output
+    assert "Manufacturer" not in result.output
+    assert 'SYMLINK+="weather"' in result.output
+
+
+# ---------------------------------------------------------------------------
+# setup — sudo tee fails → non-zero exit
+# ---------------------------------------------------------------------------
+
+
+@patch("panoptes.pocs.utils.cli.weather.serial.tools.list_ports.comports")
+@patch("panoptes.pocs.utils.cli.weather.serial.Serial")
+@patch("panoptes.pocs.utils.cli.weather._glob.glob")
+def test_setup_tee_fails(mock_glob, mock_serial_cls, mock_comports, cli_runner):
+    """CalledProcessError from sudo tee produces an error message and exits non-zero."""
+    mock_glob.return_value = ["/dev/ttyUSB0"]
+    mock_comports.return_value = [_make_port_info("/dev/ttyUSB0")]
+    mock_serial_cls.return_value = _make_serial_cm(b"!N CloudWatcher  !\x11            0")
+
+    with patch("subprocess.run") as mock_run:
+        mock_run.side_effect = subprocess.CalledProcessError(
+            1, ["sudo", "tee", "/etc/udev/rules.d/92-panoptes-weather.rules"], stderr=b"Permission denied"
+        )
+        result = cli_runner.invoke(app, ["weather", "setup"])
+
+    assert result.exit_code != 0
+    assert "Failed to write" in result.output
+
+
+# ---------------------------------------------------------------------------
+# setup — udevadm reload fails → warning only, exit 0
+# ---------------------------------------------------------------------------
+
+
+@patch("panoptes.pocs.utils.cli.weather.serial.tools.list_ports.comports")
+@patch("panoptes.pocs.utils.cli.weather.serial.Serial")
+@patch("panoptes.pocs.utils.cli.weather._glob.glob")
+def test_setup_udevadm_reload_fails(mock_glob, mock_serial_cls, mock_comports, cli_runner):
+    """CalledProcessError from udevadm prints a warning but does not exit non-zero."""
+    mock_glob.return_value = ["/dev/ttyUSB0"]
+    mock_comports.return_value = [_make_port_info("/dev/ttyUSB0")]
+    mock_serial_cls.return_value = _make_serial_cm(b"!N CloudWatcher  !\x11            0")
+
+    tee_ok = MagicMock(returncode=0, stderr=b"")
+    udevadm_err = subprocess.CalledProcessError(
+        1, ["sudo", "udevadm", "control", "--reload"], stderr="rules directory not found"
+    )
+
+    with (
+        patch("subprocess.run", side_effect=[tee_ok, udevadm_err]),
+        patch("panoptes.utils.config.client.set_config"),
+    ):
+        result = cli_runner.invoke(app, ["weather", "setup"])
+
+    assert result.exit_code == 0, result.output
+    assert "failed to reload" in result.output.lower()
+
+
+# ---------------------------------------------------------------------------
+# setup — config server update fails → warning only, exit 0
+# ---------------------------------------------------------------------------
+
+
+@patch("subprocess.run")
+@patch("panoptes.pocs.utils.cli.weather.serial.tools.list_ports.comports")
+@patch("panoptes.pocs.utils.cli.weather.serial.Serial")
+@patch("panoptes.pocs.utils.cli.weather._glob.glob")
+def test_setup_config_server_fails(mock_glob, mock_serial_cls, mock_comports, mock_run, cli_runner):
+    """Exception from set_config prints a warning but does not exit non-zero."""
+    mock_glob.return_value = ["/dev/ttyUSB0"]
+    mock_comports.return_value = [_make_port_info("/dev/ttyUSB0")]
+    mock_serial_cls.return_value = _make_serial_cm(b"!N CloudWatcher  !\x11            0")
+    mock_run.return_value = MagicMock(returncode=0, stderr=b"")
+
+    with patch("panoptes.utils.config.client.set_config", side_effect=ConnectionRefusedError("no server")):
+        result = cli_runner.invoke(app, ["weather", "setup"])
+
+    assert result.exit_code == 0, result.output
+    assert "config server" in result.output.lower() or "serial_port" in result.output.lower()
+
+
+# ---------------------------------------------------------------------------
+# setup — port not in comports and path doesn't resolve differently → VID/PID error
+# ---------------------------------------------------------------------------
+
+
+@patch("panoptes.pocs.utils.cli.weather.serial.tools.list_ports.comports")
+@patch("panoptes.pocs.utils.cli.weather.serial.Serial")
+@patch("panoptes.pocs.utils.cli.weather._glob.glob")
+def test_setup_port_info_not_in_comports_no_symlink(mock_glob, mock_serial_cls, mock_comports, cli_runner):
+    """AAG responds but the device isn't in comports and its path doesn't resolve to
+    a different string — port_info stays None → vendor/product ID error."""
+    mock_glob.return_value = ["/dev/ttyUSB0"]
+    mock_comports.return_value = []  # empty — device absent from comports
+    mock_serial_cls.return_value = _make_serial_cm(b"!N CloudWatcher  !\x11            0")
+
+    result = cli_runner.invoke(app, ["weather", "setup"])
+
+    assert result.exit_code != 0
+    assert "vendor/product ID" in result.output
