@@ -341,6 +341,10 @@ def setup_weather(
     # Retrieve USB VID / PID / serial number for the udev rule.
     # ------------------------------------------------------------------
     port_info = port_info_map.get(found_device)
+    if port_info is None:
+        resolved_found_device = str(Path(found_device).resolve())
+        if resolved_found_device != found_device:
+            port_info = port_info_map.get(resolved_found_device)
     if port_info is None or port_info.vid is None or port_info.pid is None:
         console.print(
             "[bold red]Could not read USB vendor/product ID from the device.[/bold red]\n"
@@ -397,14 +401,24 @@ def setup_weather(
     # Reload udev rules so the symlink is active on the next plug-in.
     # ------------------------------------------------------------------
     try:
-        subprocess.run(["sudo", "udevadm", "control", "--reload"], check=True)
+        subprocess.run(
+            ["sudo", "udevadm", "control", "--reload"],
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
         console.print(
             "[green]✅ udev rules reloaded.[/green] Unplug and re-plug the weather station "
             "to activate the [bold]/dev/weather[/bold] symlink."
         )
     except subprocess.CalledProcessError as exc:
+        error_output = (exc.stderr or "").strip()
+        stdout_output = (exc.stdout or "").strip()
+        details = error_output or stdout_output
+        detail_message = f"\n  {details}" if details else ""
         console.print(
-            f"[yellow]Warning: failed to reload udev rules: {exc}[/yellow]\n"
+            f"[yellow]Warning: failed to reload udev rules: {exc}[/yellow]{detail_message}\n"
             "Run [bold]sudo udevadm control --reload[/bold] manually."
         )
 
