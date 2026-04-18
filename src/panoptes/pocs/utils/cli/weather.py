@@ -293,11 +293,24 @@ def setup_weather(
     # Build a VID/PID/serial map from pyserial's port enumeration.
     port_info_map = {p.device: p for p in serial.tools.list_ports.comports()}
 
+    # Resolve /dev/mount symlink so we can skip that port during probing.
+    mount_device: str | None = None
+    mount_symlink = Path("/dev/mount")
+    if mount_symlink.is_symlink():
+        try:
+            mount_device = str(mount_symlink.resolve())
+            console.print(f"[dim]/dev/mount → {mount_device}; skipping that port[/dim]")
+        except OSError:
+            pass
+
     # ------------------------------------------------------------------
     # Probe each port for the AAG handshake.
     # ------------------------------------------------------------------
     found_device: str | None = None
     for device in port_paths:
+        if mount_device and Path(device).resolve() == Path(mount_device):
+            console.print(f"  Skipping [cyan]{device}[/cyan] (in use by mount)")
+            continue
         console.print(f"  Trying [cyan]{device}[/cyan]...", end=" ")
         try:
             with serial.Serial(device, baudrate=baud_rate, timeout=read_timeout) as ser:

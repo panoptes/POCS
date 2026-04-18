@@ -1,5 +1,6 @@
 """Tests for the `pocs weather` CLI commands, including the `setup` subcommand."""
 
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -219,3 +220,48 @@ def test_setup_rule_omits_serial_when_none(mock_glob, mock_serial_cls, mock_comp
     rule = tee_call.kwargs["input"].decode()
     assert "serial" not in rule
     assert 'SYMLINK+="weather"' in rule
+
+
+# ---------------------------------------------------------------------------
+# setup — /dev/mount symlink causes that port to be skipped
+# ---------------------------------------------------------------------------
+
+
+@patch("subprocess.run")
+@patch("panoptes.pocs.utils.cli.weather.serial.tools.list_ports.comports")
+@patch("panoptes.pocs.utils.cli.weather.serial.Serial")
+@patch("panoptes.pocs.utils.cli.weather._glob.glob")
+def test_setup_skips_mount_port(mock_glob, mock_serial_cls, mock_comports, mock_run, cli_runner):
+    """/dev/ttyUSB0 claimed by /dev/mount is skipped; AAG found on /dev/ttyUSB1."""
+    mock_glob.return_value = ["/dev/ttyUSB0", "/dev/ttyUSB1"]
+    mock_comports.return_value = [
+        _make_port_info("/dev/ttyUSB0"),
+        _make_port_info("/dev/ttyUSB1", vid=0x0403, pid=0x6001, serial_number="FT001"),
+    ]
+    # Only USB1 should be probed; USB0 is the mount.
+    mock_serial_cls.return_value = _make_serial_cm(b"!N CloudWatcher  !\x11            0")
+    mock_run.return_value = MagicMock(returncode=0, stderr=b"")
+
+    mount_symlink = MagicMock(spec=Path)
+    mount_symlink.is_symlink.return_value = True
+    mount_symlink.resolve.return_value = Path("/dev/ttyUSB0")
+
+    with (
+        patch("panoptes.pocs.utils.cli.weather.Path") as mock_path_cls,
+        patch("panoptes.utils.config.client.set_config"),
+    ):
+        # Path("/dev/mount") → our mock; Path(device).resolve() uses real Path
+        def path_side_effect(arg):
+            if arg == "/dev/mount":
+                return mount_symlink
+            return Path(arg)
+
+        mock_path_cls.side_effect = path_side_effect
+
+        result = cli_runner.invoke(app, ["weather", "setup"])
+
+    assert result.exit_code == 0, result.output
+    assert "skipping" in result.output.lower() or "mount" in result.output.lower()
+    # serial.Serial should have been called exactly once (for USB1, not USB0)
+    assert mock_serial_cls.call_count == 1
+    assert mock_serial_cls.call_args[0][0] == "/dev/ttyUSB1"
