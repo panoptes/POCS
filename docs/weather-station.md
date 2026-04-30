@@ -1,32 +1,100 @@
 # Weather Station
 
-POCS integrates with the **AAG CloudWatcher** weather station via a thin wrapper class
-(`WeatherStation`) and a FastAPI service that
-exposes the readings over HTTP.
+POCS integrates with the **AAG CloudWatcher** weather station out of the box, but it can
+work with **any weather source** — a different sensor, a scraper for a local weather API,
+or a home-built station — as long as you write records in the expected JSON format to the
+`weather` database collection.
 
 ## How It Works
 
 ```
-AAG CloudWatcher ──serial──► WeatherStation.record()
-                                     │
-                                     ▼
-                              DB "weather" collection
-                                     │
-                                     ▼
-                          POCS.is_weather_safe()  ──► allow / deny observations
+Weather source ──────────────────► DB "weather" collection
+(AAG CloudWatcher, adapter script,         │
+ or any custom integration)                ▼
+                               POCS.is_weather_safe()  ──► allow / deny observations
 ```
 
-1. The `WeatherStation` reads data from the sensor over a serial port.
-2. `record()` is called on a configurable interval (default 60 s) and writes the
-   latest snapshot to the `weather` database collection.
-3. `POCS.is_weather_safe()` reads the most recent record from that collection and
-   decides whether observing is safe.
+The only thing `POCS.is_weather_safe()` cares about is the **most recent document** in
+the `weather` collection. It reads two fields and makes a go/no-go decision:
+
+| Field | Required | Description |
+|---|---|---|
+| `is_safe` | **yes** | `true` = conditions are safe to observe |
+| `timestamp` | **yes** | ISO 8601 string; records older than 180 s are treated as unsafe |
 
 ---
 
-## JSON Reading Schema
+## Building a Custom Integration
 
-Every weather record written to the database contains the following fields.
+If you are using a non-AAG sensor, scraping a weather page, or writing an adapter script,
+this is the section for you.
+
+### Minimum Viable Record
+
+The smallest record POCS will act on:
+
+```json
+{
+    "is_safe": true,
+    "timestamp": "2024-01-15T10:30:00.123456"
+}
+```
+
+That's it. Write a document with those two fields to the `weather` collection on the
+configured interval and POCS will use it to gate observations.
+
+### Example Adapter Script
+
+```python
+#!/usr/bin/env python3
+"""Minimal weather adapter — scrapes an external source and writes to POCS DB."""
+
+from datetime import UTC, datetime
+
+from panoptes.utils.database import PanDB
+
+db = PanDB()  # uses the same DB backend as POCS
+
+
+def is_currently_safe() -> bool:
+    """Replace this with your own safety logic."""
+    # e.g. call a local weather API, read a sensor, scrape a web page …
+    return True
+
+
+def write_weather_record() -> None:
+    record = {
+        "is_safe": is_currently_safe(),
+        "timestamp": datetime.now(UTC).isoformat(),
+    }
+    db.insert_current("weather", record)
+    print(f"Wrote: {record}")
+
+
+if __name__ == "__main__":
+    import time
+
+    while True:
+        write_weather_record()
+        time.sleep(60)
+```
+
+Run this script alongside POCS and it will keep the `weather` collection up to date.
+POCS will stop observing if the script stops writing (records go stale after 180 s).
+
+!!! tip "Adding more detail"
+    You can include any extra fields you like alongside the two required ones.
+    The full schema used by the built-in AAG integration is described
+    [below](#full-json-schema). Including those extra fields makes your records
+    visible in `pocs weather status` output.
+
+---
+
+## Full JSON Schema
+
+The built-in AAG CloudWatcher integration writes all of the following fields.
+Custom integrations may include any subset (only `is_safe` and `timestamp` are required),
+or additional fields of their own.
 
 ### Measurement Fields
 
@@ -34,14 +102,14 @@ Every weather record written to the database contains the following fields.
 |---|---|---|---|
 | `timestamp` | `str` | — | ISO 8601 datetime of the reading, e.g. `"2024-01-15T10:30:00.123456"` |
 | `ambient_temp` | `float` | °C | Ambient (air) temperature |
-| `sky_temp` | `float` | °C | Sky infrared temperature. The difference `sky_temp − ambient_temp` is used to infer cloud cover |
+| `sky_temp` | `float` | °C | Sky infrared temperature; the difference `sky_temp − ambient_temp` indicates cloud cover |
 | `wind_speed` | `float` | m/s | Wind speed |
-| `rain_frequency` | `float` | — | Raw rain-sensor frequency value; higher values indicate drier conditions |
+| `rain_frequency` | `float` | — | Raw rain-sensor frequency; higher values mean drier conditions |
 | `pwm` | `float` | % | Heater element duty cycle |
 
 ### Condition Fields
 
-Condition strings are derived by comparing the measurements against configurable thresholds
+Derived by comparing the measurements against configurable thresholds
 (see `environment.weather` in `conf_files/pocs.yaml`).
 
 | Field | Type | Possible Values |
@@ -59,7 +127,7 @@ Condition strings are derived by comparing the measurements against configurable
 | `rain_safe` | `bool` | `True` when `rain_condition == "dry"` |
 | `is_safe` | `bool` | `True` only when **all three** of `cloud_safe`, `wind_safe`, and `rain_safe` are `True` |
 
-### Example Record
+### Full Example Record
 
 ```json
 {
@@ -83,20 +151,16 @@ Condition strings are derived by comparing the measurements against configurable
 
 ## Safety Evaluation
 
-`POCS.is_weather_safe()` reads the latest
-`weather` record from the database and applies two checks:
+`POCS.is_weather_safe()` reads the latest `weather` record from the database and
+applies two checks:
 
-1. **Safety flag** — looks for `is_safe` (then `safe`) and casts it to `bool`.
+1. **Safety flag** — looks for `is_safe` (then falls back to `safe`) and casts it to `bool`.
 2. **Staleness** — compares `timestamp` to the current time. If the record is older
    than `stale` seconds (default **180 s**) the record is treated as unsafe regardless
    of the flag value.
 
-!!! warning "Custom weather integrations"
-    If you write weather data directly to the `weather` database collection from a
-    custom source, your records **must** include at minimum:
-
-    - `is_safe` (*bool*) — the overall safety decision
-    - `timestamp` (*str*) — ISO 8601 datetime so staleness can be evaluated
+This means **any integration that stops writing records will automatically halt
+observations** after the staleness window expires.
 
 ---
 
@@ -127,9 +191,10 @@ pocs weather --host 192.168.1.100 --port 6566 status
 
 ---
 
-## Configuration
+## AAG CloudWatcher Configuration
 
-Weather station settings live under `environment.weather` in your config file:
+For the built-in AAG integration, settings live under `environment.weather` in your
+config file:
 
 ```yaml
 environment:
