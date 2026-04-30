@@ -62,6 +62,7 @@ nav:
   - Examples: examples.md
   - Architecture: architecture-for-beginners.md
   - CLI Guide: cli-guide.md
+  - Weather Station: weather-station.md
   - Glossary: glossary.md
   - API Reference: api.md
   - Contributing: contributing.md

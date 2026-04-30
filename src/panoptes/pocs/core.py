@@ -479,6 +479,21 @@ class POCS(PanStateMachine, PanBase):
     def is_weather_safe(self, stale=180):
         """Determines whether current weather conditions are safe or not.
 
+        Reads the most recent document from the ``weather`` database collection
+        (written by :meth:`panoptes.pocs.sensor.weather.WeatherStation.record`) and
+        inspects the following fields:
+
+        - **is_safe** or **safe** (*bool*, **required**): Overall safety flag. The
+          check tries ``is_safe`` first, then falls back to ``safe``. A record that
+          contains neither key is treated as unsafe.
+        - **timestamp** (*str*, **required**): ISO 8601 datetime of the reading. If the
+          record is older than *stale* seconds it is treated as unsafe regardless of the
+          safety flag value.
+
+        Custom or third-party weather integrations that write directly to the
+        ``weather`` database collection must include both of these fields for POCS to
+        recognise the record as safe.
+
         Args:
             stale (int, optional): Number of seconds before record is stale, defaults to 180
 

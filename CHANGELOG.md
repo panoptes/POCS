@@ -5,6 +5,7 @@
 ### Added
 
 - Added `pocs weather setup` subcommand that scans `/dev/ttyUSB*` ports (skipping any claimed by `/dev/mount`), probes each with the AAG CloudWatcher serial handshake, and writes a udev rule to `/etc/udev/rules.d/92-panoptes-weather.rules` creating a stable `/dev/weather` symlink.
+- Added `docs/weather-station.md` documenting the weather reading JSON schema, safety evaluation logic, HTTP API, and configuration reference.
 
 ## 0.8.2 - 2026-04-15
 
