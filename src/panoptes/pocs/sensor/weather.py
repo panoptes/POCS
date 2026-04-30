@@ -51,7 +51,34 @@ class WeatherStation(PanBase):
 
     @property
     def status(self):
-        """Returns the most recent weather reading."""
+        """Returns the most recent weather reading.
+
+        Returns:
+            dict | str: A dictionary of the most recent sensor values, or a string
+                message if no readings are available yet. The dictionary contains the
+                following fields:
+
+                - **timestamp** (*str*): ISO 8601 datetime of the reading
+                  (e.g. ``"2024-01-15T10:30:00.123456"``).
+                - **ambient_temp** (*float*): Ambient temperature in degrees Celsius.
+                - **sky_temp** (*float*): Sky (infrared) temperature in degrees Celsius.
+                  Subtract ``ambient_temp`` to get the cloud-temperature delta.
+                - **wind_speed** (*float*): Wind speed in m/s.
+                - **rain_frequency** (*float*): Raw rain-sensor frequency value.
+                  Higher values indicate drier conditions.
+                - **pwm** (*float*): Heater duty cycle in percent.
+                - **cloud_condition** (*str*): One of ``"clear"``, ``"cloudy"``,
+                  ``"very cloudy"``, or ``"unknown"``.
+                - **wind_condition** (*str*): One of ``"calm"``, ``"windy"``,
+                  ``"very windy"``, ``"gusty"``, ``"very gusty"``, or ``"unknown"``.
+                - **rain_condition** (*str*): One of ``"dry"``, ``"wet"``, ``"rainy"``,
+                  or ``"unknown"``.
+                - **cloud_safe** (*bool*): ``True`` when ``cloud_condition == "clear"``.
+                - **wind_safe** (*bool*): ``True`` when ``wind_condition == "calm"``.
+                - **rain_safe** (*bool*): ``True`` when ``rain_condition == "dry"``.
+                - **is_safe** (*bool*): ``True`` only when *all three* of
+                  ``cloud_safe``, ``wind_safe``, and ``rain_safe`` are ``True``.
+        """
         reading = "No valid readings found. If the system just started, wait a few seconds and try again."
         try:
             reading = self.weather_station.readings[-1]
@@ -61,7 +88,23 @@ class WeatherStation(PanBase):
         return reading
 
     def record(self):
-        """Record the rolling mean of the power readings in the database."""
+        """Capture a fresh reading and persist it to the database.
+
+        Calls :meth:`aag.weather.CloudSensor.get_reading` to obtain an averaged
+        sensor snapshot, then stores it in the ``weather`` database collection via
+        :meth:`panoptes.utils.db.PanDB.insert_current`.
+
+        The stored document contains the same fields described in :attr:`status`.
+        The two fields that POCS reads back when evaluating safety are:
+
+        - **is_safe** (*bool*): Overall safety flag — ``True`` only when cloud,
+          wind, and rain conditions are all individually safe.
+        - **timestamp** (*str*): ISO 8601 datetime used to determine whether the
+          record is stale (default staleness threshold: 180 s).
+
+        Returns:
+            dict: The reading dictionary that was written to the database.
+        """
         recent_values = self.weather_station.get_reading()
 
         self.db.insert_current(self.collection_name, recent_values, store_permanently=self.store_permanently)
