@@ -1,7 +1,7 @@
 # Weather Station
 
 POCS integrates with the **AAG CloudWatcher** weather station via a thin wrapper class
-([`WeatherStation`][panoptes.pocs.sensor.weather.WeatherStation]) and a FastAPI service that
+(`WeatherStation`) and a FastAPI service that
 exposes the readings over HTTP.
 
 ## How It Works
@@ -83,7 +83,7 @@ Condition strings are derived by comparing the measurements against configurable
 
 ## Safety Evaluation
 
-[`POCS.is_weather_safe()`][panoptes.pocs.core.POCS.is_weather_safe] reads the latest
+`POCS.is_weather_safe()` reads the latest
 `weather` record from the database and applies two checks:
 
 1. **Safety flag** — looks for `is_safe` (then `safe`) and casts it to `bool`.
