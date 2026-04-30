@@ -26,12 +26,14 @@ the `weather` collection. It reads two fields and makes a go/no-go decision:
 
 ## Building a Custom Integration
 
-If you are using a non-AAG sensor, scraping a weather page, or writing an adapter script,
-this is the section for you.
+If you are using a non-AAG sensor or want to pull data from an existing weather service,
+the only thing you need to do is **expose an HTTP endpoint that returns a JSON object**
+with the required fields. POCS already has the polling and database-writing machinery
+built in via `RemoteMonitor` and `pocs sensor monitor`.
 
-### Minimum Viable Record
+### What your endpoint must return
 
-The smallest record POCS will act on:
+The JSON object returned by your endpoint must include at minimum:
 
 ```json
 {
@@ -40,53 +42,55 @@ The smallest record POCS will act on:
 }
 ```
 
-That's it. Write a document with those two fields to the `weather` collection on the
-configured interval and POCS will use it to gate observations.
+| Field | Type | Description |
+|---|---|---|
+| `is_safe` | `bool` | `true` = conditions are safe to observe |
+| `timestamp` | `str` | ISO 8601 datetime of the reading; records older than 180 s are treated as unsafe |
 
-### Example Adapter Script
+Your endpoint can return any additional fields — they will be stored alongside the
+required ones. Including the [full AAG schema](#full-json-schema) fields makes your
+readings visible in `pocs weather status` output.
 
-```python
-#!/usr/bin/env python3
-"""Minimal weather adapter — scrapes an external source and writes to POCS DB."""
+### Polling the endpoint
 
-from datetime import UTC, datetime
+Once your endpoint is running, point `pocs sensor monitor` at it:
 
-from panoptes.utils.database import PanDB
-
-db = PanDB()  # uses the same DB backend as POCS
-
-
-def is_currently_safe() -> bool:
-    """Replace this with your own safety logic."""
-    # e.g. call a local weather API, read a sensor, scrape a web page …
-    return True
-
-
-def write_weather_record() -> None:
-    record = {
-        "is_safe": is_currently_safe(),
-        "timestamp": datetime.now(UTC).isoformat(),
-    }
-    db.insert_current("weather", record)
-    print(f"Wrote: {record}")
-
-
-if __name__ == "__main__":
-    import time
-
-    while True:
-        write_weather_record()
-        time.sleep(60)
+```bash
+# One-liner: poll http://myweather.local/status every 90 seconds
+pocs sensor monitor weather --endpoint http://myweather.local/status --read-frequency 90
 ```
 
-Run this script alongside POCS and it will keep the `weather` collection up to date.
-POCS will stop observing if the script stops writing (records go stale after 180 s).
+Or configure the URL in your config file so no `--endpoint` flag is needed:
 
-!!! tip "Adding more detail"
-    You can include any extra fields you like alongside the two required ones.
-    The full schema used by the built-in AAG integration is described
-    [below](#full-json-schema). Including those extra fields makes your records
-    visible in `pocs weather status` output.
+```yaml
+environment:
+  weather:
+    url: http://myweather.local/status
+```
+
+```bash
+pocs sensor monitor weather --read-frequency 90
+```
+
+`pocs sensor monitor` fetches the endpoint on every interval, merges in a `date`
+timestamp, and writes the result to the `weather` database collection — the same
+collection that `POCS.is_weather_safe()` reads.
+
+### Running as a background service
+
+The supervisord configuration already includes a ready-to-use entry for this pattern.
+Enable the `pocs-weather-reader-remote` program in `conf_files/pocs-supervisord.conf`
+(and disable `pocs-weather-reader` if the AAG is not physically connected):
+
+```ini
+; Use this when your weather station is NOT connected to the POCS computer.
+[program:pocs-weather-reader-remote]
+command=pocs sensor monitor weather --read-frequency 90
+autostart=true   ; change from false → true
+```
+
+If the monitor process stops for any reason, readings in the database will go stale and
+POCS will automatically suspend observations after 180 s.
 
 ---
 
