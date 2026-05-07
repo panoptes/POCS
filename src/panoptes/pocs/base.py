@@ -55,14 +55,15 @@ class PanBase:
         self.db = PAN_DB_OBJ
 
     def get_config(
-        self, key: str, default: Any | None = None, remember: bool = False, *args, **kwargs
+        self, key: str | None = None, default: Any | None = None, remember: bool = False, *args, **kwargs
     ) -> Any:
         """Thin-wrapper around client based get_config that sets default port.
 
         See `panoptes.utils.config.client.get_config` for more information.
 
         Args:
-            key (str): The key name to use, can be namespaced with dots.
+            key (str | None): The key name to use, can be namespaced with dots. The default of
+                `None` will return the entire config.
             default (any): The default value to return if the key is not found.
             remember (bool): If True, cache the result for future calls.
             *args: Passed to get_config
