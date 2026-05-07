@@ -131,6 +131,11 @@ def test_observatory_cannot_observe(pocs):
     assert pocs.is_initialized
 
 
+def test_pocs_get_config(pocs):
+    conf = pocs.get_config()
+    assert conf is not None
+
+
 def test_simple_simulator(caplog):
     pocs = POCS.from_config(simulators="all")
     assert isinstance(pocs, POCS)
