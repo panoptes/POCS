@@ -123,7 +123,7 @@ def update_repo(
         TextColumn("[progress.description]{task.description}"),
     ) as progress:
         # Start update task
-        t_update = progress.add_task(f"Updating {project_root} (branch: {branch})", total=1)
+        t_update = progress.add_task(f"Updating {project_root} (branch: {branch})", total=None)
         repo = Repo(project_root)
 
         try:
@@ -140,7 +140,6 @@ def update_repo(
                 progress.update(
                     t_update,
                     description=f"Checking out branch '{branch}'...",
-                    advance=1,
                 )
                 repo.git.checkout(branch)
 
@@ -152,7 +151,6 @@ def update_repo(
                 progress.update(
                     t_update,
                     description="Project is already up to date. No action needed.",
-                    advance=1,
                 )
                 return
 
@@ -167,7 +165,6 @@ def update_repo(
             progress.update(
                 t_update,
                 description=f"[red]Failed to pull the latest changes: {e}[/red]",
-                advance=1,
             )
             raise typer.Abort()
         except Exception as e:
