@@ -98,10 +98,21 @@ def show_version():
 
 
 @app.command(name="update")
-def update_repo():
+def update_repo(
+    branch: str = typer.Option(
+        "main",
+        "--branch",
+        "-b",
+        help="The git branch to update from. Defaults to 'main'.",
+    ),
+):
     """Update POCS.
 
-    This will pull the latest changes from github and show any relevant messages.
+    This will pull the latest changes from github for the specified branch
+    (defaults to ``main``) and show any relevant messages.
+
+    Args:
+        branch: The git branch to checkout and pull from. Defaults to ``main``.
     """
     new_commits = []
 
@@ -112,7 +123,7 @@ def update_repo():
         TextColumn("[progress.description]{task.description}"),
     ) as progress:
         # Start update task
-        t_update = progress.add_task(f"Updating {project_root}", total=1)
+        t_update = progress.add_task(f"Updating {project_root} (branch: {branch})", total=1)
         repo = Repo(project_root)
 
         try:
@@ -123,6 +134,15 @@ def update_repo():
             if repo.is_dirty():
                 progress.update(t_update, description="Stashing local changes...", advance=1)
                 repo.git.stash("push")
+
+            # Checkout the requested branch if we're not already on it.
+            if repo.active_branch.name != branch:
+                progress.update(
+                    t_update,
+                    description=f"Checking out branch '{branch}'...",
+                    advance=1,
+                )
+                repo.git.checkout(branch)
 
             # Get the current commit and the latest remote commit
             current_commit = repo.head.commit
@@ -140,7 +160,7 @@ def update_repo():
             new_commits = list(repo.iter_commits(f"{current_commit}...{latest_remote_commit}"))
 
             progress.update(t_update, description="Updates found. Pulling latest changes...", advance=1)
-            origin.pull()
+            origin.pull(branch)
 
             progress.update(t_update, description="Successfully pulled the latest changes.", advance=1)
         except GitCommandError as e:
