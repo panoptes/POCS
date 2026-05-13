@@ -136,12 +136,16 @@ def update_repo(
                 repo.git.stash("push")
 
             # Checkout the requested branch if we're not already on it.
-            if repo.active_branch.name != branch:
+            previous_branch = repo.active_branch.name
+            if previous_branch != branch:
                 progress.update(
                     t_update,
                     description=f"Checking out branch '{branch}'...",
                 )
                 repo.git.checkout(branch)
+                print(
+                    f"[bold green]Switched branch from '{previous_branch}' to '{branch}'.[/bold green]"
+                )
 
             # Get the current commit and the latest remote commit
             current_commit = repo.head.commit
