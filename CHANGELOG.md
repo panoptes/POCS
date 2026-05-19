@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### Security
+
+- Updated `cryptography` to `>=46.0.5` to fix subgroup attack vulnerability on SECT curves (CVE-2026-26007).
+- Updated `Pillow` to `>=12.2.0` to fix OOB write with invalid PSD tile extents and FITS GZIP decompression bomb vulnerabilities.
+- Updated `urllib3` to `>=2.7.0` to fix decompression-bomb bypass and sensitive header forwarding vulnerabilities.
+
 ### Added
 
 - Added `pocs weather setup` subcommand that scans `/dev/ttyUSB*` ports (skipping any claimed by `/dev/mount`), probes each with the AAG CloudWatcher serial handshake, and writes a udev rule to `/etc/udev/rules.d/92-panoptes-weather.rules` creating a stable `/dev/weather` symlink.
