@@ -2,11 +2,19 @@
 
 ## [Unreleased]
 
+### Changed
+
+- Updated `panoptes-utils` to `v0.3.3`.
+- Updated `requests` to `2.34.2` in the lock file.
+- Updated `pytest` to `9.0.3`, `pygments` to `2.20.0`, `pyasn1` to `0.6.3` in the lock file.
+- Removed `flask` and `werkzeug` transitive dependencies (no longer required by `panoptes-utils` 0.3.x).
+
 ### Security
 
 - Updated `cryptography` to `>=46.0.5` to fix subgroup attack vulnerability on SECT curves (CVE-2026-26007).
 - Updated `Pillow` to `>=12.2.0` to fix OOB write with invalid PSD tile extents and FITS GZIP decompression bomb vulnerabilities.
 - Updated `urllib3` to `>=2.7.0` to fix decompression-bomb bypass and sensitive header forwarding vulnerabilities.
+- Updated `pyopenssl` to `>=26.0.0` (resolved to `26.2.0`) to fix DTLS cookie callback buffer overflow vulnerability.
 
 ### Added
 
