@@ -9,6 +9,8 @@
 - `POCS.from_config` now accepts `simulators=["all"]` (a list) in addition to `simulators="all"` (a string).
 - Improvements to `pocs config setup`: base directory now defaults to the current working directory; added `--from` option to load a base config (auto-detects `conf_files/pocs.yaml` if present); added `--force` to skip the overwrite prompt; timezone detection now uses the system's `/etc/localtime` symlink (no subprocess, no confusing errors); GMT offset computed via Python's `datetime`; fixed double-colon in unit prompts.
 - POCS now auto-creates any missing configured directories (e.g. `images`, `resources`) on startup, logging each creation.
+- Added `pocs telemetry run` CLI command (`src/panoptes/pocs/utils/cli/telemetry.py`) — starts the POCS-flavoured telemetry server with an optional Firestore upload hook (`--no-upload` disables it for local dev).
+- Added `src/panoptes/pocs/utils/service/telemetry.py` with `make_firestore_hook()` and `make_pocs_telemetry_app()` — Firestore upload is non-blocking and non-fatal.
 
 ### Changed
 
@@ -21,6 +23,7 @@
 ### Removed
 
 - Legacy HTTP config server; POCS no longer depends on a running config server process. #1448
+- Removed `pocs-metadata-uploader` supervisord program — Firestore metadata uploads are now handled directly inside the telemetry server process via `post_event_hooks`.
 
 
 ## 0.8.3 - 2026-05-26
@@ -43,6 +46,7 @@ Security and dependency updates, plus a new weather station setup command.
 - Updated `Pillow` to `>=12.2.0` (OOB write with invalid PSD tiles; FITS GZIP decompression bomb).
 - Updated `urllib3` to `>=2.7.0` (decompression-bomb bypass; sensitive header forwarding).
 - Updated `pyopenssl` to `>=26.0.0` (DTLS cookie callback buffer overflow).
+
 
 ## 0.8.2 - 2026-04-15
 
