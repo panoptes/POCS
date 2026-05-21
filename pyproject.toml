@@ -38,7 +38,7 @@ dependencies = [
     "GitPython",
     "human-readable",
     "numpy>=2",
-    "panoptes-utils[images]>=0.5.0,<3.0",
+    "panoptes-utils[images,telemetry]>=0.5.0,<3.0",
     "pandas",
     "pick",
     "pillow>=12.2.0",

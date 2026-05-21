@@ -15,6 +15,7 @@
 - `pocs update` now defaults to checking out the latest tagged release. Use `--dev` for the latest commit or `--branch` for a specific branch.
 - Config is now loaded and managed via `panoptes.utils.config.store` from `panoptes-utils>=0.5.0`; in-process changes use `persist=False` to avoid writing back to disk. #1448
 - Bumped `panoptes-utils` requirement to `>=0.5.0`. #1448
+- Migrated from `PanDB` / `PanFileDB` JSON database to `TelemetryClient` / telemetry server (`panoptes-utils` v0.5.0+). Requires the `panoptes-utils telemetry run` server running on port 6562 before POCS starts.
 
 ### Removed
 

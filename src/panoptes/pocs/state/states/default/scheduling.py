@@ -43,6 +43,13 @@ def on_enter(event_data):
             else:
                 pocs.say(f"Got it! I'm going to check out: {observation.name}")
 
+                # Start a new telemetry run scoped to this observation's directory.
+                try:
+                    pocs.db.start_run(run_dir=observation.directory)
+                    pocs.logger.debug(f"Telemetry run started for {observation.directory}")
+                except Exception as e:
+                    pocs.logger.warning(f"Unable to start telemetry run: {e!r}")
+
                 pocs.logger.debug(f"Setting Observation coords: {observation.field}")
                 if pocs.observatory.mount.set_target_coordinates(observation.field) is True:
                     pocs.next_state = "slewing"

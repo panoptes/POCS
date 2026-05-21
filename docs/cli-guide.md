@@ -369,6 +369,18 @@ pocs config setup
 POCS loads config directly from `~/.panoptes/config.yaml` (or `$PANOPTES_CONFIG_FILE`).
 No separate server process is required.
 
+### Telemetry Server Not Running
+
+**Error:** "Cannot connect to telemetry server" or `TelemetryClient` connection errors at startup
+
+**Solution:**
+```bash
+# Start the telemetry server (stores observatory state, sensor readings, and observations)
+panoptes-utils telemetry run --site-dir telemetry/
+```
+
+The telemetry server must be running before POCS starts. It stores data as NDJSON files under `--site-dir`.
+
 ### Mount Not Responding
 
 **Problem:** Mount commands don't work

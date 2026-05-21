@@ -244,6 +244,31 @@ pocs config setup
 - Document new configuration options
 - Config changes take effect immediately for new `get_config` calls; no restart needed
 
+### Telemetry Server
+
+POCS uses a telemetry server (from `panoptes-utils[telemetry]`) to record observatory state, sensor readings, and
+observation data. It replaces the legacy `PanDB` / `PanFileDB` JSON file database.
+
+**Starting the telemetry server locally:**
+
+```bash
+# For normal development (data stored in ./telemetry/)
+panoptes-telemetry --host 0.0.0.0 --port 6562 run --site-dir telemetry/
+
+# For testing (started automatically by conftest.py)
+# No manual start needed — pytest conftest.py handles it
+```
+
+**Notes:**
+
+- Default port is 6562 (config server remains on 6563)
+- Must be running before any `PanBase` subclass is instantiated
+- Configured via `telemetry: {host: localhost, port: 6562}` in YAML config files
+- Data is stored as NDJSON in the `site-dir` (default: `telemetry/`)
+- `store_permanently=False` skips disk writes (in-memory only) — used for high-frequency sensor readings
+- `start_run(run_dir=...)` / `stop_run()` mark observation run boundaries in the telemetry stream
+- For historical data queries, use `jq`, `pandas`, or DuckDB directly on the NDJSON files
+
 ## Common Tasks
 
 ### Adding a New Hardware Driver
@@ -647,6 +672,9 @@ When making changes, update:
 ### Common Commands
 
 ```bash
+# Start telemetry server (required before running POCS)
+panoptes-utils telemetry run --site-dir telemetry/
+
 # Install dependencies
 uv sync
 

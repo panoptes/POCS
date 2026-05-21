@@ -7,14 +7,13 @@ from contextlib import suppress
 import pytest
 
 from panoptes.utils.config import store as config_store
+from panoptes.utils.telemetry.server import telemetry_server
 
 from panoptes.pocs import hardware
 from panoptes.pocs.utils.location import download_iers_a_file
 from panoptes.pocs.utils.logger import PanLogger, get_logger
 
-_all_databases = ["file", "memory"]
-
-TESTING_LOG_LEVEL = "DEBUG"
+TESTING_LOG_LEVEL = "TRACE"
 LOGGER_INFO = PanLogger()
 
 logger = get_logger(console_log_level=TESTING_LOG_LEVEL)
@@ -62,10 +61,35 @@ def pytest_configure(config):
     download_iers_a_file()
     logger.success("Test config loaded")
 
+    logger.info("Setting up the telemetry server.")
+    telemetry_host = "localhost"
+    telemetry_port = 6562
+    _telemetry_dir = tempfile.mkdtemp(prefix="panoptes-testing-telemetry-")
+
+    os.environ["PANOPTES_TELEMETRY_HOST"] = telemetry_host
+    os.environ["PANOPTES_TELEMETRY_PORT"] = str(telemetry_port)
+
+    proc = telemetry_server(site_dir=_telemetry_dir, host=telemetry_host, port=telemetry_port)
+    config._telemetry_proc = proc
+    config._telemetry_dir = _telemetry_dir
+    logger.success("Telemetry server set up")
+
+
+def pytest_unconfigure(config):
+    """Tear down the telemetry server and clean up temp dir."""
+    proc = getattr(config, "_telemetry_proc", None)
+    if proc is not None and proc.is_alive():
+        proc.terminate()
+        proc.join(timeout=5)
+        logger.info("Telemetry server stopped")
+    telemetry_dir = getattr(config, "_telemetry_dir", None)
+    if telemetry_dir:
+        with suppress(Exception):
+            shutil.rmtree(telemetry_dir)
+
 
 def pytest_addoption(parser):
     hw_names = ",".join(hardware.get_all_names()) + " (or all for all hardware)"
-    db_names = ",".join(_all_databases) + " (or all for all databases)"
     group = parser.getgroup("PANOPTES pytest options")
     group.addoption(
         "--with-hardware",
@@ -78,14 +102,6 @@ def pytest_addoption(parser):
         nargs="+",
         default=[],
         help=f"A comma separated list of hardware to NOT test.  List items can include: {hw_names}",
-    )
-    group.addoption(
-        "--test-databases",
-        nargs="+",
-        default=["file"],
-        help=f"Test databases in the list. List items can include: {db_names}. Note that "
-        f"travis-ci will test all of "
-        f"them by default.",
     )
     group.addoption(
         "--test-solve",

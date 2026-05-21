@@ -1,4 +1,4 @@
-from panoptes.utils.database import PanDB
+from panoptes.utils.telemetry import TelemetryClient
 
 from panoptes.pocs.base import PanBase
 
@@ -8,8 +8,9 @@ def test_with_logger():
 
 
 def test_with_db():
-    base = PanBase(db=PanDB(db_type="memory", db_name="tester"))
+    base = PanBase(db=TelemetryClient())
     assert isinstance(base, PanBase)
+    assert isinstance(base.db, TelemetryClient)
 
 
 def test_remember_config():

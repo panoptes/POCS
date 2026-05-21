@@ -2317,7 +2317,7 @@ dependencies = [
     { name = "human-readable" },
     { name = "numpy" },
     { name = "pandas" },
-    { name = "panoptes-utils", extra = ["images"] },
+    { name = "panoptes-utils", extra = ["images", "telemetry"] },
     { name = "pick" },
     { name = "pillow" },
     { name = "pyserial" },
@@ -2413,7 +2413,7 @@ requires-dist = [
     { name = "pandas" },
     { name = "panoptes-aag", marker = "extra == 'weather'" },
     { name = "panoptes-pocs", extras = ["focuser", "google", "weather"], marker = "extra == 'all'" },
-    { name = "panoptes-utils", extras = ["images"], specifier = ">=0.5.0,<3.0" },
+    { name = "panoptes-utils", extras = ["images", "telemetry"], specifier = ">=0.5.0,<3.0" },
     { name = "pick" },
     { name = "pillow", specifier = ">=12.2.0" },
     { name = "protobuf", marker = "extra == 'google'" },
@@ -2494,6 +2494,10 @@ images = [
     { name = "scipy" },
     { name = "sep" },
     { name = "watchfiles" },
+]
+telemetry = [
+    { name = "fastapi" },
+    { name = "uvicorn" },
 ]
 
 [[package]]

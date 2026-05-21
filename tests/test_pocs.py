@@ -243,8 +243,9 @@ def test_no_ac_power(pocs):
         # But double check it still matches longer entry
         assert pocs.has_ac_power() == has_power
 
-        # Remove entry and try again
-        pocs.db.clear_current("power")
+        # Remove entry and try again — clear_current is a no-op with TelemetryClient;
+        # explicitly insert a falsy value to reset the snapshot instead.
+        pocs.db.insert_current("power", {"main": False})
         assert pocs.has_ac_power() is False
 
 
