@@ -253,7 +253,7 @@ observation data. It replaces the legacy `PanDB` / `PanFileDB` JSON file databas
 
 ```bash
 # For normal development (data stored in ./telemetry/)
-panoptes-telemetry --host 0.0.0.0 --port 6562 run --site-dir telemetry/
+panoptes-utils telemetry run --host 0.0.0.0 --port 6562 --site-dir telemetry/
 
 # For testing (started automatically by conftest.py)
 # No manual start needed — pytest conftest.py handles it
