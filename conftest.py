@@ -63,7 +63,7 @@ def pytest_configure(config):
 
     logger.info("Setting up the telemetry server.")
     telemetry_host = "localhost"
-    telemetry_port = 6562
+    telemetry_port = 6572  # separate from production port (6562); matches tests/testing.yaml
     _telemetry_dir = tempfile.mkdtemp(prefix="panoptes-testing-telemetry-")
 
     os.environ["PANOPTES_TELEMETRY_HOST"] = telemetry_host

@@ -581,7 +581,7 @@ class POCS(PanStateMachine, PanBase):
                 with suppress(KeyError):
                     has_power = bool(record["data"][power_key])
 
-            date = record["date"].replace(tzinfo=None)  # current_time is timezone naive
+            date = Time(record["date"]).datetime  # ts is an ISO string; Time parses it as UTC naive
             age = (current_time().datetime - date).total_seconds()
 
             self.logger.debug(f"Power Safety: {has_power} [{age:.0f}s old - {date:%m-%d %H:%M:%S}]")
