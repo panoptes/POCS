@@ -52,7 +52,6 @@ dependencies = [
     "typer",
     "typing-inspect",
     "urllib3>=2.7.0",
-    "watchdog",
     "cryptography>=46.0.5",
 ]
 

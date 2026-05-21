@@ -2330,7 +2330,6 @@ dependencies = [
     { name = "typer" },
     { name = "typing-inspect" },
     { name = "urllib3" },
-    { name = "watchdog" },
 ]
 
 [package.optional-dependencies]
@@ -2429,7 +2428,6 @@ requires-dist = [
     { name = "typer" },
     { name = "typing-inspect" },
     { name = "urllib3", specifier = ">=2.7.0" },
-    { name = "watchdog" },
 ]
 
 [package.metadata.requires-dev]

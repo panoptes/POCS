@@ -21,8 +21,8 @@ def make_firestore_hook(unit_id: str | None = None):
     """Return a ``post_event_hook`` callable that mirrors events to Firestore.
 
     The hook only acts on events where ``request.store_permanently`` is
-    ``True``, matching the previous behaviour of the watchdog-based metadata
-    uploader.  All Firestore imports are deferred so the telemetry server
+    ``True``, matching the previous behaviour of the ``upload-metadata``
+    command.  All Firestore imports are deferred so the telemetry server
     can start even when the Google Cloud SDK is not installed or credentials
     are unavailable.
 
