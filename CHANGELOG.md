@@ -16,6 +16,7 @@
 - Config is now loaded and managed via `panoptes.utils.config.store` from `panoptes-utils>=0.5.0`; in-process changes use `persist=False` to avoid writing back to disk. #1448
 - Bumped `panoptes-utils` requirement to `>=0.5.0`. #1448
 - Migrated from `PanDB` / `PanFileDB` JSON database to `TelemetryClient` / telemetry server (`panoptes-utils` v0.5.0+). Requires the `panoptes-utils telemetry run` server running on port 6562 before POCS starts.
+- Added `pocs-telemetry-server` program to `pocs-supervisord.conf` (port 6562, `priority=1`, data stored in `/home/panoptes/telemetry`).
 
 ### Removed
 
