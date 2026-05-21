@@ -33,11 +33,6 @@ directories:
   mounts: resources/mounts
   fields: conf_files/fields
 
-db:
-  name: panoptes
-  type: file
-  folder: json_store
-
 telemetry:
   host: localhost
   port: 6562

@@ -112,7 +112,7 @@ def get_key_cmd(
 
 @app.command("upload-metadata")
 def upload_metadata(
-    dir_path: Path = "/home/panoptes/json_store/panoptes",
+    dir_path: Path = "/home/panoptes/telemetry",
     unit_id: str = None,
     verbose: bool = False,
 ):
@@ -120,7 +120,7 @@ def upload_metadata(
 
     Args:
         dir_path (Path): Directory containing JSON envelopes to watch. Defaults to
-            '/home/panoptes/json_store/panoptes'.
+            '/home/panoptes/telemetry'.
         unit_id (str | None): Unit identifier to attach to records; if None uses
             environment/config via _get_unit_id().
         verbose (bool): If True, echo progress and debug information.
