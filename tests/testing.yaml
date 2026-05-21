@@ -41,7 +41,7 @@ db:
 
 telemetry:
   host: localhost
-  port: 6562
+  port: 6572
 
 scheduler:
   type: panoptes.pocs.scheduler.dispatch
