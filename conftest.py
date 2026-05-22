@@ -9,7 +9,8 @@ import pytest
 from panoptes.utils.config import store as config_store
 from panoptes.utils.telemetry.server import telemetry_server
 
-from panoptes.pocs import hardware, base as pocs_base
+from panoptes.pocs import base as pocs_base
+from panoptes.pocs import hardware
 from panoptes.pocs.utils.location import download_iers_a_file
 from panoptes.pocs.utils.logger import PanLogger, get_logger
 
