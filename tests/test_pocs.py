@@ -55,7 +55,7 @@ def scheduler(site_details):
 
 
 @pytest.fixture(scope="function")
-def observatory(cameras, mount, site_details, scheduler):
+def observatory(cameras, mount, site_details, scheduler, images_dir):
     """Return a valid Observatory instance with a specific config."""
 
     obs = Observatory(scheduler=scheduler, simulator=["power", "weather"])

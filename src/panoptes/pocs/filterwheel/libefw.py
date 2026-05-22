@@ -26,9 +26,7 @@ class EFWDriver(AbstractSDKDriver):
     AbstractFilterWheel implementations.
     """
 
-    # Because ZWO EFW library isn't linked properly have to manually load libudev
-    # in global mode first, otherwise get undefined symbol errors.
-    _libudev = load_c_library("udev", mode=ctypes.RTLD_GLOBAL)
+    _libudev = None
 
     def __init__(self, library_path=None, **kwargs):
         """Main class representing the ZWO EFW library interface.
@@ -51,6 +49,11 @@ class EFWDriver(AbstractSDKDriver):
             `OSError`: raises if the ctypes.CDLL loader cannot load the library.
         """
         super().__init__(name="EFWFilter", library_path=library_path, **kwargs)
+
+        # Because ZWO EFW library isn't linked properly have to manually load libudev
+        # in global mode first, otherwise get undefined symbol errors.
+        if EFWDriver._libudev is None:
+            EFWDriver._libudev = load_c_library("udev", mode=ctypes.RTLD_GLOBAL)
 
     # Methods
 

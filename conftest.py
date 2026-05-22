@@ -9,7 +9,7 @@ import pytest
 from panoptes.utils.config import store as config_store
 from panoptes.utils.telemetry.server import telemetry_server
 
-from panoptes.pocs import hardware
+from panoptes.pocs import hardware, base as pocs_base
 from panoptes.pocs.utils.location import download_iers_a_file
 from panoptes.pocs.utils.logger import PanLogger, get_logger
 
@@ -72,6 +72,9 @@ def pytest_configure(config):
     proc = telemetry_server(site_dir=_telemetry_dir, host=telemetry_host, port=telemetry_port)
     config._telemetry_proc = proc
     config._telemetry_dir = _telemetry_dir
+
+    # Reset the global so PanBase picks up the test telemetry port on next instantiation.
+    pocs_base.PAN_TELEMETRY_OBJ = None
     logger.success("Telemetry server set up")
 
 

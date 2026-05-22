@@ -66,9 +66,15 @@ class PanBase:
             PAN_TELEMETRY_OBJ = kwargs.pop("db")
         elif PAN_TELEMETRY_OBJ is None:
             telemetry_host = kwargs.get(
-                "telemetry_host", self.get_config("telemetry.host", default="localhost")
+                "telemetry_host",
+                os.getenv("PANOPTES_TELEMETRY_HOST", self.get_config("telemetry.host", default="localhost")),
             )
-            telemetry_port = kwargs.get("telemetry_port", self.get_config("telemetry.port", default=6562))
+            telemetry_port = int(
+                kwargs.get(
+                    "telemetry_port",
+                    os.getenv("PANOPTES_TELEMETRY_PORT", self.get_config("telemetry.port", default=6562)),
+                )
+            )
             PAN_TELEMETRY_OBJ = TelemetryClient(host=telemetry_host, port=telemetry_port)
 
         self.db = PAN_TELEMETRY_OBJ
