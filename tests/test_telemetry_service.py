@@ -6,10 +6,12 @@ import threading
 from unittest.mock import MagicMock, patch
 
 import pytest
+from typer.testing import CliRunner
 
 from panoptes.utils.telemetry.server import EventRequest, TelemetryService
 
-from panoptes.pocs.utils.service.telemetry import make_firestore_hook, make_pocs_telemetry_app
+from panoptes.pocs.utils.cli.telemetry import app as telemetry_cli_app
+from panoptes.pocs.utils.service.telemetry import _get_unit_id, make_firestore_hook, make_pocs_telemetry_app
 
 
 @pytest.fixture
@@ -134,3 +136,64 @@ class TestMakePocsTelemetryApp:
         )
         service = app.state.telemetry_service
         assert len(service._post_event_hooks) == 1
+
+
+class TestGetUnitId:
+    def test_returns_env_var(self, monkeypatch):
+        """Should return UNIT_ID env var when set."""
+        monkeypatch.setenv("UNIT_ID", "PAN042")
+        assert _get_unit_id() == "PAN042"
+
+    def test_falls_back_to_config(self, monkeypatch):
+        """Should query config server when UNIT_ID env var is absent."""
+        monkeypatch.delenv("UNIT_ID", raising=False)
+        with patch("panoptes.utils.config.client.get_config", return_value="PAN099"):
+            assert _get_unit_id() == "PAN099"
+
+    def test_raises_when_no_unit_id(self, monkeypatch):
+        """Should raise ValueError when neither env var nor config provides a unit id."""
+        monkeypatch.delenv("UNIT_ID", raising=False)
+        with patch("panoptes.utils.config.client.get_config", return_value=None):
+            with pytest.raises(ValueError, match="No unit id found"):
+                _get_unit_id()
+
+    def test_raises_when_config_unavailable(self, monkeypatch):
+        """Should raise ValueError when config server is unreachable."""
+        monkeypatch.delenv("UNIT_ID", raising=False)
+        with patch("panoptes.utils.config.client.get_config", side_effect=Exception("no server")):
+            with pytest.raises(ValueError, match="No unit id found"):
+                _get_unit_id()
+
+
+class TestRunTelemetryServerCli:
+    def test_run_no_upload(self, tmp_path, monkeypatch):
+        """CLI --no-upload flag should start uvicorn without Firestore hooks."""
+        runner = CliRunner()
+        mock_run = MagicMock()
+        monkeypatch.setenv("UNIT_ID", "PAN001")
+        with patch("uvicorn.run", mock_run):
+            result = runner.invoke(
+                telemetry_cli_app,
+                ["--no-upload", "--site-dir", str(tmp_path), "--port", "16562"],
+            )
+        assert result.exit_code == 0, result.output
+        mock_run.assert_called_once()
+        _, kwargs = mock_run.call_args
+        assert kwargs["port"] == 16562
+
+    def test_run_with_unit_id(self, tmp_path):
+        """CLI --unit-id flag should be passed through to make_pocs_telemetry_app."""
+        runner = CliRunner()
+        mock_run = MagicMock()
+        with patch("uvicorn.run", mock_run):
+            with patch("panoptes.pocs.utils.service.telemetry.TelemetryService") as mock_svc:
+                mock_svc.return_value = MagicMock(_post_event_hooks=[])
+                result = runner.invoke(
+                    telemetry_cli_app,
+                    ["--unit-id", "PAN001", "--no-upload", "--site-dir", str(tmp_path)],
+                )
+        assert result.exit_code == 0, result.output
+        mock_run.assert_called_once()
+        # Confirm --no-upload was respected (no Firestore hook registered).
+        args, _ = mock_svc.call_args
+        assert mock_svc.call_args.kwargs.get("post_event_hooks", []) == []
