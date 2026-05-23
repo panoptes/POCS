@@ -16,6 +16,7 @@
 - Telemetry run directories are now `telemetry/runs/<sequence_id>/` (no unit-id prefix, images remain in `images/`); `seq_time` is stamped at scheduling time.
 - `PanBase.__init__` now accepts a `config_file` parameter, allowing hardware sub-processes to load a specific config file independently via `init_config(config_file=...)`.
 - `PanBase` now validates the loaded config against `POCSConfig` (Pydantic) at startup; a warning is logged if validation fails rather than crashing.
+- Added `docs/tui_plan.md` design document and initial `panoptes.pocs.tui` skeleton for a curses dashboard inspired by milk-CTRL.
 
 ### Changed
 
