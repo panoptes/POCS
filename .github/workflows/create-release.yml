@@ -14,11 +14,18 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+      - name: Extract release notes from CHANGELOG
+        id: release_notes
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          NOTES=$(awk "/^## ${VERSION}/{found=1; next} found && /^## /{exit} found{print}" CHANGELOG.md)
+          echo "notes<<EOF" >> $GITHUB_OUTPUT
+          echo "$NOTES" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          body: |
-            See [CHANGELOG.md](https://github.com/panoptes/POCS/blob/main/CHANGELOG.md) for details
+          body: ${{ steps.release_notes.outputs.notes }}
           draft: false
           prerelease: false
   deploy:

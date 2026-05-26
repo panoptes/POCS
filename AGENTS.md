@@ -334,11 +334,13 @@ panoptes-config-server --host 0.0.0.0 --port 6563 run --config-file tests/testin
 
 7. **Tag `main` with new version:**
    - Once the PR is merged, switch to `main`, pull the latest changes, and verify the build before tagging.
+   - **The tag message must include the full changelog entries for this release** — the GitHub Release body is extracted directly from `CHANGELOG.md` by the CI workflow, so the CHANGELOG must be accurate and complete.
    ```bash
    git checkout main
    git pull origin main
    # Optionally verify: uv run pytest && uv run ruff check .
-   git tag -a ${NEW_VERSION} -m "Release ${NEW_VERSION}"
+   CHANGELOG_BODY=$(awk "/^## ${NEW_VERSION#v}/{found=1; next} found && /^## /{exit} found{print}" CHANGELOG.md)
+   git tag -a ${NEW_VERSION} -m "Release ${NEW_VERSION}" -m "${CHANGELOG_BODY}"
    git push origin ${NEW_VERSION}
    ```
 
@@ -361,7 +363,7 @@ panoptes-config-server --host 0.0.0.0 --port 6563 run --config-file tests/testin
 - **Twine check failures:** Usually due to missing or malformed metadata in `pyproject.toml`.
 
 **Automation Notes for AI Agents (During Release Process):**
-
+- **Never tag or push a release version without an explicit user request to do so.**
 - Parse version from `git describe --tags --abbrev=0`
 - Calculate next version based on changelog entries or commit messages
 - Extract date automatically: `date +%Y-%m-%d`

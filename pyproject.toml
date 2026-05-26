@@ -38,10 +38,10 @@ dependencies = [
     "GitPython",
     "human-readable",
     "numpy>=2",
-    "panoptes-utils[config,images]<3.0",
+    "panoptes-utils[config,images]>=0.3.3,<3.0",
     "pandas",
     "pick",
-    "Pillow>=10.0.1",
+    "pillow>=12.2.0",
     "pyserial",
     "requests>=2.32.0",
     "scipy>=1.10.0",
@@ -51,8 +51,9 @@ dependencies = [
     "transitions",
     "typer",
     "typing-inspect",
-    "urllib3>=2.0.7",
+    "urllib3>=2.7.0",
     "watchdog",
+    "cryptography>=46.0.5",
 ]
 
 [project.urls]
@@ -73,6 +74,7 @@ google = [
     "google-cloud-storage",
     "gsutil",
     "protobuf",
+    "pyopenssl>=26.0.0",
     "rsa",
 ]
 weather = [
