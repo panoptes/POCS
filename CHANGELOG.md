@@ -2,8 +2,14 @@
 
 ## [Unreleased]
 
+### Added
+
+- Added `--dev` option to `pocs update` to pull the latest commit from `main` instead of the latest tagged release.
+- Added `--branch/-b` option to `pocs update` to update from a specific branch (bypasses the tagged-release requirement).
+
 ### Changed
 
+- `pocs update` now defaults to checking out the latest tagged release. Use `--dev` for the latest commit or `--branch` for a specific branch.
 - Replaced `pocs.*` config-backed runtime flags (`INITIALIZED`, `CONNECTED`, `INTERRUPTED`, `DO_STATES`, `RUN_ONCE`) with plain instance variables on the `POCS` class; removed the `pocs:` section from `pocs.yaml` and `testing.yaml`.
 - Renamed `pocs.RETRY_ATTEMPTS` config key to top-level `observing_run_attempts`; default remains 3.
 

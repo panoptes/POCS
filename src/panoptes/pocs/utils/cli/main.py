@@ -98,73 +98,135 @@ def show_version():
 
 
 @app.command(name="update")
-def update_repo():
+def update_repo(
+    branch: str = typer.Option(
+        None,
+        "--branch",
+        "-b",
+        help="Update from a specific git branch, ignoring tagged release requirement.",
+    ),
+    dev: bool = typer.Option(
+        False,
+        "--dev",
+        help="Pull the latest commit from 'main' instead of the latest tagged release.",
+    ),
+):
     """Update POCS.
 
-    This will pull the latest changes from github and show any relevant messages.
-    """
-    new_commits = []
+    By default, checks out the latest tagged release. Use ``--dev`` to pull the
+    latest commit from ``main``, or ``--branch`` to update from a specific branch
+    (which bypasses the tagged-release requirement).
 
+    Args:
+        branch: A specific git branch to checkout and pull from. Overrides tagged-release
+            behaviour when provided. Names starting with ``-`` are rejected.
+        dev: If True, pull the latest commit from ``main`` instead of the latest tag.
+    """
+    # Validate branch name to prevent git option injection.
+    if branch is not None and branch.startswith("-"):
+        print(f"[red]Invalid branch name: '{branch}'. Branch names must not start with '-'.[/red]")
+        raise typer.Exit(code=1)
+
+    new_commits = []
     project_root = find_project_root()
 
     with Progress(
         SpinnerColumn(),
         TextColumn("[progress.description]{task.description}"),
     ) as progress:
-        # Start update task
-        t_update = progress.add_task(f"Updating {project_root}", total=1)
+        t_update = progress.add_task(f"Updating {project_root}...", total=None)
         repo = Repo(project_root)
 
         try:
             origin = repo.remotes.origin
-            origin.fetch()
+            progress.update(t_update, description="Fetching remote information...")
+            origin.fetch("--tags")
 
             # If local dir is dirty, stash changes.
             if repo.is_dirty():
-                progress.update(t_update, description="Stashing local changes...", advance=1)
+                progress.update(t_update, description="Stashing local changes...")
                 repo.git.stash("push")
 
-            # Get the current commit and the latest remote commit
-            current_commit = repo.head.commit
-            latest_remote_commit = repo.active_branch.tracking_branch().commit
-
-            if current_commit == latest_remote_commit:
-                progress.update(
-                    t_update,
-                    description="Project is already up to date. No action needed.",
-                    advance=1,
+            # Determine the target ref (tag, branch, or 'main' for --dev).
+            if branch is not None:
+                # --branch explicitly provided: checkout and pull that branch.
+                target_ref = branch
+                target_is_branch = True
+            elif dev:
+                # --dev: pull latest commit from main.
+                target_ref = "main"
+                target_is_branch = True
+            else:
+                # Default: find the latest tagged release.
+                tags = sorted(
+                    repo.tags,
+                    key=lambda t: t.commit.committed_date,
                 )
-                return
+                if not tags:
+                    print("[red]No tags found in the repository. Use --dev to pull from main.[/red]")
+                    raise typer.Exit(code=1)
+                latest_tag = tags[-1]
+                target_ref = latest_tag.name
+                target_is_branch = False
+                progress.update(t_update, description=f"Latest release tag: {target_ref}")
 
-            # Find the commits between the current state and the remote
-            new_commits = list(repo.iter_commits(f"{current_commit}...{latest_remote_commit}"))
+            # Checkout the target ref if we're not already on it.
+            current_ref = repo.active_branch.name if not repo.head.is_detached else repo.head.commit.hexsha
+            if current_ref != target_ref:
+                progress.update(t_update, description=f"Checking out '{target_ref}'...")
+                repo.git.checkout(target_ref)
+                print(f"[bold green]Switched to '{target_ref}'.[/bold green]")
 
-            progress.update(t_update, description="Updates found. Pulling latest changes...", advance=1)
-            origin.pull()
+            if target_is_branch:
+                # Pull latest commits for the branch.
+                current_commit = repo.head.commit
+                tracking = repo.active_branch.tracking_branch()
+                if tracking is None:
+                    # Set upstream to origin/<branch> if not already set.
+                    repo.git.branch("--set-upstream-to", f"origin/{target_ref}", target_ref)
+                    tracking = repo.active_branch.tracking_branch()
 
-            progress.update(t_update, description="Successfully pulled the latest changes.", advance=1)
+                latest_remote_commit = tracking.commit if tracking else None
+
+                if latest_remote_commit and current_commit == latest_remote_commit:
+                    progress.update(t_update, description="Already up to date.")
+                    return
+
+                if latest_remote_commit:
+                    new_commits = list(repo.iter_commits(f"{current_commit}...{latest_remote_commit}"))
+
+                progress.update(t_update, description=f"Pulling latest changes from '{target_ref}'...")
+                origin.pull(target_ref)
+            else:
+                # Tag checkout: check if we're already at the latest tag.
+                current_commit = repo.head.commit
+                tag_commit = latest_tag.commit
+                if current_commit == tag_commit:
+                    progress.update(t_update, description=f"Already at latest release ({target_ref}).")
+                    return
+
+                progress.update(
+                    t_update, description=f"Checked out release tag '{target_ref}'. No pull needed."
+                )
+
+            progress.update(t_update, description="Successfully updated.")
         except GitCommandError as e:
-            progress.update(
-                t_update,
-                description=f"[red]Failed to pull the latest changes: {e}[/red]",
-                advance=1,
-            )
+            progress.update(t_update, description=f"[red]Failed to update: {e}[/red]")
             raise typer.Abort()
         except Exception as e:
-            progress.update(t_update, description=f"[red]Error: {e}[/red]", advance=1)
+            progress.update(t_update, description=f"[red]Error: {e}[/red]")
             raise typer.Abort()
         else:
-            progress.update(t_update, description="[green]Update process complete![/green]", advance=1)
+            progress.update(t_update, description="[green]Update process complete![/green]")
 
-            # After pulling, show any update messages and sync dependencies
-            if len(new_commits):
+            if new_commits:
                 show_messages(start_commit=new_commits[0].hexsha, end_commit=new_commits[-1].hexsha)
         finally:
-            # Apply stashed changes
+            # Re-apply any stashed changes.
             if repo.git.stash("list"):
                 repo.git.stash("pop")
 
-        # Sync dependencies with the new pyproject.toml by showing message updates.
+        # Sync dependencies with the new pyproject.toml.
         run_uv_command(["run", "pocs", "update-deps"])
 
 

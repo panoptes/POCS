@@ -1,5 +1,8 @@
 """Tests for the CLI main application."""
 
+import re
+from unittest.mock import MagicMock, patch
+
 import pytest
 from typer.testing import CliRunner
 
@@ -85,3 +88,108 @@ def test_version_command(cli_runner):
     assert result.exit_code == 0
     assert "panoptes-pocs" in result.output
     assert "panoptes-utils" in result.output
+
+
+def test_update_help_shows_options(cli_runner):
+    """Test that 'pocs update --help' documents --branch, --dev options."""
+    result = cli_runner.invoke(app, ["update", "--help"])
+    # Strip ANSI escape codes before asserting so colour formatting doesn't break the check.
+    plain = re.sub(r"\x1b\[[0-9;]*m", "", result.output)
+
+    assert result.exit_code == 0
+    assert "--branch" in plain or "-b" in plain
+    assert "--dev" in plain
+
+
+def test_update_invalid_branch_name_rejected(cli_runner):
+    """Test that branch names starting with '-' are rejected."""
+    result = cli_runner.invoke(app, ["update", "--branch", "--force"])
+
+    assert result.exit_code != 0
+
+
+@patch("panoptes.pocs.utils.cli.main.find_project_root")
+@patch("panoptes.pocs.utils.cli.main.run_uv_command")
+@patch("panoptes.pocs.utils.cli.main.Repo")
+def test_update_default_uses_latest_tag(mock_repo_cls, mock_uv, mock_root, cli_runner):
+    """Test that the default update mode checks out the latest tagged release."""
+    mock_root.return_value = "/fake/project"
+
+    # Set up fake tag with a commit.
+    fake_commit = MagicMock()
+    fake_commit.committed_date = 1000
+    fake_tag = MagicMock()
+    fake_tag.name = "v1.2.3"
+    fake_tag.commit = fake_commit
+
+    # Set up repo mock.
+    mock_repo = MagicMock()
+    mock_repo.tags = [fake_tag]
+    mock_repo.is_dirty.return_value = False
+    mock_repo.head.is_detached = False
+    mock_repo.active_branch.name = "main"
+    mock_repo.head.commit = fake_commit
+    mock_repo.git.stash.return_value = ""
+    mock_repo_cls.return_value = mock_repo
+
+    cli_runner.invoke(app, ["update"])
+
+    # Should have attempted to checkout the latest tag.
+    mock_repo.git.checkout.assert_called_once_with("v1.2.3")
+
+
+@patch("panoptes.pocs.utils.cli.main.find_project_root")
+@patch("panoptes.pocs.utils.cli.main.run_uv_command")
+@patch("panoptes.pocs.utils.cli.main.Repo")
+def test_update_dev_pulls_main(mock_repo_cls, mock_uv, mock_root, cli_runner):
+    """Test that --dev pulls the latest commit from main."""
+    mock_root.return_value = "/fake/project"
+
+    fake_commit = MagicMock()
+    fake_remote_commit = MagicMock()
+    tracking = MagicMock()
+    tracking.commit = fake_remote_commit
+
+    mock_repo = MagicMock()
+    mock_repo.is_dirty.return_value = False
+    mock_repo.head.is_detached = False
+    mock_repo.active_branch.name = "main"
+    mock_repo.active_branch.tracking_branch.return_value = tracking
+    mock_repo.head.commit = fake_commit
+    mock_repo.git.stash.return_value = ""
+    mock_repo.iter_commits.return_value = []
+    mock_repo_cls.return_value = mock_repo
+
+    cli_runner.invoke(app, ["update", "--dev"])
+
+    # Should pull from 'main'.
+    mock_repo.remotes.origin.pull.assert_called_once_with("main")
+
+
+@patch("panoptes.pocs.utils.cli.main.find_project_root")
+@patch("panoptes.pocs.utils.cli.main.run_uv_command")
+@patch("panoptes.pocs.utils.cli.main.Repo")
+def test_update_branch_option_bypasses_tag(mock_repo_cls, mock_uv, mock_root, cli_runner):
+    """Test that --branch pulls from the specified branch, ignoring tags."""
+    mock_root.return_value = "/fake/project"
+
+    fake_commit = MagicMock()
+    fake_remote_commit = MagicMock()
+    tracking = MagicMock()
+    tracking.commit = fake_remote_commit
+
+    mock_repo = MagicMock()
+    mock_repo.is_dirty.return_value = False
+    mock_repo.head.is_detached = False
+    mock_repo.active_branch.name = "main"
+    mock_repo.active_branch.tracking_branch.return_value = tracking
+    mock_repo.head.commit = fake_commit
+    mock_repo.git.stash.return_value = ""
+    mock_repo.iter_commits.return_value = []
+    mock_repo_cls.return_value = mock_repo
+
+    cli_runner.invoke(app, ["update", "--branch", "develop"])
+
+    # Should pull from 'develop', not a tag.
+    mock_repo.git.checkout.assert_called_once_with("develop")
+    mock_repo.remotes.origin.pull.assert_called_once_with("develop")
