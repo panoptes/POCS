@@ -11,7 +11,6 @@ from typing import Any
 
 from loguru import logger
 
-from panoptes.utils.config.helpers import deep_merge
 from panoptes.utils.config.helpers import load_config as _load_config_file
 
 _CONFIG: dict[str, Any] = {}
@@ -49,6 +48,15 @@ def _get_nested(d: dict[str, Any], key: str, default: Any = None) -> Any:
                 return default
 
     return current
+
+
+def _set_nested(d: dict[str, Any], keys: list[str], value: Any) -> None:
+    """Set a leaf value in a nested dict using a list of key parts."""
+    for key in keys[:-1]:
+        if key not in d or not isinstance(d[key], dict):
+            d[key] = {}
+        d = d[key]
+    d[keys[-1]] = value
 
 
 def init_config(config_file: str | Path | None = None) -> dict[str, Any]:
@@ -121,9 +129,6 @@ def set_config(key: str, new_value: Any, **kwargs) -> Any:
     global _CONFIG
     if not _CONFIG:
         init_config()
-    nested: Any = new_value
-    for part in reversed(key.split(".")):
-        nested = {part: nested}
-    _CONFIG = deep_merge(_CONFIG, nested)
+    _set_nested(_CONFIG, key.split("."), new_value)
     logger.trace(f"set_config {key!r} = {new_value!r}")
     return new_value
