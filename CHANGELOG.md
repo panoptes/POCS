@@ -2,24 +2,26 @@
 
 ## [Unreleased]
 
-### Changed
+## 0.8.3 - 2026-05-26
 
-- Updated `panoptes-utils` to `v0.3.3`.
-- Updated `requests` to `2.34.2` in the lock file.
-- Updated `pytest` to `9.0.3`, `pygments` to `2.20.0`, `pyasn1` to `0.6.3` in the lock file.
-- Removed `flask` and `werkzeug` transitive dependencies (no longer required by `panoptes-utils` 0.3.x).
-
-### Security
-
-- Updated `cryptography` to `>=46.0.5` to fix subgroup attack vulnerability on SECT curves (CVE-2026-26007).
-- Updated `Pillow` to `>=12.2.0` to fix OOB write with invalid PSD tile extents and FITS GZIP decompression bomb vulnerabilities.
-- Updated `urllib3` to `>=2.7.0` to fix decompression-bomb bypass and sensitive header forwarding vulnerabilities.
-- Updated `pyopenssl` to `>=26.0.0` (resolved to `26.2.0`) to fix DTLS cookie callback buffer overflow vulnerability.
+Security and dependency updates, plus a new weather station setup command.
 
 ### Added
 
-- Added `pocs weather setup` subcommand that scans `/dev/ttyUSB*` ports (skipping any claimed by `/dev/mount`), probes each with the AAG CloudWatcher serial handshake, and writes a udev rule to `/etc/udev/rules.d/92-panoptes-weather.rules` creating a stable `/dev/weather` symlink.
-- Added `docs/weather-station.md` documenting the weather reading JSON schema, safety evaluation logic, HTTP API, and configuration reference.
+- Added `pocs weather setup` subcommand to auto-detect and configure an AAG CloudWatcher weather station, writing a stable `/dev/weather` udev symlink.
+- Added `docs/weather-station.md` with weather reading schema, safety logic, HTTP API, and configuration reference.
+
+### Changed
+
+- Updated `panoptes-utils` to `v0.3.3`, removing `flask` and `werkzeug` as transitive dependencies.
+- Updated `requests` to `2.34.2`, `pytest` to `9.0.3`, `pygments` to `2.20.0`, `pyasn1` to `0.6.3`.
+
+### Security
+
+- Updated `cryptography` to `>=46.0.5` (CVE-2026-26007: subgroup attack on SECT curves).
+- Updated `Pillow` to `>=12.2.0` (OOB write with invalid PSD tiles; FITS GZIP decompression bomb).
+- Updated `urllib3` to `>=2.7.0` (decompression-bomb bypass; sensitive header forwarding).
+- Updated `pyopenssl` to `>=26.0.0` (DTLS cookie callback buffer overflow).
 
 ## 0.8.2 - 2026-04-15
 
