@@ -49,7 +49,7 @@ jobs:
       - name: Install POCS with all extras and testing dependencies
         run: uv sync --all-extras --group testing
       - name: Test with pytest
-        run: uv run pytest
+        run: uv run pytest --cov=panoptes.pocs --cov=tests --cov-branch --cov-report=term-missing:skip-covered --cov-report=xml:build/coverage.xml --no-cov-on-fail
       - uses: codecov/codecov-action@v4
         with:
           name: Upload to codecov.io

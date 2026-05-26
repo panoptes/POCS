@@ -26,11 +26,11 @@ def get_target_coords(
     Using common target names (requires internet for name resolution):
 
     >>> from astropy.time import Time
-    >>> c = get_target_coords("M42", obstime=Time("2020-01-01"))
-    >>> type(c).__name__
+    >>> c = get_target_coords("M42", obstime=Time("2020-01-01"))  # doctest: +SKIP
+    >>> type(c).__name__  # doctest: +SKIP
     'SkyCoord'
 
-    >>> get_target_coords("Andromeda Galaxy", obstime=Time("2020-01-01"), verbose=True)  # doctest: +ELLIPSIS
+    >>> get_target_coords("Andromeda Galaxy", obstime=Time("2020-01-01"), verbose=True)  # doctest: +SKIP
     <SkyCoord (ICRS): (ra, dec) in deg
         (10.6847..., 41.26875)>
 
