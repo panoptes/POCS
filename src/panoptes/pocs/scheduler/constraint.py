@@ -115,8 +115,9 @@ class Altitude(BaseConstraint):
         target = observation.field
 
         # Note we just get nearest integer
-        target_az = observer.altaz(time, target=target).az.degree
-        target_alt = observer.altaz(time, target=target).alt.degree
+        target_altaz = observer.altaz(time, target=target)
+        target_az = target_altaz.az.degree
+        target_alt = target_altaz.alt.degree
 
         # Determine if the target altitude is above or below the determined
         # minimum elevation for that azimuth
@@ -164,9 +165,12 @@ class Duration(BaseConstraint):
         target = observation.field
         veto = not observer.target_is_up(time, target, horizon=self.horizon)
 
-        end_of_night = observer.tonight(
-            time=time, horizon=self.get_config("location.observe_horizon", default=-18 * u.degree)
-        )[1]
+        end_of_night = (
+            kwargs.get("end_of_night")
+            or observer.tonight(
+                time=time, horizon=self.get_config("location.observe_horizon", default=-18 * u.degree)
+            )[1]
+        )
 
         if not veto:
             # Get the next meridian flip

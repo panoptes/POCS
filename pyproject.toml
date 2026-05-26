@@ -120,12 +120,6 @@ version_file = "src/panoptes/pocs/_version.py"
 
 [tool.pytest.ini_options]
 addopts = [
-    "--cov=panoptes.pocs",
-    "--cov=tests",
-    "--cov-branch",
-    "--cov-report=term-missing:skip-covered",
-    "--cov-report=xml:build/coverage.xml",
-    "--no-cov-on-fail",
     "--doctest-ignore-import-errors",
     "--doctest-modules",
     "-x",

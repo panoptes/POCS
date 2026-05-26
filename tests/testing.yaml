@@ -74,7 +74,7 @@ cameras:
     compress_fits: True
     make_pretty_images: True
     keep_jpgs: False
-    readout_time: 0.5  # seconds
+    readout_time: 0.1  # seconds
     timeout: 10  # seconds
     exptime: 120  # Default exposure time in seconds (used when not specified in field files)
     filter_type: RGGB
@@ -95,7 +95,7 @@ cameras:
     - model: panoptes.pocs.camera.simulator.dslr.Camera
       name: dslr.00
       port: /dev/fake/dslr.00
-      readout_time: 0.5
+      readout_time: 0.1
     - model: panoptes.pocs.camera.simulator.dslr.Camera
       name: dslr.focuser.cooling.00
       port: /dev/fake/dslr.focuser.cooling.00
