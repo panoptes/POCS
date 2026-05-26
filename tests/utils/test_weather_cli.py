@@ -69,7 +69,7 @@ def test_setup_finds_aag_on_first_port(mock_glob, mock_serial_cls, mock_comports
     mock_serial_cls.return_value = _make_serial_cm(b"!N CloudWatcher  !\x11            0")
     mock_run.return_value = MagicMock(returncode=0, stderr=b"")
 
-    with patch("panoptes.pocs.config_store.set_config"):
+    with patch("panoptes.pocs.config.store.set_config"):
         result = cli_runner.invoke(app, ["weather", "setup"])
 
     assert result.exit_code == 0, result.output
@@ -107,7 +107,7 @@ def test_setup_skips_non_aag_ports(mock_glob, mock_serial_cls, mock_comports, mo
     ]
     mock_run.return_value = MagicMock(returncode=0, stderr=b"")
 
-    with patch("panoptes.pocs.config_store.set_config"):
+    with patch("panoptes.pocs.config.store.set_config"):
         result = cli_runner.invoke(app, ["weather", "setup"])
 
     assert result.exit_code == 0, result.output
@@ -213,7 +213,7 @@ def test_setup_rule_omits_serial_when_none(mock_glob, mock_serial_cls, mock_comp
     mock_serial_cls.return_value = _make_serial_cm(b"!N CloudWatcher  !\x11            0")
     mock_run.return_value = MagicMock(returncode=0, stderr=b"")
 
-    with patch("panoptes.pocs.config_store.set_config"):
+    with patch("panoptes.pocs.config.store.set_config"):
         result = cli_runner.invoke(app, ["weather", "setup"])
 
     assert result.exit_code == 0, result.output
@@ -249,7 +249,7 @@ def test_setup_skips_mount_port(mock_glob, mock_serial_cls, mock_comports, mock_
 
     with (
         patch("panoptes.pocs.utils.cli.weather.Path") as mock_path_cls,
-        patch("panoptes.pocs.config_store.set_config"),
+        patch("panoptes.pocs.config.store.set_config"),
     ):
         # Path("/dev/mount") → our mock; Path(device).resolve() uses real Path
         def path_side_effect(arg):
@@ -290,7 +290,7 @@ def test_setup_mount_symlink_resolve_oserror(mock_glob, mock_serial_cls, mock_co
 
     with (
         patch("panoptes.pocs.utils.cli.weather.Path") as mock_path_cls,
-        patch("panoptes.pocs.config_store.set_config"),
+        patch("panoptes.pocs.config.store.set_config"),
     ):
 
         def path_side_effect(arg):
@@ -345,7 +345,7 @@ def test_setup_port_info_via_resolved_path(mock_glob, mock_serial_cls, mock_comp
 
     with (
         patch("panoptes.pocs.utils.cli.weather.Path") as mock_path_cls,
-        patch("panoptes.pocs.config_store.set_config"),
+        patch("panoptes.pocs.config.store.set_config"),
     ):
 
         def path_side_effect(arg):
@@ -384,7 +384,7 @@ def test_setup_no_description_no_manufacturer(
     mock_serial_cls.return_value = _make_serial_cm(b"!N CloudWatcher  !\x11            0")
     mock_run.return_value = MagicMock(returncode=0, stderr=b"")
 
-    with patch("panoptes.pocs.config_store.set_config"):
+    with patch("panoptes.pocs.config.store.set_config"):
         result = cli_runner.invoke(app, ["weather", "setup"])
 
     assert result.exit_code == 0, result.output
@@ -438,7 +438,7 @@ def test_setup_udevadm_reload_fails(mock_glob, mock_serial_cls, mock_comports, c
 
     with (
         patch("subprocess.run", side_effect=[tee_ok, udevadm_err]),
-        patch("panoptes.pocs.config_store.set_config"),
+        patch("panoptes.pocs.config.store.set_config"),
     ):
         result = cli_runner.invoke(app, ["weather", "setup"])
 
@@ -462,7 +462,7 @@ def test_setup_config_update_fails(mock_glob, mock_serial_cls, mock_comports, mo
     mock_serial_cls.return_value = _make_serial_cm(b"!N CloudWatcher  !\x11            0")
     mock_run.return_value = MagicMock(returncode=0, stderr=b"")
 
-    with patch("panoptes.pocs.config_store.set_config", side_effect=RuntimeError("write failed")):
+    with patch("panoptes.pocs.config.store.set_config", side_effect=RuntimeError("write failed")):
         result = cli_runner.invoke(app, ["weather", "setup"])
 
     assert result.exit_code == 0, result.output
