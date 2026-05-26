@@ -400,8 +400,8 @@ def test_run_wait_until_safe(observatory, valid_observation, pocstime_day, pocst
         pocs.logger.warning(f"Waiting to get to slewing state... {pocs.state=} {pocs.next_state=}")
         time.sleep(1)
 
-    pocs.logger.warning("Stopping states via pocs.DO_STATES")
-    observatory.set_config("pocs.DO_STATES", False)
+    pocs.logger.warning("Stopping states via pocs.do_states")
+    pocs.do_states = False
 
     observatory.logger.warning("Waiting on pocs_thread")
     pocs_thread.join(timeout=300)
@@ -466,8 +466,8 @@ def test_unsafe_park(observatory, valid_observation, pocstime_night):
         assert pocs.state in ["sleeping", "housekeeping", "slewing", "parking", "parked"]
         time.sleep(0.25)
 
-    pocs.logger.warning("Stopping states via pocs.DO_STATES")
-    observatory.set_config("pocs.DO_STATES", False)
+    pocs.logger.warning("Stopping states via pocs.do_states")
+    pocs.do_states = False
 
     observatory.logger.warning("Waiting on pocs_thread")
     pocs_thread.join(timeout=300)
@@ -510,8 +510,8 @@ def test_run_power_down_interrupt(observatory, valid_observation, pocstime_night
         pocs.logger.debug(f"Waiting to get to slewing state. Currently next_state={pocs.next_state}")
         time.sleep(1)
 
-    pocs.logger.warning("Stopping states via pocs.DO_STATES")
-    observatory.set_config("pocs.DO_STATES", False)
+    pocs.logger.warning("Stopping states via pocs.do_states")
+    pocs.do_states = False
 
     observatory.logger.debug("Waiting on pocs_thread")
     pocs_thread.join(timeout=300)

@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+### Changed
+
+- Replaced `pocs.*` config-backed runtime flags (`INITIALIZED`, `CONNECTED`, `INTERRUPTED`, `DO_STATES`, `RUN_ONCE`) with plain instance variables on the `POCS` class; removed the `pocs:` section from `pocs.yaml` and `testing.yaml`.
+- Renamed `pocs.RETRY_ATTEMPTS` config key to top-level `observing_run_attempts`; default remains 3.
+
 ## 0.8.3 - 2026-05-26
 
 Security and dependency updates, plus a new weather station setup command.
