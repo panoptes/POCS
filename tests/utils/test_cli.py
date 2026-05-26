@@ -1,7 +1,9 @@
 """Tests for the CLI main application."""
 
-import pytest
+import re
 from unittest.mock import MagicMock, patch
+
+import pytest
 from typer.testing import CliRunner
 
 # Import will fail if dependencies are not available, so we'll mark the test as optional
@@ -90,8 +92,6 @@ def test_version_command(cli_runner):
 
 def test_update_help_shows_options(cli_runner):
     """Test that 'pocs update --help' documents --branch, --dev options."""
-    import re
-
     result = cli_runner.invoke(app, ["update", "--help"])
     # Strip ANSI escape codes before asserting so colour formatting doesn't break the check.
     plain = re.sub(r"\x1b\[[0-9;]*m", "", result.output)
@@ -132,7 +132,7 @@ def test_update_default_uses_latest_tag(mock_repo_cls, mock_uv, mock_root, cli_r
     mock_repo.git.stash.return_value = ""
     mock_repo_cls.return_value = mock_repo
 
-    result = cli_runner.invoke(app, ["update"])
+    cli_runner.invoke(app, ["update"])
 
     # Should have attempted to checkout the latest tag.
     mock_repo.git.checkout.assert_called_once_with("v1.2.3")
@@ -160,7 +160,7 @@ def test_update_dev_pulls_main(mock_repo_cls, mock_uv, mock_root, cli_runner):
     mock_repo.iter_commits.return_value = []
     mock_repo_cls.return_value = mock_repo
 
-    result = cli_runner.invoke(app, ["update", "--dev"])
+    cli_runner.invoke(app, ["update", "--dev"])
 
     # Should pull from 'main'.
     mock_repo.remotes.origin.pull.assert_called_once_with("main")
@@ -188,7 +188,7 @@ def test_update_branch_option_bypasses_tag(mock_repo_cls, mock_uv, mock_root, cl
     mock_repo.iter_commits.return_value = []
     mock_repo_cls.return_value = mock_repo
 
-    result = cli_runner.invoke(app, ["update", "--branch", "develop"])
+    cli_runner.invoke(app, ["update", "--branch", "develop"])
 
     # Should pull from 'develop', not a tag.
     mock_repo.git.checkout.assert_called_once_with("develop")

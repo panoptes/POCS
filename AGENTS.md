@@ -130,6 +130,17 @@ POCS/
 - Reference issue numbers when applicable
 - Format: `Brief description (#issue-number)`
 
+**Pre-commit Checklist:**
+
+Before every commit, run lint and format to ensure no issues:
+
+```bash
+ruff check .
+ruff format .
+```
+
+Both commands must pass cleanly before committing.
+
 ## Architecture Guidelines
 
 ### State Machine (POCS Core)
