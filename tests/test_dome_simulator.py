@@ -1,7 +1,6 @@
 import pytest
 
-from panoptes.utils.config.client import set_config
-
+from panoptes.pocs.config_store import set_config
 from panoptes.pocs.dome import create_dome_simulator, simulator
 
 

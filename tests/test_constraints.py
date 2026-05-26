@@ -7,10 +7,10 @@ from astropy.coordinates import EarthLocation, get_body
 from astropy.time import Time
 
 from panoptes.utils import horizon as horizon_utils
-from panoptes.utils.config.client import get_config
 from panoptes.utils.error import PanError
 from panoptes.utils.serializers import from_yaml
 
+from panoptes.pocs.config_store import get_config
 from panoptes.pocs.scheduler import create_constraints_from_config
 from panoptes.pocs.scheduler.constraint import (
     AlreadyVisited,

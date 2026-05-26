@@ -2,9 +2,9 @@ from contextlib import suppress
 from glob import glob
 
 from panoptes.utils import error
-from panoptes.utils.config.client import get_config, set_config
 from panoptes.utils.library import load_module
 
+from panoptes.pocs.config_store import get_config, set_config
 from panoptes.pocs.mount.mount import AbstractMount  # noqa
 from panoptes.pocs.utils.location import create_location_from_config
 from panoptes.pocs.utils.logger import get_logger
@@ -64,7 +64,7 @@ def create_mount_from_config(mount_info=None, earth_location=None, *args, **kwar
     logger.debug(f"Mount: {brand=} {driver=} {model=}")
 
     # Check if we should be using a simulator
-    use_simulator = "mount" in get_config("simulator", default=[])
+    use_simulator = "mount" in (get_config("simulator", default=[]) or [])
     logger.debug(f"Mount is simulator: {use_simulator}")
 
     # Create simulator if requested
@@ -124,7 +124,7 @@ def create_mount_simulator(mount_info=None, earth_location=None, db_type="memory
         AbstractMount: A newly constructed simulator Mount instance.
     """
     # Remove mount simulator
-    current_simulators = get_config("simulator", default=[])
+    current_simulators = get_config("simulator", default=[]) or []
     logger.warning(f"Current simulators: {current_simulators}")
     with suppress(ValueError):
         current_simulators.remove("mount")

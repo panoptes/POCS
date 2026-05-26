@@ -6,14 +6,11 @@ from ctypes.util import find_library
 
 import astropy.units as u
 import pytest
-import requests
 from astropy.io import fits
 
 from panoptes.utils import error
-from panoptes.utils.config.client import get_config, set_config
 from panoptes.utils.error import NotFound
 from panoptes.utils.images import fits as fits_utils
-from panoptes.utils.serializers import to_json
 from panoptes.utils.time import CountdownTimer
 
 from panoptes.pocs.camera import AbstractCamera, create_cameras_from_config
@@ -23,6 +20,7 @@ from panoptes.pocs.camera.sbigudrv import INVALID_HANDLE_VALUE, SBIGDriver
 from panoptes.pocs.camera.simulator.ccd import Camera as SimSDKCamera
 from panoptes.pocs.camera.simulator.dslr import Camera as SimCamera
 from panoptes.pocs.camera.zwo import Camera as ZWOCamera
+from panoptes.pocs.config_store import get_config, reload_config, set_config
 from panoptes.pocs.focuser.simulator import Focuser
 from panoptes.pocs.scheduler.field import Field
 from panoptes.pocs.scheduler.observation.base import Observation
@@ -63,7 +61,7 @@ def camera(request) -> AbstractCamera:
         # Simulator
         camera = CamClass(**cam_params)
     else:
-        # Lookup real hardware device name in real life config server.
+        # Lookup real hardware device name in the loaded config.
         for cam_config in get_config("cameras.devices"):
             if cam_config["model"] == cam_params:
                 camera = CamClass(**cam_config)
@@ -108,13 +106,11 @@ def patterns(camera, images_dir):
     return patterns
 
 
-def reset_conf(config_host, config_port):
-    url = f"http://{config_host}:{config_port}/reset-config"
-    response = requests.post(url, data=to_json({"reset": True}), headers={"Content-Type": "application/json"})
-    assert response.ok
+def reset_conf():
+    reload_config()
 
 
-def test_create_cameras_from_config_no_autodetect(config_host, config_port):
+def test_create_cameras_from_config_no_autodetect():
     set_config("cameras.auto_detect", False)
     set_config(
         "cameras.devices",
@@ -127,14 +123,14 @@ def test_create_cameras_from_config_no_autodetect(config_host, config_port):
     with pytest.raises(error.CameraNotFound):
         create_cameras_from_config()
 
-    reset_conf(config_host, config_port)
+    reset_conf()
 
 
-def test_create_cameras_from_config_autodetect(config_host, config_port):
+def test_create_cameras_from_config_autodetect():
     set_config("cameras.defaults.auto_detect", True)
     with pytest.raises(error.CameraNotFound):
         create_cameras_from_config()
-    reset_conf(config_host, config_port)
+    reset_conf()
 
 
 # Hardware independent tests, mostly use simulator:

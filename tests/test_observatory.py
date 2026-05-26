@@ -2,16 +2,14 @@ import os
 import time
 
 import pytest
-import requests
 from astropy.coordinates import get_body
 from astropy.time import Time
 
 from panoptes.utils import error
-from panoptes.utils.config.client import set_config
-from panoptes.utils.serializers import to_json
 
 from panoptes.pocs import __version__, hardware
 from panoptes.pocs.camera import create_cameras_from_config
+from panoptes.pocs.config_store import reload_config, set_config
 from panoptes.pocs.dome import create_dome_simulator
 from panoptes.pocs.mount import AbstractMount, create_mount_from_config, create_mount_simulator
 from panoptes.pocs.observatory import Observatory
@@ -21,10 +19,8 @@ from panoptes.pocs.scheduler.observation.base import Observation
 from panoptes.pocs.utils.location import create_location_from_config
 
 
-def reset_conf(config_host, config_port):
-    url = f"http://{config_host}:{config_port}/reset-config"
-    response = requests.post(url, data=to_json({"reset": True}), headers={"Content-Type": "application/json"})
-    assert response.ok
+def reset_conf():
+    reload_config()
 
 
 @pytest.fixture(scope="function")
@@ -62,12 +58,12 @@ def test_remove_cameras(observatory, cameras):
         observatory.remove_camera(cam_name)
 
 
-def test_bad_site(config_host, config_port):
+def test_bad_site():
     set_config("location", {})
     with pytest.raises(error.PanError):
         Observatory()
 
-    reset_conf(config_host, config_port)
+    reset_conf()
 
 
 def test_cannot_observe(caplog):

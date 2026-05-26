@@ -1,82 +1,27 @@
-"""Typer CLI helpers for interacting with the PANOPTES config server.
-
-Provides commands to query and update configuration values via the running
-panoptes-utils config server, along with a status check and restart helper.
-"""
+"""Typer CLI helpers for interacting with the PANOPTES config file."""
 
 import os
 import subprocess
 
 import typer
 from astropy import units as u
-from pydantic import BaseModel
 from rich import print, prompt
 from rich.console import Console
 
-from panoptes.utils.config.client import get_config, server_is_running, set_config
+from panoptes.utils.config.helpers import save_config
 
+from panoptes.pocs import config_store
 from panoptes.pocs.utils.logger import get_logger
 
-
-class HostInfo(BaseModel):
-    """Metadata for the Config Server"""
-
-    host: str = "127.0.0.1"
-    port: int = 6563
-    verbose: bool = False
-
-    @property
-    def url(self):
-        """Base URL of the config server.
-
-        Returns:
-            str: Host and port combined as 'host:port'.
-        """
-        return f"{self.host}:{self.port}"
-
-
 app = typer.Typer(no_args_is_help=True)
-host_info: dict[str, HostInfo | None] = {"config_server": None}
 logger = get_logger(stderr_log_level="ERROR")
-
-
-def server_running():
-    """Check if the config server is running"""
-    # NOTE: A bug in server_is_running means we cannot specify the port.
-    is_running = server_is_running()
-    if is_running is None or is_running is False:
-        print("[red]The config server is not running. Please start it first.[/red]")
-
-    return is_running
-
-
-@app.callback()
-def main(context: typer.Context):
-    """Set up shared options and host info for the config CLI commands.
-
-    Args:
-        context: Typer context used to access parent parameters (e.g., config host/port).
-
-    Returns:
-        None
-    """
-    context.params.update(context.parent.params)
-    verbose = context.params["verbose"]
-    host_info["config_server"] = HostInfo(
-        host=context.params["config_host"], port=context.params["config_port"], verbose=verbose
-    )
-    if verbose:
-        print(f"Command options from power: {context.params!r}")
 
 
 @app.command()
 def status():
-    """Print whether the config server is running.
-
-    Returns:
-        None
-    """
-    server_running()
+    """Print config availability status."""
+    config_store.get_config()
+    print("[green]Config is ready.[/green]")
 
 
 @app.command(name="get")
@@ -89,19 +34,10 @@ def get_value(
     ),
     parse: bool = typer.Option(True, help="Parse the item."),
 ):
-    """Get an item from the config.
-
-    Args:
-        key: The dotted-key of the config item to retrieve. If None, returns the full config.
-        parse: If True, parse the item into a native Python type when possible.
-
-    Returns:
-        None
-    """
-    if server_running():
-        metadata = host_info["config_server"]
-        item = get_config(key, parse=parse, host=metadata.host, port=metadata.port)
-        print(item)
+    """Get an item from the config."""
+    del parse
+    item = config_store.get_config(key)
+    print(item)
 
 
 @app.command(name="set")
@@ -113,122 +49,89 @@ def set_value(
     ),
     value: str = typer.Argument(..., help="The new value."),
 ):
-    """Set an item in the config.
-
-    Args:
-        key: The dotted-key of the config item to set.
-        value: The new value to set. Will be coerced to int/float if possible, otherwise kept as str.
-
-    Returns:
-        None
-    """
-    if server_running():
-        metadata = host_info["config_server"]
-        if value.startswith(r"\-"):
-            value = value[1:]
+    """Set an item in the config."""
+    if value.startswith(r"\-"):
+        value = value[1:]
+    try:
+        value = int(value)
+    except ValueError:
         try:
-            value = int(value)
+            value = float(value)
         except ValueError:
-            try:
-                value = float(value)
-            except ValueError:
-                print(f"{value=} is not a number.")
-        print(f"{type(value)=} {value=}")
-        item = set_config(key, value, host=metadata.host, port=metadata.port)
-        print(item)
+            print(f"{value=} is not a number.")
+    print(f"{type(value)=} {value=}")
+    item = config_store.set_config(key, value)
+    print(item)
 
 
 @app.command()
 def setup():
-    """Do initial setup of the config server.
-
-    Returns:
-        None
-    """
-    # Clear the screen.
+    """Do initial setup of the config file."""
     console = Console()
     console.clear()
-    if not server_running():
-        raise typer.Exit()
 
     print("Setting up configuration for your PANOPTES unit.")
-    # Make sure they want to proceed.
     proceed = prompt.Confirm.ask("This will overwrite any existing configuration. Proceed?", default=False)
     if not proceed:
         print("Exiting.")
         return
 
-    # Set the base directory.
     base_dir = prompt.Prompt.ask(
         "Enter the base directory for POCS", default=f"{os.path.expanduser('~')}/POCS"
     )
-    set_config("directories.base", base_dir)
+    config_store.set_config("directories.base", base_dir)
 
-    # Get the user-friendly name for the unit.
-    unit_name = prompt.Prompt.ask("Enter the user-friendly name for this unit", default=get_config("name"))
-    set_config("name", unit_name)
+    unit_name = prompt.Prompt.ask(
+        "Enter the user-friendly name for this unit", default=config_store.get_config("name")
+    )
+    config_store.set_config("name", unit_name)
 
-    # Get the pan_id for the unit.
     pan_id = prompt.Prompt.ask(
         "Enter the PANOPTES ID for this unit. If you don't have one yet just use the default:",
-        default=get_config("pan_id"),
+        default=config_store.get_config("pan_id"),
     )
-    set_config("pan_id", pan_id)
+    config_store.set_config("pan_id", pan_id)
 
-    # Latitude
     latitude = prompt.Prompt.ask(
         'Enter the latitude for this unit, e.g. "19.5 deg":',
-        default=str(get_config("location.latitude")),
+        default=str(config_store.get_config("location.latitude")),
     )
-    set_config("location.latitude", str(u.Unit(latitude)))
-    # Longitude
+    config_store.set_config("location.latitude", str(u.Unit(latitude)))
+
     longitude = prompt.Prompt.ask(
         'Enter the longitude for this unit, e.g. "-154.12 deg":',
-        default=str(get_config("location.longitude")),
+        default=str(config_store.get_config("location.longitude")),
     )
-    set_config("location.longitude", str(u.Unit(longitude)))
-    # Elevation
+    config_store.set_config("location.longitude", str(u.Unit(longitude)))
+
     elevation = prompt.Prompt.ask(
         'Enter the elevation for this unit. Use " ft" or " m" for units, e.g. "3400 m" or "12000 ft":',
-        default=str(get_config("location.elevation")),
+        default=str(config_store.get_config("location.elevation")),
     )
     if " ft" in elevation:
-        elevation = (elevation.replace(" ft", "") * u.imperial.foot).to(u.meter)
+        elevation = (float(elevation.replace(" ft", "")) * u.imperial.foot).to(u.meter)
     elif elevation.endswith("m"):
         elevation = str(u.Unit(elevation))
-    set_config("location.elevation", elevation)
+    config_store.set_config("location.elevation", elevation)
 
-    # Default timezone to UTC but try to probe OS.
     timezone = "UTC"
     try:
-        timezone = subprocess.check_output("cat /etc/timezone", shell=True).decode().strip()
+        timezone = subprocess.check_output(["cat", "/etc/timezone"], text=True).strip()
     except subprocess.CalledProcessError:
         pass
 
     timezone = prompt.Prompt.ask("Enter the timezone for this unit", default=timezone)
-    set_config("location.timezone", timezone)
+    config_store.set_config("location.timezone", timezone)
 
-    # Get GMT offset and then confirm if correct.
-    gmt_offset = subprocess.check_output("date +%z", shell=True).decode().strip()
-    # Convert GMT offset to minutes.
+    gmt_offset = subprocess.check_output(["date", "+%z"], text=True).strip()
     gmt_offset = int(gmt_offset[:3]) * 60 + int(gmt_offset[-2:])
     gmt_offset = prompt.Prompt.ask(
         "Enter the GMT offset for this unit in minutes, e.g. 60 for 1 hour ahead, -120 for 2 hours behind:",
         default=str(gmt_offset),
     )
-    set_config("location.gmt_offset", int(gmt_offset))
-
-
-@app.command()
-def restart():
-    """Restart the config server process via supervisorctl.
-
-    Returns:
-        None
-    """
-    cmd = "supervisorctl restart pocs-config-server"
-    print(f"Running: {cmd}")
-    subprocess.run(cmd, shell=True)
+    config_store.set_config("location.gmt_offset", int(gmt_offset))
+    save_config(config=config_store.get_config())
+    print("[green]Config saved.[/green]")
 
 
 if __name__ == "__main__":

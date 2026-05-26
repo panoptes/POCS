@@ -417,7 +417,7 @@ class POCS(PanStateMachine, PanBase):
         return safe
 
     def _in_simulator(self, key):
-        """Checks the config server for the given simulator key value."""
+        """Checks the config for the given simulator key value."""
         with suppress(KeyError):
             if key in self.get_config("simulator", default=list()):
                 self.logger.debug(f"Using {key} simulator")

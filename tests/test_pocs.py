@@ -3,15 +3,14 @@ import threading
 import time
 
 import pytest
-import requests
 from astropy import units as u
 
-from panoptes.utils.config.client import set_config
-from panoptes.utils.serializers import to_json, to_yaml
+from panoptes.utils.serializers import to_yaml
 from panoptes.utils.time import current_time
 
 from panoptes.pocs import hardware
 from panoptes.pocs.camera import create_cameras_from_config
+from panoptes.pocs.config_store import reload_config, set_config
 from panoptes.pocs.core import POCS
 from panoptes.pocs.dome import create_dome_simulator
 from panoptes.pocs.mount import create_mount_simulator
@@ -20,10 +19,8 @@ from panoptes.pocs.scheduler import create_scheduler_from_config
 from panoptes.pocs.utils.location import create_location_from_config
 
 
-def reset_conf(config_host, config_port):
-    url = f"http://{config_host}:{config_port}/reset-config"
-    response = requests.post(url, data=to_json({"reset": True}), headers={"Content-Type": "application/json"})
-    assert response.ok
+def reset_conf():
+    reload_config()
 
 
 @pytest.fixture(scope="function")
@@ -83,13 +80,13 @@ def dome():
 
 
 @pytest.fixture(scope="function")
-def pocs(observatory, config_host, config_port):
+def pocs(observatory):
     os.environ["POCSTIME"] = "2020-01-01 08:00:00"
 
     pocs = POCS(observatory, run_once=True, simulators=["power"])
     yield pocs
     pocs.power_down()
-    reset_conf(config_host, config_port)
+    reset_conf()
 
 
 @pytest.fixture(scope="function")
@@ -519,7 +516,7 @@ def test_run_power_down_interrupt(observatory, valid_observation, pocstime_night
     assert pocs_thread.is_alive() is False
 
 
-def test_custom_state_file(observatory, temp_file, config_host, config_port):
+def test_custom_state_file(observatory, temp_file, config_port):
     state_table = POCS.load_state_table()
     assert isinstance(state_table, dict)
 
@@ -531,7 +528,7 @@ def test_custom_state_file(observatory, temp_file, config_host, config_port):
     pocs = POCS(observatory, state_machine_file=file_path, run_once=True, simulators=["power"])
     pocs.initialize()
     pocs.power_down()
-    reset_conf(config_host, config_port)
+    reset_conf()
 
 
 def test_free_space(pocs, caplog):

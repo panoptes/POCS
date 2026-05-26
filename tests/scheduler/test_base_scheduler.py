@@ -4,9 +4,9 @@ from astropy import units as u
 from astropy.coordinates import EarthLocation
 
 from panoptes.utils import error
-from panoptes.utils.config.client import get_config, set_config
 from panoptes.utils.serializers import from_yaml
 
+from panoptes.pocs.config_store import get_config, set_config
 from panoptes.pocs.scheduler import create_constraints_from_config
 from panoptes.pocs.scheduler.scheduler import BaseScheduler as Scheduler
 

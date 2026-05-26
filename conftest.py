@@ -6,10 +6,7 @@ from contextlib import suppress
 
 import pytest
 
-from panoptes.utils.config.client import set_config
-from panoptes.utils.config.server import config_server
-
-from panoptes.pocs import hardware
+from panoptes.pocs import config_store, hardware
 from panoptes.pocs.utils.location import download_iers_a_file
 from panoptes.pocs.utils.logger import PanLogger, get_logger
 
@@ -58,18 +55,10 @@ def pytest_configure(config):
     from astropy.utils.iers import conf
 
     conf.auto_max_age = None
-    logger.info("Setting up the config server.")
-    config_file = "tests/testing.yaml"
-
-    host = "localhost"
-    port = "8765"
-
-    os.environ["PANOPTES_CONFIG_HOST"] = host
-    os.environ["PANOPTES_CONFIG_PORT"] = port
-
-    config_server(config_file, host=host, port=port, load_local=False, save_local=False)
+    logger.info("Loading test config.")
+    config_store.init_config("tests/testing.yaml")
     download_iers_a_file()
-    logger.success("Config server set up")
+    logger.success("Test config loaded")
 
 
 def pytest_addoption(parser):
@@ -188,12 +177,12 @@ def pytest_runtest_logfinish(nodeid, location):
 
 @pytest.fixture(scope="session")
 def config_host():
-    return os.getenv("PANOPTES_CONFIG_HOST", "localhost")
+    return "localhost"  # kept for backward compat; no longer used
 
 
 @pytest.fixture(scope="session")
 def config_port():
-    return os.getenv("PANOPTES_CONFIG_PORT", 6563)
+    return 6563  # kept for backward compat; no longer used
 
 
 @pytest.fixture
@@ -209,7 +198,7 @@ def temp_file(tmp_path):
 @pytest.fixture(scope="session")
 def images_dir(tmpdir_factory):
     directory = tmpdir_factory.mktemp("images")
-    set_config("directories.images", str(directory))
+    config_store.set_config("directories.images", str(directory))
     return str(directory)
 
 

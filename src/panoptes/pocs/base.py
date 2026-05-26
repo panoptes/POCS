@@ -4,26 +4,20 @@ Provides PanBase, which centralizes access to configuration, logging, and the
 shared lightweight database handle used throughout the project.
 """
 
-import os
+import warnings
 from typing import Any
 
-from requests.exceptions import ConnectionError
-
-from panoptes.utils.config import client
 from panoptes.utils.database import PanDB
 
-from panoptes.pocs import __version__, hardware
+from panoptes.pocs import __version__, config_store, hardware
 from panoptes.pocs.utils.logger import get_logger
 
 # Global database.
 PAN_DB_OBJ = None
 
-# Cache for config values that are `remember`ed.
-PAN_CONFIG_CACHE = {}
-
 
 class PanBase:
-    """Base class for other classes within the PANOPTES ecosystem
+    """Base class for other classes within the PANOPTES ecosystem.
 
     Defines common properties for each class (e.g. logger, config, db).
     """
@@ -31,8 +25,13 @@ class PanBase:
     def __init__(self, config_host=None, config_port=None, *args, **kwargs):
         self.__version__ = __version__
 
-        self._config_host = config_host or os.getenv("PANOPTES_CONFIG_HOST", "localhost")
-        self._config_port = config_port or os.getenv("PANOPTES_CONFIG_PORT", 6563)
+        if config_host is not None or config_port is not None:
+            warnings.warn(
+                "config_host and config_port are deprecated and have no effect. "
+                "Config is now loaded directly from the PANOPTES config file.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
 
         log_dir = self.get_config("directories.base", default=".") + "/../logs"
         cloud_logging_level = kwargs.get(
@@ -45,11 +44,9 @@ class PanBase:
 
         global PAN_DB_OBJ
         if PAN_DB_OBJ is None:
-            # If the user requests a db_type then update runtime config.
             db_name = kwargs.get("db_name", self.get_config("db.name", default="panoptes"))
             db_folder = kwargs.get("db_folder", self.get_config("db.folder", default="json_store"))
             db_type = kwargs.get("db_type", self.get_config("db.type", default="file"))
-
             PAN_DB_OBJ = PanDB(db_name=db_name, storage_dir=db_folder, db_type=db_type)
 
         self.db = PAN_DB_OBJ
@@ -57,83 +54,41 @@ class PanBase:
     def get_config(
         self, key: str | None = None, default: Any | None = None, remember: bool = False, *args, **kwargs
     ) -> Any:
-        """Thin-wrapper around client based get_config that sets default port.
-
-        See `panoptes.utils.config.client.get_config` for more information.
+        """Get a config value by dotted key name.
 
         Args:
-            key (str | None): The key name to use, can be namespaced with dots. The default of
-                `None` will return the entire config.
-            default (any): The default value to return if the key is not found.
-            remember (bool): If True, cache the result for future calls.
-            *args: Passed to get_config
-            **kwargs: Passed to get_config
+            key: Dotted key e.g. ``"location.latitude"``. ``None`` returns the full config dict.
+            default: Value to return if the key is not found.
+            remember: Accepted for backward compatibility but has no effect.
+            *args: Ignored.
+            **kwargs: Ignored.
 
         Returns:
-            Any: The retrieved configuration value, or the provided default if not found
-                or if the config server is unavailable.
+            The config value, or *default* if not found.
         """
-        # Try to use the cache if we have it.
-        if key in PAN_CONFIG_CACHE:
-            self.logger.debug(f"Using cached config key={key!r} value={PAN_CONFIG_CACHE[key]!r}")
-            return PAN_CONFIG_CACHE[key]
+        del remember, args, kwargs
+        return config_store.get_config(key=key, default=default)
 
-        config_value = None
-        try:
-            config_value = client.get_config(
-                key=key,
-                default=default,
-                host=self._config_host,
-                port=self._config_port,
-                verbose=False,
-                *args,
-                **kwargs,
-            )
-        except ConnectionError as e:  # pragma: no cover
-            self.logger.warning(f"Cannot connect to config_server from {self.__class__}: {e!r}")
-            return config_value
-
-        # Cache the value if requested.
-        if remember:
-            PAN_CONFIG_CACHE[key] = config_value
-            self.logger.debug(f"Caching config key={key!r} value={config_value!r}")
-
-        return config_value
-
-    def set_config(self, key, new_value, *args, **kwargs):
-        """Thin-wrapper around client based set_config that sets default port.
-
-        See `panoptes.utils.config.client.set_config` for more information.
+    def set_config(self, key: str, new_value: Any, *args, **kwargs) -> Any:
+        """Set a config value by dotted key name.
 
         Args:
-            key (str): The key name to use, can be namespaced with dots.
-            new_value (any): The value to store.
-            *args: Passed to set_config
-            **kwargs: Passed to set_config
+            key: Dotted key e.g. ``"location.latitude"``.
+            new_value: The value to store.
+            *args: Ignored.
+            **kwargs: Ignored.
 
         Returns:
-            Any | None: The value returned by the config client after setting, or None
-                if the config server is unavailable.
+            The new value.
         """
-        config_value = None
-
+        del args, kwargs
         if key == "simulator" and new_value == "all":
-            # Don't use hardware.get_simulator_names because it checks config.
             new_value = [h.name for h in hardware.HardwareName]
 
-        try:
-            self.logger.trace(f"Setting config key={key!r} new_value={new_value!r}")
-            config_value = client.set_config(
-                key, new_value, host=self._config_host, port=self._config_port, *args, **kwargs
-            )
-            self.logger.trace(f"Config set config_value={config_value!r}")
-        except ConnectionError as e:  # pragma: no cover
-            self.logger.critical(f"Cannot connect to config_server from {self.__class__}: {e!r}")
-
-        return config_value
+        self.logger.trace(f"Setting config key={key!r} new_value={new_value!r}")
+        return config_store.set_config(key, new_value)
 
     def clear_config_cache(self):
-        """Clear the config cache."""
-        global PAN_CONFIG_CACHE
-        PAN_CONFIG_CACHE = {}
-        self.logger.debug("Cleared config cache")
+        """Reload config from the source file, discarding any in-memory changes."""
+        config_store.reload_config()
+        self.logger.debug("Config reloaded from file")

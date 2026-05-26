@@ -7,6 +7,10 @@
 - Added `--dev` option to `pocs update` to pull the latest commit from `main` instead of the latest tagged release.
 - Added `--branch/-b` option to `pocs update` to update from a specific branch (bypasses the tagged-release requirement).
 
+### Removed
+
+- Legacy HTTP config server dependency; config is now loaded directly from file via `panoptes-utils`. #1448
+
 ### Changed
 
 - `pocs update` now defaults to checking out the latest tagged release. Use `--dev` for the latest commit or `--branch` for a specific branch.
