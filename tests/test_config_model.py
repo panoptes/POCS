@@ -14,6 +14,7 @@ from panoptes.pocs.config import (
     SchedulerConfig,
     SchedulerConstraintConfig,
 )
+from panoptes.pocs.config.store import _get_nested, get_config, init_config, reload_config, set_config
 
 # ---------------------------------------------------------------------------
 # POCSConfig — round-trip from a dict
@@ -183,3 +184,89 @@ def test_load_config_with_pocs_model(tmp_path):
     assert cfg.mount.brand == "ioptron"
     # Defaults are present even though not in file.
     assert cfg.wait_delay == 180
+
+
+# ---------------------------------------------------------------------------
+# config/store.py — branch coverage
+# ---------------------------------------------------------------------------
+
+
+def test_get_nested_empty_key():
+    """Empty key returns the full dict."""
+    d = {"a": 1}
+    assert _get_nested(d, "") == d
+
+
+def test_get_nested_non_dict_traversal():
+    """Traversing through a non-dict value returns default."""
+    d = {"a": "not-a-dict"}
+    assert _get_nested(d, "a.b", default="x") == "x"
+
+
+def test_get_nested_list_index():
+    """List index syntax [N] retrieves the nth element."""
+    d = {"items": [10, 20, 30]}
+    assert _get_nested(d, "items[1]") == 20
+
+
+def test_get_nested_list_index_non_list():
+    """List index on a non-list value returns default."""
+    d = {"items": "not-a-list"}
+    assert _get_nested(d, "items[0]", default="x") == "x"
+
+
+def test_get_nested_list_index_out_of_range():
+    """Out-of-range list index returns default."""
+    d = {"items": [1, 2]}
+    assert _get_nested(d, "items[99]", default="miss") == "miss"
+
+
+def test_set_config_creates_intermediate_keys():
+    """set_config creates missing intermediate dicts."""
+    init_config("tests/testing.yaml")
+    set_config("brand_new.nested.key", "hello")
+    assert get_config("brand_new.nested.key") == "hello"
+    # cleanup
+    reload_config()
+
+
+def test_set_config_existing_intermediate_dict():
+    """set_config traverses existing intermediate dicts without overwriting them."""
+    init_config("tests/testing.yaml")
+    # 'location' already exists as a dict; set a sub-key without clobbering siblings
+    set_config("location.custom_key", "custom_value")
+    assert get_config("location.custom_key") == "custom_value"
+    assert get_config("location.timezone") is not None  # sibling preserved
+    # cleanup
+    reload_config()
+
+
+def test_get_config_auto_inits(tmp_path, monkeypatch):
+    """get_config auto-initialises from env var when store is empty."""
+    import panoptes.pocs.config.store as store_mod
+
+    # Force store empty then point env var at testing.yaml
+    original = store_mod._CONFIG.copy()
+    store_mod._CONFIG.clear()
+    monkeypatch.setenv("PANOPTES_CONFIG_FILE", "tests/testing.yaml")
+    try:
+        val = get_config("name")
+        assert val is not None
+    finally:
+        store_mod._CONFIG.clear()
+        store_mod._CONFIG.update(original)
+
+
+def test_set_config_auto_inits(monkeypatch):
+    """set_config auto-initialises when store is empty."""
+    import panoptes.pocs.config.store as store_mod
+
+    original = store_mod._CONFIG.copy()
+    store_mod._CONFIG.clear()
+    monkeypatch.setenv("PANOPTES_CONFIG_FILE", "tests/testing.yaml")
+    try:
+        set_config("name", "override")
+        assert get_config("name") == "override"
+    finally:
+        store_mod._CONFIG.clear()
+        store_mod._CONFIG.update(original)
