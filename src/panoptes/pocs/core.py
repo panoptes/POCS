@@ -77,7 +77,7 @@ class POCS(PanStateMachine, PanBase):
         self._is_initialized: bool = False
         self._free_space = None
         self._run_once: bool = kwargs.get("run_once", False)
-        self._obs_run_retries: int = self.get_config("observing_run_attempts", default=3)
+        self._obs_run_retries: int = self.get_config("max_observing_attempts", default=3)
         self._connected: bool = True
         self._interrupted: bool = False
         self._do_states: bool = False
@@ -165,7 +165,7 @@ class POCS(PanStateMachine, PanBase):
         Returns:
             bool: True if remaining retry attempts are available; otherwise False.
         """
-        return self._obs_run_retries >= 0
+        return self._obs_run_retries > 0
 
     @property
     def status(self) -> dict:
@@ -287,7 +287,7 @@ class POCS(PanStateMachine, PanBase):
     def reset_observing_run(self):
         """Reset an observing run loop."""
         self.logger.debug("Resetting observing run attempts")
-        self._obs_run_retries = self.get_config("observing_run_attempts", default=3)
+        self._obs_run_retries = self.get_config("max_observing_attempts", default=3)
 
     def observe_target(self, observation: Observation | None = None, park_if_unsafe: bool = True):
         """Observe something! 🔭🌠
