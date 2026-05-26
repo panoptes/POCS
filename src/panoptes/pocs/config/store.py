@@ -11,6 +11,7 @@ from typing import Any
 
 from loguru import logger
 
+from panoptes.utils.config.helpers import deep_merge
 from panoptes.utils.config.helpers import load_config as _load_config_file
 
 _CONFIG: dict[str, Any] = {}
@@ -48,17 +49,6 @@ def _get_nested(d: dict[str, Any], key: str, default: Any = None) -> Any:
                 return default
 
     return current
-
-
-def _set_nested(d: dict[str, Any], key: str, value: Any) -> None:
-    """Set a value in a nested dict using dotted-key notation, creating intermediate dicts."""
-    keys = key.split(".")
-    current = d
-    for k in keys[:-1]:
-        if k not in current or not isinstance(current[k], dict):
-            current[k] = {}
-        current = current[k]
-    current[keys[-1]] = value
 
 
 def init_config(config_file: str | Path | None = None) -> dict[str, Any]:
@@ -128,8 +118,12 @@ def set_config(key: str, new_value: Any, **kwargs) -> Any:
         *new_value* as stored.
     """
     del kwargs
+    global _CONFIG
     if not _CONFIG:
         init_config()
-    _set_nested(_CONFIG, key, new_value)
+    nested: Any = new_value
+    for part in reversed(key.split(".")):
+        nested = {part: nested}
+    _CONFIG = deep_merge(_CONFIG, nested)
     logger.trace(f"set_config {key!r} = {new_value!r}")
     return new_value

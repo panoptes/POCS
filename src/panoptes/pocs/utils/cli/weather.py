@@ -425,7 +425,7 @@ def setup_weather(
     # Update the in-memory config store.
     # ------------------------------------------------------------------
     try:
-        from panoptes.pocs.config_store import set_config
+        from panoptes.pocs.config.store import set_config
 
         set_config("environment.weather.serial_port", "/dev/weather")
         console.print("[green]Updated config:[/green] environment.weather.serial_port → /dev/weather")

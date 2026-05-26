@@ -6,7 +6,7 @@ from astropy.utils.iers import Conf as iers_conf
 from panoptes.utils import error
 
 from panoptes.pocs import hardware
-from panoptes.pocs.config_store import get_config, reload_config, set_config
+from panoptes.pocs.config.store import get_config, reload_config, set_config
 from panoptes.pocs.mount import AbstractMount, create_mount_from_config, create_mount_simulator
 from panoptes.pocs.utils.location import create_location_from_config
 

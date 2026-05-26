@@ -8,7 +8,7 @@ import os
 
 from astropy import units as u
 
-from panoptes.pocs.config_store import get_config
+from panoptes.pocs.config.store import get_config
 from panoptes.pocs.scheduler.field import Field
 from panoptes.pocs.scheduler.observation.base import Observation
 

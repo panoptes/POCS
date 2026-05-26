@@ -14,7 +14,7 @@ from typing import Annotated
 from fastapi import Depends, FastAPI, HTTPException, Request
 from pydantic import BaseModel
 
-from panoptes.pocs.config_store import get_config
+from panoptes.pocs.config.store import get_config
 from panoptes.pocs.sensor.power import PowerBoard
 
 

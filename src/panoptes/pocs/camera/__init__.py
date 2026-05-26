@@ -12,7 +12,7 @@ from panoptes.utils import error
 from panoptes.utils.library import load_module
 
 from panoptes.pocs.camera.camera import AbstractCamera  # noqa
-from panoptes.pocs.config_store import get_config
+from panoptes.pocs.config.store import get_config
 from panoptes.pocs.utils.logger import get_logger
 
 logger = get_logger()

@@ -44,7 +44,7 @@ from panoptes.pocs.camera import (
     list_connected_gphoto2_cameras,
 )
 from panoptes.pocs.camera.libasi import ASIDriver
-from panoptes.pocs.config_store import get_config, set_config
+from panoptes.pocs.config.store import get_config, set_config
 
 app = typer.Typer(no_args_is_help=True)
 

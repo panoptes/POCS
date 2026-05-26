@@ -5,7 +5,7 @@ import pytest
 import serial
 
 from panoptes.pocs import hardware
-from panoptes.pocs.config_store import set_config
+from panoptes.pocs.config.store import set_config
 from panoptes.pocs.dome import astrohaven, create_dome_simulator
 
 

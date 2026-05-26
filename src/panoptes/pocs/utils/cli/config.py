@@ -10,7 +10,7 @@ from rich.console import Console
 
 from panoptes.utils.config.helpers import save_config
 
-from panoptes.pocs import config_store
+from panoptes.pocs.config import store as config_store
 from panoptes.pocs.utils.logger import get_logger
 
 app = typer.Typer(no_args_is_help=True)

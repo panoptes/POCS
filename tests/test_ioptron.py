@@ -5,7 +5,7 @@ import pytest
 from astropy import units as u
 from astropy.coordinates import EarthLocation
 
-from panoptes.pocs.config_store import get_config
+from panoptes.pocs.config.store import get_config
 from panoptes.pocs.images import OffsetError
 from panoptes.pocs.mount.ioptron.cem40 import Mount
 from panoptes.pocs.utils.location import create_location_from_config

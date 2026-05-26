@@ -15,7 +15,7 @@ from astropy.utils.iers import Conf as iers_conf
 from panoptes.utils import error
 from panoptes.utils.utils import get_quantity_value
 
-from panoptes.pocs.config_store import get_config
+from panoptes.pocs.config.store import get_config
 from panoptes.pocs.utils.logger import get_logger
 
 logger = get_logger()
