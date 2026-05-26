@@ -1,4 +1,5 @@
 import os
+import sys
 import threading
 import time
 
@@ -204,6 +205,7 @@ def test_is_weather_safe_no_simulator(pocs):
     assert pocs.is_weather_safe() is False
 
 
+@pytest.mark.skipif(sys.platform == "darwin", reason="PanDB file locking unreliable on macOS")
 def test_no_ac_power(pocs):
     # Simulator makes AC power safe
     assert pocs.has_ac_power() is True
