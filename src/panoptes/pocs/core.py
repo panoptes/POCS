@@ -74,81 +74,61 @@ class POCS(PanStateMachine, PanBase):
         # Add observatory object, which does the bulk of the work.
         self.observatory = observatory
 
-        self.is_initialized = False
+        self._is_initialized: bool = False
         self._free_space = None
-
-        self.run_once = kwargs.get("run_once", False)
-        self._obs_run_retries = self.get_config("pocs.RETRY_ATTEMPTS", default=3)
-        self.connected = True
-        self.interrupted = False
+        self._run_once: bool = kwargs.get("run_once", False)
+        self._obs_run_retries: int = self.get_config("max_observing_attempts", default=3)
+        self._connected: bool = True
+        self._interrupted: bool = False
+        self._do_states: bool = False
 
         self.say("Hi there!")
 
     @property
-    def is_initialized(self):
-        """Indicates if POCS has been initialized or not"""
-        return self.get_config("pocs.INITIALIZED", default=False)
+    def is_initialized(self) -> bool:
+        """Indicates if POCS has been initialized or not."""
+        return self._is_initialized
 
     @is_initialized.setter
-    def is_initialized(self, new_value):
-        """Set initialization flag.
-
-        Args:
-            new_value (bool): True if POCS has finished initialization.
-        """
-        self.set_config("pocs.INITIALIZED", new_value)
+    def is_initialized(self, new_value: bool) -> None:
+        self._is_initialized = new_value
 
     @property
-    def interrupted(self):
+    def interrupted(self) -> bool:
         """If POCS has been interrupted.
 
         Returns:
             bool: If an interrupt signal has been received
         """
-        return self.get_config("pocs.INTERRUPTED", default=False)
+        return self._interrupted
 
     @interrupted.setter
-    def interrupted(self, new_value):
-        """Mark POCS as interrupted.
-
-        Args:
-            new_value (bool): True if an interrupt signal has been received.
-        """
-        self.set_config("pocs.INTERRUPTED", new_value)
+    def interrupted(self, new_value: bool) -> None:
+        self._interrupted = new_value
         if new_value:
             self.logger.critical("POCS has been interrupted")
 
     @property
-    def connected(self):
-        """Indicates if POCS is connected"""
-        return self.get_config("pocs.CONNECTED", default=False)
+    def connected(self) -> bool:
+        """Indicates if POCS is connected."""
+        return self._connected
 
     @connected.setter
-    def connected(self, new_value):
-        """Set connection status flag.
-
-        Args:
-            new_value (bool): True if POCS is connected to required services.
-        """
-        self.set_config("pocs.CONNECTED", new_value)
+    def connected(self, new_value: bool) -> None:
+        self._connected = new_value
 
     @property
-    def do_states(self):
+    def do_states(self) -> bool:
         """Whether the state machine should currently process states.
 
         Returns:
             bool: True if state transitions should be executed.
         """
-        return self.get_config("pocs.DO_STATES", default=True)
+        return self._do_states
 
     @do_states.setter
-    def do_states(self, new_value):
-        """Enable or disable state-machine processing.
-
-        Args:
-            new_value (bool): True to process state transitions; False to pause.
-        """
-        self.set_config("pocs.DO_STATES", new_value)
+    def do_states(self, new_value: bool) -> None:
+        self._do_states = new_value
 
     @property
     def keep_running(self):
@@ -166,24 +146,17 @@ class POCS(PanStateMachine, PanBase):
         return self.connected and self.do_states and self.observatory.can_observe
 
     @property
-    def run_once(self):
+    def run_once(self) -> bool:
         """If POCS should exit the run loop after a single iteration.
-
-        This value reads the `pocs.RUN_ONCE` config value.
 
         Returns:
             bool: if machine should stop after single iteration, default False.
         """
-        return self.get_config("pocs.RUN_ONCE", default=False)
+        return self._run_once
 
     @run_once.setter
-    def run_once(self, new_value):
-        """Set whether to exit the run loop after a single iteration.
-
-        Args:
-            new_value (bool): True to perform only one run loop iteration.
-        """
-        self.set_config("pocs.RUN_ONCE", new_value)
+    def run_once(self, new_value: bool) -> None:
+        self._run_once = new_value
 
     @property
     def should_retry(self):
@@ -192,7 +165,7 @@ class POCS(PanStateMachine, PanBase):
         Returns:
             bool: True if remaining retry attempts are available; otherwise False.
         """
-        return self._obs_run_retries >= 0
+        return self._obs_run_retries > 0
 
     @property
     def status(self) -> dict:
@@ -314,7 +287,7 @@ class POCS(PanStateMachine, PanBase):
     def reset_observing_run(self):
         """Reset an observing run loop."""
         self.logger.debug("Resetting observing run attempts")
-        self._obs_run_retries = self.get_config("pocs.RETRY_ATTEMPTS", default=3)
+        self._obs_run_retries = self.get_config("max_observing_attempts", default=3)
 
     def observe_target(self, observation: Observation | None = None, park_if_unsafe: bool = True):
         """Observe something! 🔭🌠
