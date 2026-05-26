@@ -60,4 +60,7 @@ json_store
 site/
 plans/
 .env
+
+# Test artifacts
 images/
+telemetry/
