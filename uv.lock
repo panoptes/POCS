@@ -2413,7 +2413,7 @@ requires-dist = [
     { name = "pandas" },
     { name = "panoptes-aag", marker = "extra == 'weather'" },
     { name = "panoptes-pocs", extras = ["focuser", "google", "weather"], marker = "extra == 'all'" },
-    { name = "panoptes-utils", extras = ["images"], specifier = ">=0.4.0,<3.0" },
+    { name = "panoptes-utils", extras = ["images"], editable = "../panoptes-utils" },
     { name = "pick" },
     { name = "pillow", specifier = ">=12.2.0" },
     { name = "protobuf", marker = "extra == 'google'" },
@@ -2464,8 +2464,7 @@ testing = [
 
 [[package]]
 name = "panoptes-utils"
-version = "0.4.0"
-source = { registry = "https://pypi.org/simple" }
+source = { editable = "../panoptes-utils" }
 dependencies = [
     { name = "astropy" },
     { name = "deprecated" },
@@ -2481,10 +2480,6 @@ dependencies = [
     { name = "typer" },
     { name = "watchdog" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/e2/24/f68eb9950774ee30d5b043f831e76857be405e0e880a73a4e8729c27c898/panoptes_utils-0.4.0.tar.gz", hash = "sha256:738bfb48d7b123c252975b27be934b567fc934ac57ead4a2ab98e20c3e058c91", size = 1745538 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/02/0d/c1408bfeeec6bec9a4d3688886e89006b629c1d0b1f08b7afbce5e562ba9/panoptes_utils-0.4.0-py3-none-any.whl", hash = "sha256:10d68c10f8551a14c1891e8ff2faed33846c1fde8951b7dda25528e0fc521584", size = 102426 },
-]
 
 [package.optional-dependencies]
 images = [
@@ -2494,6 +2489,72 @@ images = [
     { name = "scipy" },
     { name = "sep" },
     { name = "watchfiles" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "astropy" },
+    { name = "deprecated" },
+    { name = "fastapi", marker = "extra == 'config'", specifier = ">=0.115" },
+    { name = "fastapi", marker = "extra == 'telemetry'", specifier = ">=0.115" },
+    { name = "loguru" },
+    { name = "matplotlib", marker = "extra == 'examples'" },
+    { name = "matplotlib", marker = "extra == 'images'" },
+    { name = "mkdocs-material", marker = "extra == 'docs'" },
+    { name = "mkdocstrings", extras = ["python"], marker = "extra == 'docs'" },
+    { name = "numpy", specifier = ">=2" },
+    { name = "pandas", marker = "extra == 'examples'" },
+    { name = "photutils", marker = "extra == 'images'" },
+    { name = "pillow", marker = "extra == 'images'", specifier = ">=9.1.1" },
+    { name = "pydantic", specifier = ">=2.12.5" },
+    { name = "pyserial", specifier = ">=3.4" },
+    { name = "pytest-loguru" },
+    { name = "python-dateutil" },
+    { name = "pyyaml", marker = "extra == 'config'" },
+    { name = "requests" },
+    { name = "requests", marker = "extra == 'config'" },
+    { name = "rich" },
+    { name = "ruamel-yaml" },
+    { name = "scalpl", marker = "extra == 'config'" },
+    { name = "scipy", marker = "extra == 'images'" },
+    { name = "seaborn", marker = "extra == 'examples'" },
+    { name = "sep", marker = "extra == 'images'" },
+    { name = "streamz", marker = "extra == 'examples'" },
+    { name = "typer" },
+    { name = "uvicorn", marker = "extra == 'config'", specifier = ">=0.34" },
+    { name = "uvicorn", marker = "extra == 'telemetry'", specifier = ">=0.34" },
+    { name = "watchdog", specifier = ">=6.0.0" },
+    { name = "watchfiles", marker = "extra == 'images'" },
+]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "coverage" },
+    { name = "httpx" },
+    { name = "pycodestyle" },
+    { name = "pytest" },
+    { name = "pytest-cov" },
+    { name = "pytest-doctestplus" },
+    { name = "pytest-loguru" },
+    { name = "pytest-mpl" },
+    { name = "pytest-remotedata", specifier = ">=0.3.1" },
+    { name = "python-dotenv" },
+    { name = "ruff", specifier = ">=0.5.0" },
+    { name = "tox" },
+]
+lint = [{ name = "ruff", specifier = ">=0.5.0" }]
+testing = [
+    { name = "coverage" },
+    { name = "httpx" },
+    { name = "pycodestyle" },
+    { name = "pytest" },
+    { name = "pytest-cov" },
+    { name = "pytest-doctestplus" },
+    { name = "pytest-loguru" },
+    { name = "pytest-mpl" },
+    { name = "pytest-remotedata", specifier = ">=0.3.1" },
+    { name = "python-dotenv" },
+    { name = "tox" },
 ]
 
 [[package]]

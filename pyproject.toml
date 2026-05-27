@@ -213,3 +213,6 @@ indent-style = "space"
 [tool.uv]
 # Modern uv configuration
 dev-dependencies = []  # Use dependency-groups instead
+
+[tool.uv.sources]
+panoptes-utils = { path = "../panoptes-utils", editable = true }
