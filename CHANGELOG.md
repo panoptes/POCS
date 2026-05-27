@@ -9,17 +9,12 @@
 
 ### Changed
 
-- All POCS imports of `panoptes.pocs.config.store` updated to import directly from `panoptes.utils.config.store`; the intermediate shim has been removed. #1448
-- Updated `AGENTS.md`, `docs/index.md`, `docs/examples.md`, `docs/cli-guide.md`, `docs/architecture-for-beginners.md`, and `docs/glossary.md` to remove all references to the legacy HTTP config server. #1448
-- Bumped `panoptes-utils` requirement to `>=0.5.0` to pick up the upstream `panoptes.utils.config.store` module. #1448
-- All test `set_config` calls now pass `persist=False` to avoid mutating `tests/testing.yaml` on disk. #1448
-- `PanBase.set_config` and runtime calls in `core.py`/`mount/__init__.py` updated to forward/use `persist=False` for in-process config changes. #1448
-- Removed `[tool.uv.sources]` local-path override for `panoptes-utils`; package is now resolved from PyPI. #1448
+- Config is now loaded and managed via `panoptes.utils.config.store` from `panoptes-utils>=0.5.0`; in-process changes use `persist=False` to avoid writing back to disk. #1448
+- Bumped `panoptes-utils` requirement to `>=0.5.0`. #1448
 
 ### Removed
 
-- Legacy HTTP config server dependency; config is now loaded directly from file via `panoptes-utils`. #1448
-- Removed stale `config_server` key from `conf_files/pocs_local.yaml`. #1448
+- Legacy HTTP config server; POCS no longer depends on a running config server process. #1448
 
 
 ## 0.8.3 - 2026-05-26
