@@ -46,9 +46,10 @@ class PanBase:
                     f"({len(loaded)} top-level keys)."
                 )
             else:
-                _bootstrap_logger.warning(
+                _bootstrap_logger.debug(
                     "PANOPTES config store: no config file found. "
-                    "Set $PANOPTES_CONFIG_FILE or create ~/.panoptes/config.yaml."
+                    "Set $PANOPTES_CONFIG_FILE or create ~/.panoptes/config.yaml. "
+                    "Run `pocs config setup` to create one."
                 )
 
         log_dir = self.get_config("directories.base", default=".") + "/../logs"

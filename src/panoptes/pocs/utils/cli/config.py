@@ -5,6 +5,7 @@ import subprocess
 
 import typer
 from astropy import units as u
+from loguru import logger as _loguru_logger
 from rich import print, prompt
 from rich.console import Console
 
@@ -65,12 +66,24 @@ def set_value(
 
 
 @app.command()
-def setup():
+def setup(
+    output: str = typer.Option(
+        None,
+        "--output",
+        "-o",
+        help="Path to write the config file. Defaults to $PANOPTES_CONFIG_FILE or ~/.panoptes/config.yaml.",
+    ),
+):
     """Do initial setup of the config file."""
+    # Suppress all log output during the interactive wizard.
+    _loguru_logger.remove()
+
     console = Console()
     console.clear()
 
     print("Setting up configuration for your PANOPTES unit.")
+    if output:
+        print(f"Config will be saved to: [bold]{output}[/bold]")
     proceed = prompt.Confirm.ask("This will overwrite any existing configuration. Proceed?", default=False)
     if not proceed:
         print("Exiting.")
@@ -134,8 +147,9 @@ def setup():
         default=str(gmt_offset),
     )
     config_store.set_config("location.gmt_offset", int(gmt_offset))
-    save_config(config=config_store.get_config())
-    print("[green]Config saved.[/green]")
+    save_config(save_path=output, config=config_store.get_config())
+    saved_to = output or os.environ.get("PANOPTES_CONFIG_FILE", "~/.panoptes/config.yaml")
+    print(f"[green]Config saved to {saved_to}.[/green]")
 
 
 if __name__ == "__main__":
