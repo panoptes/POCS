@@ -44,7 +44,7 @@ src/panoptes/pocs/
 
 ## Critical Info
 
-**Config Server:** Port 6563 (must be running)  
+**Config Store:** File-based; set `$PANOPTES_CONFIG_FILE` or use `~/.panoptes/config.yaml`  
 **Test Config:** `tests/testing.yaml`  
 **State Machine:** Understand state flow before modifying `core.py`  
 **Timing:** Tests may take several minutes

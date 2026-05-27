@@ -531,13 +531,13 @@ class Observatory(PanBase):
 
         Args:
             compress_fits (bool or None): If FITS files should be fpacked into .fits.fz.
-                If None (default), checks the `observations.compress_fits` config-server key.
+                If None (default), checks the `observations.compress_fits` config key.
             record_observations (bool or None): If observation metadata should be saved.
                 If None (default), checks the `observations.record_observations`
-                config-server key.
+                config key.
             make_pretty_images (bool or None): Make a jpg from raw image.
                 If None (default), checks the `observations.make_pretty_images`
-                config-server key.
+                config key.
             plate_solve (bool or None): If images should be plate solved, default None for config.
             upload_image (bool or None): If images should be uploaded (in a separate process).
         """

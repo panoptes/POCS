@@ -43,16 +43,14 @@ app.add_typer(weather.app, name="weather", help="Interact with weather station s
 @app.callback()
 def main(
     context: typer.Context,
-    config_host: str = "127.0.0.1",
-    config_port: int = 6563,
+    config_host: str = typer.Option("127.0.0.1", hidden=True),
+    config_port: int = typer.Option(6563, hidden=True),
     verbose: bool = False,
 ):
     """Top-level CLI callback to set shared options for subcommands.
 
     Args:
         context: Typer context object.
-        config_host: Deprecated no-op option retained for backward compatibility.
-        config_port: Deprecated no-op option retained for backward compatibility.
         verbose: If True, enables verbose output.
 
     Returns:

@@ -7,6 +7,8 @@ shared lightweight database handle used throughout the project.
 import warnings
 from typing import Any
 
+from loguru import logger as _bootstrap_logger
+
 from panoptes.utils.config import store as config_store
 from panoptes.utils.database import PanDB
 
@@ -33,6 +35,21 @@ class PanBase:
                 DeprecationWarning,
                 stacklevel=2,
             )
+
+        # Explicitly initialise the config store on first use so the resolved
+        # config file path is logged before any config lookups are made.
+        if not config_store._CONFIG:
+            loaded = config_store.init_config()
+            if loaded:
+                _bootstrap_logger.info(
+                    f"PANOPTES config store initialised from {config_store._CONFIG_FILE!r} "
+                    f"({len(loaded)} top-level keys)."
+                )
+            else:
+                _bootstrap_logger.warning(
+                    "PANOPTES config store: no config file found. "
+                    "Set $PANOPTES_CONFIG_FILE or create ~/.panoptes/config.yaml."
+                )
 
         log_dir = self.get_config("directories.base", default=".") + "/../logs"
         cloud_logging_level = kwargs.get(
