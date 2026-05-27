@@ -38,7 +38,7 @@ dependencies = [
     "GitPython",
     "human-readable",
     "numpy>=2",
-    "panoptes-utils[images]>=0.4.0,<3.0",
+    "panoptes-utils[images]>=0.5.0,<3.0",
     "pandas",
     "pick",
     "pillow>=12.2.0",
@@ -214,5 +214,3 @@ indent-style = "space"
 # Modern uv configuration
 dev-dependencies = []  # Use dependency-groups instead
 
-[tool.uv.sources]
-panoptes-utils = { path = "../panoptes-utils", editable = true }

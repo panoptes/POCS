@@ -13,9 +13,10 @@ from contextlib import suppress
 
 import astropy.units as u
 
+from panoptes.utils.config.store import get_config
+
 from panoptes.pocs.camera.sdk import AbstractSDKCamera, AbstractSDKDriver
 from panoptes.pocs.camera.simulator.dslr import Camera as SimCamera
-from panoptes.utils.config.store import get_config
 
 
 class SDKDriver(AbstractSDKDriver):

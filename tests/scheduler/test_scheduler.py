@@ -1,8 +1,8 @@
 import pytest
 
 from panoptes.utils import error
-
 from panoptes.utils.config.store import reload_config, set_config
+
 from panoptes.pocs.scheduler import create_scheduler_from_config
 from panoptes.pocs.scheduler.scheduler import BaseScheduler
 from panoptes.pocs.utils.location import create_location_from_config
@@ -13,12 +13,12 @@ def reset_conf():
 
 
 def test_bad_scheduler_namespace():
-    set_config("scheduler.type", "dispatch")
+    set_config("scheduler.type", "dispatch", persist=False)
     site_details = create_location_from_config()
     with pytest.raises(error.NotFound):
         create_scheduler_from_config(observer=site_details.observer)
 
-    set_config("scheduler.type", "panoptes.pocs.scheduler.dispatch")
+    set_config("scheduler.type", "panoptes.pocs.scheduler.dispatch", persist=False)
     scheduler = create_scheduler_from_config(observer=site_details.observer)
 
     assert isinstance(scheduler, BaseScheduler)
@@ -27,7 +27,7 @@ def test_bad_scheduler_namespace():
 
 
 def test_bad_scheduler_type():
-    set_config("scheduler.type", "foobar")
+    set_config("scheduler.type", "foobar", persist=False)
     site_details = create_location_from_config()
     with pytest.raises(error.NotFound):
         create_scheduler_from_config(observer=site_details.observer)
@@ -36,7 +36,7 @@ def test_bad_scheduler_type():
 
 
 def test_bad_scheduler_fields_file():
-    set_config("scheduler.fields_file", "foobar")
+    set_config("scheduler.fields_file", "foobar", persist=False)
     site_details = create_location_from_config()
     with pytest.raises(error.NotFound):
         create_scheduler_from_config(observer=site_details.observer)
@@ -49,7 +49,7 @@ def test_no_observer():
 
 
 def test_no_scheduler_in_config():
-    set_config("scheduler", None)
+    set_config("scheduler", None, persist=False)
     site_details = create_location_from_config()
     assert create_scheduler_from_config(observer=site_details.observer) is None
     reset_conf()

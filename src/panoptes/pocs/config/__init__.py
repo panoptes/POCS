@@ -3,6 +3,8 @@
 Provides the file-based in-memory config store and typed Pydantic models.
 """
 
+from panoptes.utils.config.store import get_config, init_config, reload_config, set_config
+
 from panoptes.pocs.config.models import (
     CameraDefaultsConfig,
     CamerasConfig,
@@ -17,7 +19,6 @@ from panoptes.pocs.config.models import (
     SchedulerConfig,
     SchedulerConstraintConfig,
 )
-from panoptes.utils.config.store import get_config, init_config, reload_config, set_config
 
 __all__ = [
     # Store

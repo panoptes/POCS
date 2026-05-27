@@ -4,8 +4,9 @@ from contextlib import suppress
 import pytest
 import serial
 
-from panoptes.pocs import hardware
 from panoptes.utils.config.store import set_config
+
+from panoptes.pocs import hardware
 from panoptes.pocs.dome import astrohaven, create_dome_simulator
 
 
@@ -15,7 +16,7 @@ def dome():
     serial.protocol_handler_packages.append("panoptes.pocs.dome")
 
     # Modify the config so that the dome uses the right controller and port.
-    set_config("simulator", hardware.get_all_names(without=["dome"]))
+    set_config("simulator", hardware.get_all_names(without=["dome"]), persist=False)
     set_config(
         "dome",
         {
@@ -23,6 +24,7 @@ def dome():
             "driver": "astrohaven",
             "port": "loop://",
         },
+        persist=False,
     )
     the_dome = create_dome_simulator()
 

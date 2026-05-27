@@ -2,6 +2,8 @@
 
 from astropy import units as u
 
+from panoptes.utils.config.store import _get_nested, get_config, init_config, reload_config, set_config
+
 from panoptes.pocs.config import (
     CameraDefaultsConfig,
     CamerasConfig,
@@ -14,7 +16,6 @@ from panoptes.pocs.config import (
     SchedulerConfig,
     SchedulerConstraintConfig,
 )
-from panoptes.utils.config.store import _get_nested, get_config, init_config, reload_config, set_config
 
 # ---------------------------------------------------------------------------
 # POCSConfig — round-trip from a dict
@@ -224,7 +225,7 @@ def test_get_nested_list_index_out_of_range():
 def test_set_config_creates_intermediate_keys():
     """set_config creates missing intermediate dicts."""
     init_config("tests/testing.yaml")
-    set_config("brand_new.nested.key", "hello")
+    set_config("brand_new.nested.key", "hello", persist=False)
     assert get_config("brand_new.nested.key") == "hello"
     # cleanup
     reload_config()
@@ -234,7 +235,7 @@ def test_set_config_existing_intermediate_dict():
     """set_config traverses existing intermediate dicts without overwriting them."""
     init_config("tests/testing.yaml")
     # 'location' already exists as a dict; set a sub-key without clobbering siblings
-    set_config("location.custom_key", "custom_value")
+    set_config("location.custom_key", "custom_value", persist=False)
     assert get_config("location.custom_key") == "custom_value"
     assert get_config("location.timezone") is not None  # sibling preserved
     # cleanup
@@ -265,7 +266,7 @@ def test_set_config_auto_inits(monkeypatch):
     store_mod._CONFIG.clear()
     monkeypatch.setenv("PANOPTES_CONFIG_FILE", "tests/testing.yaml")
     try:
-        set_config("name", "override")
+        set_config("name", "override", persist=False)
         assert get_config("name") == "override"
     finally:
         store_mod._CONFIG.clear()

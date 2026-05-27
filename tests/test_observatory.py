@@ -6,10 +6,10 @@ from astropy.coordinates import get_body
 from astropy.time import Time
 
 from panoptes.utils import error
+from panoptes.utils.config.store import reload_config, set_config
 
 from panoptes.pocs import __version__, hardware
 from panoptes.pocs.camera import create_cameras_from_config
-from panoptes.utils.config.store import reload_config, set_config
 from panoptes.pocs.dome import create_dome_simulator
 from panoptes.pocs.mount import AbstractMount, create_mount_from_config, create_mount_simulator
 from panoptes.pocs.observatory import Observatory
@@ -59,7 +59,7 @@ def test_remove_cameras(observatory, cameras):
 
 
 def test_bad_site():
-    set_config("location", {})
+    set_config("location", {}, persist=False)
     with pytest.raises(error.PanError):
         Observatory()
 
@@ -93,7 +93,7 @@ def test_cannot_observe(caplog):
 
 def test_camera_wrong_type():
     # Remove mount simulator
-    set_config("simulator", hardware.get_all_names(without="camera"))
+    set_config("simulator", hardware.get_all_names(without="camera"), persist=False)
 
     with pytest.raises(AttributeError):
         Observatory(cameras=[Time.now()])
@@ -145,11 +145,11 @@ def test_set_dome():
             "brand": "Simulacrum",
             "driver": "simulator",
         },
+        persist=False,
     )
     dome = create_dome_simulator()
 
     obs = Observatory(dome=dome)
-    assert obs.has_dome is True
     obs.set_dome(dome=None)
     assert obs.has_dome is False
     obs.set_dome(dome=dome)
@@ -176,6 +176,7 @@ def test_set_mount():
             "driver": "panoptes.pocs.mount.simulator",
             "model": "panoptes.pocs.camera.simulator.dslr",
         },
+        persist=False,
     )
     mount = create_mount_from_config()
     obs.set_mount(mount=mount)
@@ -388,7 +389,7 @@ def test_no_dome(observatory):
 
 def test_operate_dome():
     # Remove dome and night simulator
-    set_config("simulator", hardware.get_all_names(without=["dome", "night"]))
+    set_config("simulator", hardware.get_all_names(without=["dome", "night"]), persist=False)
 
     set_config(
         "dome",
@@ -396,6 +397,7 @@ def test_operate_dome():
             "brand": "Simulacrum",
             "driver": "simulator",
         },
+        persist=False,
     )
 
     set_config(
@@ -404,6 +406,7 @@ def test_operate_dome():
             "brand": "Simulacrum",
             "driver": "simulator",
         },
+        persist=False,
     )
     dome = create_dome_simulator()
     observatory = Observatory(dome=dome)

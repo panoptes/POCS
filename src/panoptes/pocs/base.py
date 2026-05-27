@@ -7,10 +7,10 @@ shared lightweight database handle used throughout the project.
 import warnings
 from typing import Any
 
+from panoptes.utils.config import store as config_store
 from panoptes.utils.database import PanDB
 
 from panoptes.pocs import __version__, hardware
-from panoptes.utils.config import store as config_store
 from panoptes.pocs.utils.logger import get_logger
 
 # Global database.
@@ -70,12 +70,13 @@ class PanBase:
         del remember, args, kwargs
         return config_store.get_config(key=key, default=default)
 
-    def set_config(self, key: str, new_value: Any, *args, **kwargs) -> Any:
+    def set_config(self, key: str, new_value: Any, persist: bool = True, *args, **kwargs) -> Any:
         """Set a config value by dotted key name.
 
         Args:
             key: Dotted key e.g. ``"location.latitude"``.
             new_value: The value to store.
+            persist: Write the updated config back to disk. Defaults to ``True``.
             *args: Ignored.
             **kwargs: Ignored.
 
@@ -87,7 +88,7 @@ class PanBase:
             new_value = [h.name for h in hardware.HardwareName]
 
         self.logger.trace(f"Setting config key={key!r} new_value={new_value!r}")
-        return config_store.set_config(key, new_value)
+        return config_store.set_config(key, new_value, persist=persist)
 
     def clear_config_cache(self):
         """Reload config from the source file, discarding any in-memory changes."""

@@ -6,8 +6,9 @@ from contextlib import suppress
 
 import pytest
 
-from panoptes.pocs import hardware
 from panoptes.utils.config import store as config_store
+
+from panoptes.pocs import hardware
 from panoptes.pocs.utils.location import download_iers_a_file
 from panoptes.pocs.utils.logger import PanLogger, get_logger
 
@@ -199,7 +200,7 @@ def temp_file(tmp_path):
 @pytest.fixture(scope="session")
 def images_dir(tmpdir_factory):
     directory = tmpdir_factory.mktemp("images")
-    config_store.set_config("directories.images", str(directory))
+    config_store.set_config("directories.images", str(directory), persist=False)
     return str(directory)
 
 

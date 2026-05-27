@@ -2,9 +2,9 @@ from contextlib import suppress
 from glob import glob
 
 from panoptes.utils import error
+from panoptes.utils.config.store import get_config, set_config
 from panoptes.utils.library import load_module
 
-from panoptes.utils.config.store import get_config, set_config
 from panoptes.pocs.mount.mount import AbstractMount  # noqa
 from panoptes.pocs.utils.location import create_location_from_config
 from panoptes.pocs.utils.logger import get_logger
@@ -136,7 +136,7 @@ def create_mount_simulator(mount_info=None, earth_location=None, db_type="memory
     }
 
     # Set mount device info to simulator
-    set_config("mount", mount_config)
+    set_config("mount", mount_config, persist=False)
 
     earth_location = earth_location
     if earth_location is None:

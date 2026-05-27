@@ -5,11 +5,10 @@ from transitions import Machine
 from transitions.extensions.states import Tags as MachineState
 
 from panoptes.utils import error
+from panoptes.utils.config.store import get_config
 from panoptes.utils.library import load_module
 from panoptes.utils.serializers import from_yaml
 from panoptes.utils.utils import listify
-
-from panoptes.utils.config.store import get_config
 
 
 class PanStateMachine(Machine):

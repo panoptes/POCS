@@ -9,6 +9,7 @@ import pytest
 from astropy.io import fits
 
 from panoptes.utils import error
+from panoptes.utils.config.store import get_config, reload_config, set_config
 from panoptes.utils.error import NotFound
 from panoptes.utils.images import fits as fits_utils
 from panoptes.utils.time import CountdownTimer
@@ -20,7 +21,6 @@ from panoptes.pocs.camera.sbigudrv import INVALID_HANDLE_VALUE, SBIGDriver
 from panoptes.pocs.camera.simulator.ccd import Camera as SimSDKCamera
 from panoptes.pocs.camera.simulator.dslr import Camera as SimCamera
 from panoptes.pocs.camera.zwo import Camera as ZWOCamera
-from panoptes.utils.config.store import get_config, reload_config, set_config
 from panoptes.pocs.focuser.simulator import Focuser
 from panoptes.pocs.scheduler.field import Field
 from panoptes.pocs.scheduler.observation.base import Observation
@@ -111,13 +111,14 @@ def reset_conf():
 
 
 def test_create_cameras_from_config_no_autodetect():
-    set_config("cameras.auto_detect", False)
+    set_config("cameras.auto_detect", False, persist=False)
     set_config(
         "cameras.devices",
         [
             dict(model="canon_gphoto2", port="/dev/fake01"),
             dict(model="canon_gphoto2", port="/dev/fake02"),
         ],
+        persist=False,
     )
 
     with pytest.raises(error.CameraNotFound):
@@ -127,7 +128,7 @@ def test_create_cameras_from_config_no_autodetect():
 
 
 def test_create_cameras_from_config_autodetect():
-    set_config("cameras.defaults.auto_detect", True)
+    set_config("cameras.defaults.auto_detect", True, persist=False)
     with pytest.raises(error.CameraNotFound):
         create_cameras_from_config()
     reset_conf()

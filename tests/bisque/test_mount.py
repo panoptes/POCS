@@ -4,10 +4,10 @@ import pytest
 from astropy import units as u
 from astropy.coordinates import EarthLocation
 
+from panoptes.utils.config.store import get_config
 from panoptes.utils.time import current_time
 from panoptes.utils.utils import altaz_to_radec
 
-from panoptes.utils.config.store import get_config
 from panoptes.pocs.mount.bisque import Mount
 from panoptes.pocs.utils.theskyx import TheSkyX
 

@@ -32,6 +32,7 @@ from rich.progress import (
 from rich.table import Table
 from rich.text import Text
 
+from panoptes.utils.config.store import get_config, set_config
 from panoptes.utils.error import PanError
 from panoptes.utils.images import cr2 as cr2_utils
 from panoptes.utils.images import make_pretty_image
@@ -44,7 +45,6 @@ from panoptes.pocs.camera import (
     list_connected_gphoto2_cameras,
 )
 from panoptes.pocs.camera.libasi import ASIDriver
-from panoptes.utils.config.store import get_config, set_config
 
 app = typer.Typer(no_args_is_help=True)
 
