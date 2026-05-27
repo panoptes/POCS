@@ -63,8 +63,8 @@ Quick reference for terms you'll encounter in POCS documentation and code.
 **Simulator**
 : Fake hardware that lets you test POCS without physical equipment. Great for learning!
 
-**Config Server**
-: A background service that provides configuration settings to POCS.
+**Config Store**
+: The in-memory configuration system used by POCS, loaded from a YAML file at startup via `panoptes.utils.config.store`. No separate server process is required.
 
 **PANDIR**
 : Environment variable pointing to where POCS stores data. Usually `/var/panoptes` or `~/panoptes`.

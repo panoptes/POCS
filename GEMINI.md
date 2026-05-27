@@ -14,7 +14,7 @@ Gemini CLI must rigorously adhere to the standards, workflows, and architectural
 - **Testing:** Every change MUST include corresponding `pytest` tests. Maintain high coverage.
 - **Package Management:** Use `uv` for all dependency and environment management.
 - **Logging:** Use `loguru` via `self.logger` (from `PanBase`) or direct import for standalone utilities.
-- **Configuration:** The `panoptes-config-server` MUST be running for POCS or its tests to function correctly.
+- **Configuration:** Configuration is loaded directly from a YAML file via `panoptes.utils.config.store`. No separate server process is required.
 
 ## Project-Specific Workflow Mandates
 
@@ -31,7 +31,7 @@ Gemini CLI must rigorously adhere to the standards, workflows, and architectural
     - `uv run ruff format --check .` (use `uv run ruff format .` to fix)
 - **Testing:** 
     - `uv run pytest <test_path>`
-    - Always ensure the config server is running (usually on port 6563) before starting tests.
+    - No config server process is required; config is loaded from `tests/testing.yaml` via `init_config`.
 
 ## Reference Documents
 

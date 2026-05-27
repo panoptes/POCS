@@ -212,7 +212,7 @@ Device-specific control code.
 
 ### Config Store
 
-POCS loads configuration directly from a YAML file via `panoptes.pocs.config.store` — no separate server
+POCS loads configuration directly from a YAML file via `panoptes.utils.config.store` — no separate server
 process is needed. The store is initialised once at startup and all components read from the in-memory dict.
 
 **Config file resolution order:**
