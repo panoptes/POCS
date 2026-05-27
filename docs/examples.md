@@ -51,23 +51,9 @@ os.environ["PANDIR"] = str(pandir)
 print(f"📁 POCS data directory: {pandir}")
 ```
 
-### 2. Start Configuration Service
+### 2. Initialize POCS
 
-POCS requires a configuration service to be running. In a notebook, you can start it like this:
-
-```python
-from panoptes.utils.config.server import config_server
-
-# Use the default config file from the repository
-conf_file = Path.cwd() / "conf_files" / "pocs.yaml"
-server = config_server(str(conf_file))
-
-print(f"✅ Config service is running using: {conf_file}")
-```
-
-### 3. Initialize POCS
-
-Now we can create a `POCS` instance. We'll use `simulators='all'` to ensure we can run everything without real hardware.
+Config is loaded automatically from `~/.panoptes/config.yaml`. Create a `POCS` instance directly:
 
 ```python
 from panoptes.pocs.core import POCS
@@ -82,7 +68,7 @@ print(f"🔭 Observatory {pocs.name} is ready!")
 print(f"Current State: {pocs.state}")
 ```
 
-### 4. Interact with Hardware
+### 3. Interact with Hardware
 
 You can now interact with the various components of the observatory directly.
 
@@ -115,7 +101,7 @@ for cam_name, cam in pocs.observatory.cameras.items():
     print(f"Saved to {filename}")
 ```
 
-### 5. Scheduling Observations
+### 4. Scheduling Observations
 
 You can even ask the scheduler to find a target for you based on the current time and location.
 
@@ -133,7 +119,7 @@ else:
     print("🌙 No valid targets found for the current conditions.")
 ```
 
-### 6. Clean Up
+### 5. Clean Up
 
 When you're done, it's good practice to park the mount.
 

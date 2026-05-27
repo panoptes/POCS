@@ -81,7 +81,7 @@ pocs config set location.latitude 19.54
 
 ### `pocs config status`
 
-Check if the configuration server is running.
+Check if configuration is loaded and accessible.
 
 ```bash
 pocs config status
@@ -350,18 +350,24 @@ pocs run auto
 
 ## Troubleshooting
 
-### Configuration Server Not Running
+### Configuration Not Loading
 
-**Error:** "Cannot connect to config server"
+**Problem:** Config values are missing or POCS fails to start
 
 **Solution:**
 ```bash
-# Start the config server
+# Check config is readable
 pocs config status
 
-# If not running, restart it
+# View the full config to verify contents
+pocs config get
+
+# Re-run setup if needed
 pocs config setup
 ```
+
+POCS loads config directly from `~/.panoptes/config.yaml` (or `$PANOPTES_CONFIG_FILE`).
+No separate server process is required.
 
 ### Mount Not Responding
 

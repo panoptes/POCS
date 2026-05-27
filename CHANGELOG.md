@@ -10,6 +10,11 @@
 ### Removed
 
 - Legacy HTTP config server dependency; config is now loaded directly from file via `panoptes-utils`. #1448
+- Removed stale `config_server` key from `conf_files/pocs_local.yaml`. #1448
+
+### Changed
+
+- Updated `AGENTS.md`, `docs/index.md`, `docs/examples.md`, `docs/cli-guide.md`, `docs/architecture-for-beginners.md`, and `docs/glossary.md` to remove all references to the legacy HTTP config server. #1448
 
 ### Changed
 

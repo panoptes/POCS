@@ -211,16 +211,12 @@ POCS needs to know about your specific setup (location, hardware, etc.)
 ### How configuration works:
 
 ```
-Config Files (YAML)
-       ↓
-Config Server (runs in background)
-       ↓
-POCS asks server for settings
-       ↓
-POCS configures itself
+Config File (YAML) → loaded directly into memory → POCS reads settings
 ```
 
-**Key config file:** `conf_files/pocs.yaml`
+**Key config file:** `~/.panoptes/config.yaml` (or set `$PANOPTES_CONFIG_FILE`)
+
+**Template:** `conf_files/pocs.yaml` in the POCS repository
 
 **What's configured:**
 - Your location (latitude, longitude, elevation)
@@ -265,7 +261,7 @@ pocs.is_safe()       # But is actually a method
 
 ### 3. Configuration Lookup
 
-Code frequently asks the config server for values:
+Code reads settings from the in-memory config store:
 ```python
 self.get_config('mount.serial.port')
 ```
@@ -331,6 +327,6 @@ pocs.initialize()
 - Observatory = Hardware coordinator
 - Drivers = Individual device controllers
 - State machine = Organized workflow
-- Config server = Settings provider
+- Config store = Settings provider (loaded from YAML file)
 
 Start with the examples, read the code, and don't hesitate to ask questions!
