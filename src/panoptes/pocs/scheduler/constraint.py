@@ -165,12 +165,11 @@ class Duration(BaseConstraint):
         target = observation.field
         veto = not observer.target_is_up(time, target, horizon=self.horizon)
 
-        end_of_night = (
-            kwargs.get("end_of_night")
-            or observer.tonight(
+        end_of_night = kwargs.get("end_of_night")
+        if end_of_night is None:
+            end_of_night = observer.tonight(
                 time=time, horizon=self.get_config("location.observe_horizon", default=-18 * u.degree)
             )[1]
-        )
 
         if not veto:
             # Get the next meridian flip
