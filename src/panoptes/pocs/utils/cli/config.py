@@ -92,27 +92,31 @@ def setup():
     )
     config_store.set_config("pan_id", pan_id)
 
+    _lat = config_store.get_config("location.latitude")
     latitude = prompt.Prompt.ask(
         'Enter the latitude for this unit, e.g. "19.5 deg":',
-        default=str(config_store.get_config("location.latitude")),
+        default=str(_lat) if _lat is not None else None,
     )
-    config_store.set_config("location.latitude", str(u.Unit(latitude)))
+    if latitude is not None:
+        config_store.set_config("location.latitude", str(u.Quantity(latitude)))
 
+    _lon = config_store.get_config("location.longitude")
     longitude = prompt.Prompt.ask(
         'Enter the longitude for this unit, e.g. "-154.12 deg":',
-        default=str(config_store.get_config("location.longitude")),
+        default=str(_lon) if _lon is not None else None,
     )
-    config_store.set_config("location.longitude", str(u.Unit(longitude)))
+    if longitude is not None:
+        config_store.set_config("location.longitude", str(u.Quantity(longitude)))
 
+    _elev = config_store.get_config("location.elevation")
     elevation = prompt.Prompt.ask(
         'Enter the elevation for this unit. Use " ft" or " m" for units, e.g. "3400 m" or "12000 ft":',
-        default=str(config_store.get_config("location.elevation")),
+        default=str(_elev) if _elev is not None else None,
     )
-    if " ft" in elevation:
-        elevation = (float(elevation.replace(" ft", "")) * u.imperial.foot).to(u.meter)
-    elif elevation.endswith("m"):
-        elevation = str(u.Unit(elevation))
-    config_store.set_config("location.elevation", elevation)
+    if elevation is not None:
+        if " ft" in elevation:
+            elevation = str((float(elevation.replace(" ft", "")) * u.imperial.foot).to(u.meter))
+        config_store.set_config("location.elevation", elevation)
 
     timezone = "UTC"
     try:
