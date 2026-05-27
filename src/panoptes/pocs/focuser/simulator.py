@@ -15,7 +15,7 @@ class Focuser(AbstractFocuser):
     Simple focuser simulator
     """
 
-    def __init__(self, name="Simulated Focuser", port="/dev/ttyFAKE", move_time=1.0, *args, **kwargs):
+    def __init__(self, name="Simulated Focuser", port="/dev/ttyFAKE", move_time=0.001, *args, **kwargs):
         self._move_time = move_time
         super().__init__(*args, name=name, port=port, **kwargs)
         self.logger.debug("Initialising simulator focuser")

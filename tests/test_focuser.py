@@ -81,7 +81,7 @@ def test_move_by(focuser, tolerance):
 
 
 def test_is_ready(focuser):
-    move_thread = Thread(target=focuser.move_by, args=[13])
+    move_thread = Thread(target=focuser.move_by, args=[50])
     assert not focuser.is_moving
     assert focuser.is_ready
     move_thread.start()
