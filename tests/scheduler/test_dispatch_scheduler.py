@@ -192,8 +192,8 @@ def test_continue_observation(scheduler):
 
 
 def test_set_observation_then_reset(scheduler):
-    time = Time("2016-08-13 05:00:00")
-    scheduler.get_observation(time=time)
+    obs_time = Time("2016-08-13 05:00:00")
+    scheduler.get_observation(time=obs_time)
 
     obs1 = scheduler.current_observation
     original_seq_time = obs1.seq_time
@@ -201,23 +201,26 @@ def test_set_observation_then_reset(scheduler):
     # Reset priority
     scheduler.observations[obs1.name].priority = 1.0
 
-    time = Time("2016-08-13 05:30:00")
-    scheduler.get_observation(time=time)
+    obs_time = Time("2016-08-13 05:30:00")
+    scheduler.get_observation(time=obs_time)
     obs2 = scheduler.current_observation
 
     assert obs1 != obs2
 
     scheduler.observations[obs1.name].priority = 500.0
 
-    time = Time("2016-08-13 06:00:00")
-    scheduler.get_observation(time=time)
+    # Sleep to ensure a different wall-clock second for the new seq_time.
+    time.sleep(1)
+
+    obs_time = Time("2016-08-13 06:00:00")
+    scheduler.get_observation(time=obs_time)
     obs3 = scheduler.current_observation
     obs3_seq_time = obs3.seq_time
 
     assert original_seq_time != obs3_seq_time
 
     # Now reselect same target and test that seq_time does not change
-    scheduler.get_observation(time=time)
+    scheduler.get_observation(time=obs_time)
     obs4 = scheduler.current_observation
     assert obs4.seq_time == obs3_seq_time
 
