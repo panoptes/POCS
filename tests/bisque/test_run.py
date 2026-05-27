@@ -6,7 +6,7 @@ from astropy.coordinates import EarthLocation
 from panoptes.utils.time import current_time
 from panoptes.utils.utils import altaz_to_radec
 
-from panoptes.pocs.config.store import get_config
+from panoptes.utils.config.store import get_config
 from panoptes.pocs.core import POCS
 from panoptes.pocs.dome.bisque import Dome
 from panoptes.pocs.utils.theskyx import TheSkyX

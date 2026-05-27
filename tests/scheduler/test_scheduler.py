@@ -2,7 +2,7 @@ import pytest
 
 from panoptes.utils import error
 
-from panoptes.pocs.config.store import reload_config, set_config
+from panoptes.utils.config.store import reload_config, set_config
 from panoptes.pocs.scheduler import create_scheduler_from_config
 from panoptes.pocs.scheduler.scheduler import BaseScheduler
 from panoptes.pocs.utils.location import create_location_from_config

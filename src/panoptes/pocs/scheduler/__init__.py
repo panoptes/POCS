@@ -11,7 +11,7 @@ from pathlib import Path
 from panoptes.utils import error
 from panoptes.utils.library import load_module
 
-from panoptes.pocs.config.store import get_config
+from panoptes.utils.config.store import get_config
 from panoptes.pocs.scheduler.constraint import BaseConstraint
 from panoptes.pocs.utils.location import create_location_from_config, download_iers_a_file
 from panoptes.pocs.utils.logger import get_logger

@@ -14,7 +14,7 @@ from typing import Annotated
 from fastapi import Depends, FastAPI, Request
 from serial.tools.list_ports import comports as get_comports
 
-from panoptes.pocs.config.store import get_config
+from panoptes.utils.config.store import get_config
 from panoptes.pocs.sensor.weather import WeatherStation
 
 

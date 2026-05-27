@@ -11,7 +11,7 @@ from panoptes.utils.time import current_time
 
 from panoptes.pocs import hardware
 from panoptes.pocs.camera import create_cameras_from_config
-from panoptes.pocs.config.store import reload_config, set_config
+from panoptes.utils.config.store import reload_config, set_config
 from panoptes.pocs.core import POCS
 from panoptes.pocs.dome import create_dome_simulator
 from panoptes.pocs.mount import create_mount_simulator

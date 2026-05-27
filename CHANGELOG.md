@@ -10,7 +10,7 @@
 
 ### Changed
 
-- `panoptes.pocs.config.store` is now a thin re-export shim; the actual implementation lives in `panoptes.utils.config.store` (moved upstream). Existing imports continue to work unchanged. #1448
+- All POCS imports of `panoptes.pocs.config.store` updated to import directly from `panoptes.utils.config.store`; the intermediate shim has been removed. #1448
 - Updated `AGENTS.md`, `docs/index.md`, `docs/examples.md`, `docs/cli-guide.md`, `docs/architecture-for-beginners.md`, and `docs/glossary.md` to remove all references to the legacy HTTP config server. #1448
 
 ### Removed

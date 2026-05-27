@@ -17,7 +17,7 @@ from rich import print
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
 
-from panoptes.pocs.config.store import get_config, set_config
+from panoptes.utils.config.store import get_config, set_config
 from panoptes.pocs.utils.cloud import upload_image
 
 app = typer.Typer(no_args_is_help=True)

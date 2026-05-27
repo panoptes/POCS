@@ -10,7 +10,7 @@ from typing import Any
 from panoptes.utils.database import PanDB
 
 from panoptes.pocs import __version__, hardware
-from panoptes.pocs.config import store as config_store
+from panoptes.utils.config import store as config_store
 from panoptes.pocs.utils.logger import get_logger
 
 # Global database.

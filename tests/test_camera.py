@@ -20,7 +20,7 @@ from panoptes.pocs.camera.sbigudrv import INVALID_HANDLE_VALUE, SBIGDriver
 from panoptes.pocs.camera.simulator.ccd import Camera as SimSDKCamera
 from panoptes.pocs.camera.simulator.dslr import Camera as SimCamera
 from panoptes.pocs.camera.zwo import Camera as ZWOCamera
-from panoptes.pocs.config.store import get_config, reload_config, set_config
+from panoptes.utils.config.store import get_config, reload_config, set_config
 from panoptes.pocs.focuser.simulator import Focuser
 from panoptes.pocs.scheduler.field import Field
 from panoptes.pocs.scheduler.observation.base import Observation

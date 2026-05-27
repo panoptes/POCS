@@ -9,7 +9,7 @@ from panoptes.utils import error
 
 from panoptes.pocs import __version__, hardware
 from panoptes.pocs.camera import create_cameras_from_config
-from panoptes.pocs.config.store import reload_config, set_config
+from panoptes.utils.config.store import reload_config, set_config
 from panoptes.pocs.dome import create_dome_simulator
 from panoptes.pocs.mount import AbstractMount, create_mount_from_config, create_mount_simulator
 from panoptes.pocs.observatory import Observatory

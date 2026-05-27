@@ -22,7 +22,7 @@ from panoptes.utils.rs232 import SerialData
 from panoptes.utils.serial.device import get_serial_port_info
 from panoptes.utils.time import CountdownTimer, current_time
 
-from panoptes.pocs.config.store import set_config
+from panoptes.utils.config.store import set_config
 from panoptes.pocs.mount import create_mount_from_config
 from panoptes.pocs.mount.ioptron import MountInfo
 from panoptes.pocs.utils.coords import get_target_coords

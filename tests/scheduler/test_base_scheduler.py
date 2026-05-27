@@ -6,7 +6,7 @@ from astropy.coordinates import EarthLocation
 from panoptes.utils import error
 from panoptes.utils.serializers import from_yaml
 
-from panoptes.pocs.config.store import get_config, set_config
+from panoptes.utils.config.store import get_config, set_config
 from panoptes.pocs.scheduler import create_constraints_from_config
 from panoptes.pocs.scheduler.scheduler import BaseScheduler as Scheduler
 

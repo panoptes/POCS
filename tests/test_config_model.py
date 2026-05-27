@@ -14,7 +14,7 @@ from panoptes.pocs.config import (
     SchedulerConfig,
     SchedulerConstraintConfig,
 )
-from panoptes.pocs.config.store import _get_nested, get_config, init_config, reload_config, set_config
+from panoptes.utils.config.store import _get_nested, get_config, init_config, reload_config, set_config
 
 # ---------------------------------------------------------------------------
 # POCSConfig — round-trip from a dict
@@ -243,7 +243,7 @@ def test_set_config_existing_intermediate_dict():
 
 def test_get_config_auto_inits(tmp_path, monkeypatch):
     """get_config auto-initialises from env var when store is empty."""
-    import panoptes.pocs.config.store as store_mod
+    import panoptes.utils.config.store as store_mod
 
     # Force store empty then point env var at testing.yaml
     original = store_mod._CONFIG.copy()
@@ -259,7 +259,7 @@ def test_get_config_auto_inits(tmp_path, monkeypatch):
 
 def test_set_config_auto_inits(monkeypatch):
     """set_config auto-initialises when store is empty."""
-    import panoptes.pocs.config.store as store_mod
+    import panoptes.utils.config.store as store_mod
 
     original = store_mod._CONFIG.copy()
     store_mod._CONFIG.clear()

@@ -17,7 +17,7 @@ from panoptes.pocs.config.models import (
     SchedulerConfig,
     SchedulerConstraintConfig,
 )
-from panoptes.pocs.config.store import get_config, init_config, reload_config, set_config
+from panoptes.utils.config.store import get_config, init_config, reload_config, set_config
 
 __all__ = [
     # Store

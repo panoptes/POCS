@@ -10,7 +10,7 @@ from panoptes.utils import error
 from panoptes.utils.time import current_time
 
 from panoptes.pocs.base import PanBase
-from panoptes.pocs.config.store import get_config
+from panoptes.utils.config.store import get_config
 
 
 class RemoteMonitor(PanBase):

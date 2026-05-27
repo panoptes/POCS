@@ -9,7 +9,7 @@ from panoptes.utils.library import load_module
 from panoptes.utils.serializers import from_yaml
 from panoptes.utils.utils import listify
 
-from panoptes.pocs.config.store import get_config
+from panoptes.utils.config.store import get_config
 
 
 class PanStateMachine(Machine):

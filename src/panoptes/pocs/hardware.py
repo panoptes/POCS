@@ -2,7 +2,7 @@
 
 from enum import Enum
 
-from panoptes.pocs.config.store import get_config
+from panoptes.utils.config.store import get_config
 
 
 class HardwareName(Enum):
