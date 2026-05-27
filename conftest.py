@@ -15,7 +15,7 @@ from panoptes.pocs.utils.logger import PanLogger, get_logger
 
 _all_databases = ["file", "memory"]
 
-TESTING_LOG_LEVEL = "WARNING"
+TESTING_LOG_LEVEL = "DEBUG"
 LOGGER_INFO = PanLogger()
 
 logger = get_logger(console_log_level=TESTING_LOG_LEVEL)
