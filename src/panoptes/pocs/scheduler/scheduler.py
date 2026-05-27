@@ -122,7 +122,7 @@ class BaseScheduler(PanBase):
             # If we have no current observation but do have a new one, set seq_time
             # and add to the list
             if new_observation is not None:
-                new_observation.seq_time = self._unique_seq_time()
+                new_observation.seq_time = current_time().strftime("%Y%m%dT%H%M%S%f")
                 self.observed_list[new_observation.seq_time] = new_observation
         else:
             # If no new observation, simply reset the current
@@ -132,29 +132,11 @@ class BaseScheduler(PanBase):
                 # If we have a new observation, check if same as old observation
                 if self.current_observation.name != new_observation.name:
                     self.current_observation.reset()
-                    new_observation.seq_time = self._unique_seq_time()
+                    new_observation.seq_time = current_time().strftime("%Y%m%dT%H%M%S%f")
                     self.observed_list[new_observation.seq_time] = new_observation
 
         self.logger.info(f"Setting new observation to {new_observation}")
         self._current_observation = new_observation
-
-    def _unique_seq_time(self) -> str:
-        """Return a collision-resistant seq_time string.
-
-        Uses microsecond-precision UTC timestamps. If the generated key already
-        exists in ``observed_list``, appends an incrementing counter to guarantee
-        uniqueness.
-
-        Returns:
-            str: Timestamp string of the form ``YYYYMMDDTHHMMSSffffff[_N]``.
-        """
-        base = current_time().strftime("%Y%m%dT%H%M%S%f")
-        if base not in self.observed_list:
-            return base
-        counter = 1
-        while f"{base}_{counter}" in self.observed_list:
-            counter += 1
-        return f"{base}_{counter}"
 
     @property
     def fields_file(self):
