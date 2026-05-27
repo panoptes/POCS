@@ -399,7 +399,7 @@ def test_exposure(camera, tmpdir):
     if isinstance(camera, FLICamera):
         time.sleep(10)
     else:
-        time.sleep(5)
+        time.sleep(2.0)
     # Output file should exist, Event should be set and camera should say it's not exposing.
     assert os.path.exists(fits_path)
     assert not camera.is_exposing
@@ -557,7 +557,7 @@ def test_exposure_timeout(camera, tmpdir, caplog):
     readout_thread = camera.take_exposure(seconds=1.0, simulator_exptime=20, filename=fits_path, timeout=0.03)
 
     # Wait for it all to be over.
-    time.sleep(5)
+    time.sleep(1.5)
 
     # Should be an ERROR message in the log from the exposure timeout
     assert caplog.records[-1].levelname == "ERROR"

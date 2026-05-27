@@ -547,8 +547,9 @@ When making changes, update:
 4. **Configuration Validation:** Validate config before use
 5. **Resource Cleanup:** Always clean up hardware connections
 6. **Astropy Units:** Use units consistently (especially angles)
-7. **Time Zones:** Use UTC for all astronomical calculations
-8. **Path Handling:** Use `pathlib.Path`, handle both absolute and relative paths
+7. **Time — Always Use `current_time()`:** Never use `datetime.now()`, `time.time()`, or any other time source. See the `panoptes-utils` entry in Useful Libraries below.
+8. **Time Zones:** Use UTC for all astronomical calculations
+9. **Path Handling:** Use `pathlib.Path`, handle both absolute and relative paths
 
 ## Astronomy Domain Knowledge
 
@@ -565,8 +566,14 @@ When making changes, update:
 
 **Useful libraries:**
 
-- **`panoptes-utils`**: **Primary source for PANOPTES utilities** - Always check here first for common functionality (
-  time utilities, configuration, logging setup, etc.) before implementing new utilities or importing external libraries
+- **`panoptes-utils`**: **Primary source for PANOPTES utilities** - Always check here first for common functionality
+  before implementing new utilities or importing external libraries. Key mandates:
+  - **Always use `current_time()` (from `panoptes.utils.time`) for all timestamps.** Never use `datetime.now()`,
+    `time.time()`, or any other time source. Call `current_time()` (without `flatten=True`) to get an
+    `astropy.time.Time` object with microsecond precision. This applies everywhere in POCS without exception.
+  - Use `panoptes.utils.serializers` for YAML/JSON serialization.
+  - Use `panoptes.utils.error` for error types.
+  - Use `PanBase` (from `panoptes.pocs.base`) for logging via `self.logger`.
 - `astropy`: Astronomical calculations and units
 - `astroplan`: Observation planning
 - `astroquery`: Catalog queries

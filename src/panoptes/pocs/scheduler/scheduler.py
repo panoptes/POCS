@@ -122,10 +122,7 @@ class BaseScheduler(PanBase):
             # If we have no current observation but do have a new one, set seq_time
             # and add to the list
             if new_observation is not None:
-                # Set the new seq_time for the observation
                 new_observation.seq_time = current_time(flatten=True)
-
-                # Add the new observation to the list
                 self.observed_list[new_observation.seq_time] = new_observation
         else:
             # If no new observation, simply reset the current
@@ -136,8 +133,6 @@ class BaseScheduler(PanBase):
                 if self.current_observation.name != new_observation.name:
                     self.current_observation.reset()
                     new_observation.seq_time = current_time(flatten=True)
-
-                    # Add the new observation to the list
                     self.observed_list[new_observation.seq_time] = new_observation
 
         self.logger.info(f"Setting new observation to {new_observation}")

@@ -15,7 +15,8 @@ class Focuser(AbstractFocuser):
     Simple focuser simulator
     """
 
-    def __init__(self, name="Simulated Focuser", port="/dev/ttyFAKE", *args, **kwargs):
+    def __init__(self, name="Simulated Focuser", port="/dev/ttyFAKE", move_time=0.001, *args, **kwargs):
+        self._move_time = move_time
         super().__init__(*args, name=name, port=port, **kwargs)
         self.logger.debug("Initialising simulator focuser")
         self._is_moving = False
@@ -63,7 +64,7 @@ class Focuser(AbstractFocuser):
         self._min_position = 0
         self._max_position = 22200
         if self.position is None:
-            self._position = random.randint(0, self._max_position)
+            self._position = 0
         self.logger.debug(f"Connected to focuser {self.uid}")
 
     def move_to(self, position):
@@ -75,7 +76,7 @@ class Focuser(AbstractFocuser):
         """Move focuser by a given amount"""
         self.logger.debug(f"Moving focuser {self.uid} by {increment}")
         self._is_moving = True
-        time.sleep(1)
+        time.sleep(abs(increment) * self._move_time)
         previous_position = self._position
         position = previous_position + int(increment)
         position = min(position, self.max_position)

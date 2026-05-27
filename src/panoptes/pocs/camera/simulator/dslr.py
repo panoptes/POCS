@@ -105,10 +105,11 @@ class Camera(AbstractCamera):
     def _start_exposure(self, seconds=None, filename=None, dark=False, header=None, *args, **kwargs):
         self._is_exposing_event.set()
         seconds = kwargs.get("simulator_exptime", seconds)
-        exposure_thread = Timer(
-            interval=get_quantity_value(seconds, unit=u.second), function=self._end_exposure
-        )
-        exposure_thread.start()
+        interval = get_quantity_value(seconds, unit=u.second)
+        if interval <= 0:
+            self._end_exposure()
+        else:
+            Timer(interval=interval, function=self._end_exposure).start()
         readout_args = (filename, header)
         return readout_args
 
