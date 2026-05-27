@@ -162,7 +162,12 @@ def test_observation_seq_time(scheduler):
 
     scheduler.get_observation(time=time)
 
-    assert scheduler.current_observation.seq_time is not None
+    seq_time = scheduler.current_observation.seq_time
+    assert seq_time is not None
+    # seq_time must use the flatten_time format (YYYYMMDDTHHmmSS) so that
+    # directory names and sequence IDs are consistent across the codebase.
+    assert len(seq_time) == 15
+    assert seq_time[8] == "T"
 
 
 def test_no_valid_observation(scheduler):
