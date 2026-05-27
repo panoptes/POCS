@@ -10,7 +10,6 @@ import os
 from abc import abstractmethod
 from collections import OrderedDict
 from contextlib import suppress
-from datetime import UTC, datetime
 
 from astroplan import Observer
 from astropy import units as u
@@ -18,6 +17,7 @@ from astropy.coordinates import get_body
 
 from panoptes.utils import error
 from panoptes.utils.serializers import from_yaml
+from panoptes.utils.time import current_time
 
 from panoptes.pocs.base import PanBase
 from panoptes.pocs.scheduler.observation.base import Observation
@@ -148,7 +148,7 @@ class BaseScheduler(PanBase):
         Returns:
             str: Timestamp string of the form ``YYYYMMDDTHHMMSSffffff[_N]``.
         """
-        base = datetime.now(UTC).strftime("%Y%m%dT%H%M%S%f")
+        base = current_time().strftime("%Y%m%dT%H%M%S%f")
         if base not in self.observed_list:
             return base
         counter = 1
