@@ -122,8 +122,11 @@ class BaseScheduler(PanBase):
             # If we have no current observation but do have a new one, set seq_time
             # and add to the list
             if new_observation is not None:
-                # Set the new seq_time for the observation
-                new_observation.seq_time = current_time(flatten=True)
+                # Set the new seq_time for the observation (include milliseconds to
+                # ensure uniqueness even when two observations are selected within the
+                # same wall-clock second).
+                t = current_time()
+                new_observation.seq_time = t.isot.replace("-", "").replace(":", "").replace(".", "")[:18]
 
                 # Add the new observation to the list
                 self.observed_list[new_observation.seq_time] = new_observation
@@ -135,7 +138,8 @@ class BaseScheduler(PanBase):
                 # If we have a new observation, check if same as old observation
                 if self.current_observation.name != new_observation.name:
                     self.current_observation.reset()
-                    new_observation.seq_time = current_time(flatten=True)
+                    t = current_time()
+                    new_observation.seq_time = t.isot.replace("-", "").replace(":", "").replace(".", "")[:18]
 
                     # Add the new observation to the list
                     self.observed_list[new_observation.seq_time] = new_observation
