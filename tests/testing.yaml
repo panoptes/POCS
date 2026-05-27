@@ -111,6 +111,7 @@ cameras:
         model: panoptes.pocs.focuser.simulator.Focuser
         focus_port: /dev/fake/focuser.00
         initial_position: 20000
+        move_time: 0.001
         autofocus_range: [ 40, 80 ]
         autofocus_step: [ 10, 20 ]
         autofocus_seconds: 0.1
@@ -150,6 +151,7 @@ cameras:
         model: panoptes.pocs.focuser.simulator.Focuser
         focus_port: /dev/fake/focuser.00
         initial_position: 20000
+        move_time: 0.001
         autofocus_range: [ 40, 80 ]
         autofocus_step: [ 10, 20 ]
         autofocus_seconds: 0.1
