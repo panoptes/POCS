@@ -57,51 +57,51 @@ def get_all_names(all_names=None, without=None):
     return sorted([v for v in all_names if v not in without])
 
 
-def get_simulator_names(simulator: str | list | None = None, kwargs=None):
+def get_simulator_names(simulator: str | list[str] | None = None, kwargs: dict | None = None) -> list[str]:
     """Return the names of the simulators to be used in lieu of hardware drivers.
+
+    Checks sources in priority order: the explicit ``simulator`` argument, then
+    ``kwargs["simulator"]``, then the ``simulator`` key in the config store.  The
+    config store is only queried when the earlier sources are all falsy (lazy
+    evaluation), so this function is safe to call before the config store is
+    fully initialised.
 
     Note:
         Returning a list containing 'X' doesn't mean that the config calls for a driver
         of type 'X'; that is up to the code working with the config to create drivers for real or
         simulated hardware.
 
-    This function is intended to be called from `PanBase` or similar, which receives kwargs that
-    may include simulator, config or both.
-
     Examples:
-        get_simulator_names(config=self.config, kwargs=kwargs)
-
-        # Or:
-
-        get_simulator_names(simulator=simulator, config=self.config)
-
         >>> from panoptes.pocs.hardware import get_simulator_names
         >>> get_simulator_names()
         []
         >>> get_simulator_names('all')
         ['camera', 'dome', 'mount', 'night', 'power', 'sensors', 'theskyx', 'weather']
+        >>> get_simulator_names(['mount', 'camera'])
+        ['camera', 'mount']
 
     Args:
-        simulator (str | list | None): An explicit list of names of hardware to be simulated
-            (i.e. hardware drivers to be replaced with simulators).
-        kwargs (dict | None): The kwargs passed in to the caller, which is inspected for an arg
-            called 'simulator'.
+        simulator: An explicit simulator name or list of names. Pass ``"all"`` to
+            simulate every hardware subsystem.
+        kwargs: Optional dict (e.g. the caller's ``**kwargs``) inspected for a
+            ``"simulator"`` key.
 
     Returns:
-        list: Names of the hardware to be simulated.
+        Sorted list of hardware names to be simulated, or an empty list.
     """
-    empty = dict()
+    all_names = [h.name for h in HardwareName]
 
-    def extract_simulator(d):
-        return (d or empty).get("simulator")
+    def _candidates():
+        yield simulator
+        yield (kwargs or {}).get("simulator")
+        yield get_config("simulator")  # only reached when above are both falsy
 
-    for v in [simulator, extract_simulator(kwargs), extract_simulator(get_config())]:
+    for v in _candidates():
         if not v:
             continue
         if isinstance(v, str):
             v = [v]
         if "all" in v:
-            return [h.name for h in HardwareName]
-        else:
-            return sorted(v)
+            return all_names
+        return sorted(name for name in v if name in all_names)
     return []
