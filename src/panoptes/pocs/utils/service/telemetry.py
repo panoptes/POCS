@@ -22,9 +22,9 @@ def make_firestore_hook(unit_id: str | None = None):
 
     The hook only acts on events where ``request.store_permanently`` is
     ``True``, matching the previous behaviour of the ``upload-metadata``
-    command.  All Firestore imports are deferred so the telemetry server
-    can start even when the Google Cloud SDK is not installed or credentials
-    are unavailable.
+    command.  The Firestore import is checked once at hook-creation time so
+    that a clear diagnostic is shown at startup if the ``google`` extra is
+    missing, rather than a cryptic per-event failure.
 
     Args:
         unit_id: PANOPTES unit identifier (e.g. ``"PAN001"``).  Falls back to
@@ -33,8 +33,19 @@ def make_firestore_hook(unit_id: str | None = None):
 
     Returns:
         A callable suitable for passing as an element of
-        ``TelemetryService``'s ``post_event_hooks`` list.
+        ``TelemetryService``'s ``post_event_hooks`` list.  Returns a no-op
+        callable if ``google-cloud-firestore`` is not installed.
     """
+    try:
+        import google.cloud.firestore as firestore
+    except ImportError:
+        logger.warning(
+            "Firestore uploads disabled: 'google-cloud-firestore' is not installed. "
+            "To enable cloud uploads, re-install with the 'google' extra:\n"
+            "    pip install panoptes-pocs[google]"
+        )
+        return lambda envelope, request: None
+
     resolved_unit_id = unit_id or _get_unit_id()
 
     def _hook(envelope: dict[str, Any], request: EventRequest) -> None:
@@ -42,8 +53,6 @@ def make_firestore_hook(unit_id: str | None = None):
             return
 
         try:
-            from google.cloud import firestore  # deferred import
-
             db = firestore.Client()
             unit_ref = db.document(f"units/{resolved_unit_id}")
             metadata_records_ref = unit_ref.collection("metadata")
@@ -106,13 +115,13 @@ def make_pocs_telemetry_app(
 
 
 def _get_unit_id() -> str:
-    """Resolve the unit id from the environment or config server."""
+    """Resolve the unit id from the environment or config."""
     unit_id = os.getenv("UNIT_ID")
     if unit_id:
         return unit_id
 
     try:
-        from panoptes.utils.config.client import get_config
+        from panoptes.utils.config.store import get_config
 
         unit_id = get_config("pan_id")
     except Exception:
@@ -121,7 +130,7 @@ def _get_unit_id() -> str:
     if not unit_id:
         raise ValueError(
             "No unit id found. Set the UNIT_ID environment variable or ensure "
-            "the config server is running with a 'pan_id' key."
+            "the config file contains a 'pan_id' key."
         )
 
     return unit_id

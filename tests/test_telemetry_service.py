@@ -13,92 +13,127 @@ from panoptes.utils.telemetry.server import EventRequest, TelemetryService
 from panoptes.pocs.utils.cli.telemetry import app as telemetry_cli_app
 from panoptes.pocs.utils.service.telemetry import _get_unit_id, make_firestore_hook, make_pocs_telemetry_app
 
+_REAL_IMPORT = __builtins__.__import__ if hasattr(__builtins__, "__import__") else __import__
+
+
+def _raise_for_google(name, *args, **kwargs):
+    """Side-effect for builtins.__import__ that blocks google.cloud.firestore."""
+    if "google.cloud.firestore" in name or name == "google.cloud.firestore":
+        raise ImportError(f"Mocked ImportError for {name}")
+    return _REAL_IMPORT(name, *args, **kwargs)
+
 
 @pytest.fixture
 def unit_id():
     return "PAN001"
 
 
+@pytest.fixture
+def mock_firestore():
+    """Patch google.cloud.firestore.Client and SERVER_TIMESTAMP for hook tests."""
+    mock_client_cls = MagicMock()
+    with (
+        patch("google.cloud.firestore.Client", mock_client_cls),
+        patch("google.cloud.firestore.SERVER_TIMESTAMP", "SERVER_TIMESTAMP"),
+    ):
+        yield mock_client_cls
+
+
 class TestMakeFirestoreHook:
-    def test_hook_uploads_on_store_permanently(self, unit_id, tmp_path):
+    def test_hook_uploads_on_store_permanently(self, unit_id, mock_firestore):
         """Hook should upload to Firestore when store_permanently=True."""
         mock_db = MagicMock()
         mock_unit_ref = MagicMock()
         mock_metadata_ref = MagicMock()
         mock_db.document.return_value = mock_unit_ref
         mock_unit_ref.collection.return_value = mock_metadata_ref
+        mock_firestore.return_value = mock_db
 
         hook = make_firestore_hook(unit_id=unit_id)
 
-        with patch("google.cloud.firestore.Client", return_value=mock_db):
-            envelope = {"type": "weather", "data": {"temp": 20.0}, "ts": "2026-01-01T00:00:00Z"}
-            request = EventRequest(type="weather", data={"temp": 20.0}, store_permanently=True)
-            hook(envelope, request)
+        envelope = {"type": "weather", "data": {"temp": 20.0}, "ts": "2026-01-01T00:00:00Z"}
+        request = EventRequest(type="weather", data={"temp": 20.0}, store_permanently=True)
+        hook(envelope, request)
 
         mock_db.document.assert_called_once_with(f"units/{unit_id}")
         mock_unit_ref.set.assert_called_once()
         mock_metadata_ref.add.assert_called_once()
 
-    def test_hook_skips_ephemeral_events(self, unit_id):
+    def test_hook_skips_ephemeral_events(self, unit_id, mock_firestore):
         """Hook must be a no-op when store_permanently=False."""
         hook = make_firestore_hook(unit_id=unit_id)
 
-        with patch("google.cloud.firestore.Client") as mock_client:
-            envelope = {"type": "power", "data": {}, "ts": "2026-01-01T00:00:00Z"}
-            request = EventRequest(type="power", data={}, store_permanently=False)
-            hook(envelope, request)
+        envelope = {"type": "power", "data": {}, "ts": "2026-01-01T00:00:00Z"}
+        request = EventRequest(type="power", data={}, store_permanently=False)
+        hook(envelope, request)
 
-        mock_client.assert_not_called()
+        mock_firestore.assert_not_called()
 
-    def test_hook_sets_correct_firestore_paths(self, unit_id, tmp_path):
+    def test_hook_sets_correct_firestore_paths(self, unit_id, mock_firestore):
         """Hook should write to units/{unit_id}/metadata collection."""
         mock_db = MagicMock()
         mock_unit_ref = MagicMock()
         mock_metadata_ref = MagicMock()
         mock_db.document.return_value = mock_unit_ref
         mock_unit_ref.collection.return_value = mock_metadata_ref
+        mock_firestore.return_value = mock_db
 
         hook = make_firestore_hook(unit_id=unit_id)
 
-        with patch("google.cloud.firestore.Client", return_value=mock_db):
-            envelope = {"type": "status", "data": {"cpu": 10}, "ts": "2026-01-01T00:00:00Z"}
-            request = EventRequest(type="status", data={"cpu": 10}, store_permanently=True)
-            hook(envelope, request)
+        envelope = {"type": "status", "data": {"cpu": 10}, "ts": "2026-01-01T00:00:00Z"}
+        request = EventRequest(type="status", data={"cpu": 10}, store_permanently=True)
+        hook(envelope, request)
 
         mock_db.document.assert_called_with(f"units/{unit_id}")
         mock_unit_ref.collection.assert_called_with("metadata")
 
-    def test_hook_includes_timestamp_in_data(self, unit_id):
+    def test_hook_includes_timestamp_in_data(self, unit_id, mock_firestore):
         """Uploaded data should include 'date' from the envelope timestamp."""
         mock_db = MagicMock()
         mock_unit_ref = MagicMock()
         mock_metadata_ref = MagicMock()
         mock_db.document.return_value = mock_unit_ref
         mock_unit_ref.collection.return_value = mock_metadata_ref
+        mock_firestore.return_value = mock_db
 
         hook = make_firestore_hook(unit_id=unit_id)
         ts = "2026-01-01T12:00:00.000Z"
 
-        with patch("google.cloud.firestore.Client", return_value=mock_db):
-            envelope = {"type": "weather", "data": {"temp": 15.0}, "ts": ts}
-            request = EventRequest(type="weather", data={"temp": 15.0}, store_permanently=True)
-            hook(envelope, request)
+        envelope = {"type": "weather", "data": {"temp": 15.0}, "ts": ts}
+        request = EventRequest(type="weather", data={"temp": 15.0}, store_permanently=True)
+        hook(envelope, request)
 
         added_data = mock_metadata_ref.add.call_args[0][0]
         assert added_data["date"] == ts
         assert added_data["record_type"] == "weather"
 
-    def test_hook_exception_propagates_for_fire_hook(self, unit_id):
+    def test_hook_exception_propagates_for_fire_hook(self, unit_id, mock_firestore):
         """Exceptions in the hook should propagate so TelemetryService can log them."""
+        mock_firestore.side_effect = Exception("no credentials")
+
         hook = make_firestore_hook(unit_id=unit_id)
 
-        with patch("google.cloud.firestore.Client", side_effect=Exception("no credentials")):
-            envelope = {"type": "weather", "data": {}, "ts": "2026-01-01T00:00:00Z"}
-            request = EventRequest(type="weather", data={}, store_permanently=True)
-            with pytest.raises(Exception, match="no credentials"):
-                hook(envelope, request)
+        envelope = {"type": "weather", "data": {}, "ts": "2026-01-01T00:00:00Z"}
+        request = EventRequest(type="weather", data={}, store_permanently=True)
+        with pytest.raises(Exception, match="no credentials"):
+            hook(envelope, request)
 
-    def test_hook_non_fatal_via_telemetry_service(self, unit_id, tmp_path):
+    def test_hook_warns_and_returns_noop_when_google_not_installed(self, unit_id, caplog):
+        """When google-cloud-firestore is missing, warn with install instructions and return a no-op."""
+        import logging
+
+        with patch("builtins.__import__", side_effect=_raise_for_google):
+            with caplog.at_level(logging.WARNING):
+                hook = make_firestore_hook(unit_id=unit_id)
+
+        assert "google" in caplog.text.lower()
+
+        # The returned hook must be a harmless no-op.
+        envelope = {"type": "weather", "data": {}, "ts": "2026-01-01T00:00:00Z"}
+        request = EventRequest(type="weather", data={}, store_permanently=True)
+        hook(envelope, request)  # must not raise
+
+    def test_hook_non_fatal_via_telemetry_service(self, tmp_path):
         """When wired into TelemetryService, a Firestore failure must not affect the return value."""
         done = threading.Event()
 
@@ -129,11 +164,12 @@ class TestMakePocsTelemetryApp:
 
     def test_upload_registers_one_hook(self, tmp_path, unit_id):
         """With upload_to_firestore=True exactly one hook should be registered."""
-        app = make_pocs_telemetry_app(
-            site_dir=tmp_path / "telemetry",
-            unit_id=unit_id,
-            upload_to_firestore=True,
-        )
+        with patch("google.cloud.firestore.Client"), patch("google.cloud.firestore.SERVER_TIMESTAMP", "ts"):
+            app = make_pocs_telemetry_app(
+                site_dir=tmp_path / "telemetry",
+                unit_id=unit_id,
+                upload_to_firestore=True,
+            )
         service = app.state.telemetry_service
         assert len(service._post_event_hooks) == 1
 
@@ -145,22 +181,22 @@ class TestGetUnitId:
         assert _get_unit_id() == "PAN042"
 
     def test_falls_back_to_config(self, monkeypatch):
-        """Should query config server when UNIT_ID env var is absent."""
+        """Should query config store when UNIT_ID env var is absent."""
         monkeypatch.delenv("UNIT_ID", raising=False)
-        with patch("panoptes.utils.config.client.get_config", return_value="PAN099"):
+        with patch("panoptes.utils.config.store.get_config", return_value="PAN099"):
             assert _get_unit_id() == "PAN099"
 
     def test_raises_when_no_unit_id(self, monkeypatch):
         """Should raise ValueError when neither env var nor config provides a unit id."""
         monkeypatch.delenv("UNIT_ID", raising=False)
-        with patch("panoptes.utils.config.client.get_config", return_value=None):
+        with patch("panoptes.utils.config.store.get_config", return_value=None):
             with pytest.raises(ValueError, match="No unit id found"):
                 _get_unit_id()
 
     def test_raises_when_config_unavailable(self, monkeypatch):
-        """Should raise ValueError when config server is unreachable."""
+        """Should raise ValueError when config is unreachable."""
         monkeypatch.delenv("UNIT_ID", raising=False)
-        with patch("panoptes.utils.config.client.get_config", side_effect=Exception("no server")):
+        with patch("panoptes.utils.config.store.get_config", side_effect=Exception("no config")):
             with pytest.raises(ValueError, match="No unit id found"):
                 _get_unit_id()
 
