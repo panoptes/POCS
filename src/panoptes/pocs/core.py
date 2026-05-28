@@ -648,6 +648,7 @@ class POCS(PanStateMachine, PanBase):
         """
         import os
 
+        from panoptes.utils.config import store as config_store
         from panoptes.utils.config.store import get_config, init_config
         from panoptes.utils.serializers import from_yaml
 
@@ -660,15 +661,19 @@ class POCS(PanStateMachine, PanBase):
         if "all" in simulators:
             simulators = get_simulator_names("all")
 
-        # Resolve config file (mirrors panoptes-utils store resolution).
-        env_path = os.environ.get("PANOPTES_CONFIG_FILE")
-        config_file = (
-            Path(env_path).expanduser() if env_path else Path("~/.panoptes/config.yaml").expanduser()
-        )
-        if not config_file.exists():
-            raise error.PanError(
-                f"No config file found at {config_file}. Run 'pocs config setup' to create one."
+        # Use the store's already-resolved path (e.g. set by tests via init_config()),
+        # otherwise mirror the store's own file resolution logic.
+        if config_store._CONFIG_FILE is not None and config_store._CONFIG_FILE.exists():
+            config_file = config_store._CONFIG_FILE
+        else:
+            env_path = os.environ.get("PANOPTES_CONFIG_FILE")
+            config_file = (
+                Path(env_path).expanduser() if env_path else Path("~/.panoptes/config.yaml").expanduser()
             )
+            if not config_file.exists():
+                raise error.PanError(
+                    f"No config file found at {config_file}. Run 'pocs config setup' to create one."
+                )
 
         # Pre-create any missing configured directories from the raw YAML *before*
         # init_config() so parse_config_directories runs cleanly without warnings.
