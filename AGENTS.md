@@ -210,35 +210,39 @@ Device-specific control code.
 - `scheduler`: Field lists and constraints
 - `directories`: Data storage locations
 
-### Config Server
+### Config Store
 
-POCS uses a configuration server from the [`panoptes-utils`](https://github.com/panoptes/panoptes-utils) library to
-manage configuration. The server provides centralized configuration access across components.
+POCS loads configuration directly from a YAML file via `panoptes.utils.config.store` — no separate server
+process is needed. The store is initialised once at startup and all components read from the in-memory dict.
 
-**Starting the config server locally:**
+**Config file resolution order:**
+
+1. Value passed to `init_config(config_file=...)` explicitly
+2. `$PANOPTES_CONFIG_FILE` environment variable
+3. `~/.panoptes/config.yaml` (standard user location)
+
+**Convenience CLI:**
 
 ```bash
-# For normal development
-panoptes-config-server --host 0.0.0.0 --port 6563 run --config-file conf_files/pocs.yaml
+# View the full config
+pocs config get
 
-# For testing (use testing config)
-panoptes-config-server --host 0.0.0.0 --port 6563 run --config-file tests/testing.yaml
+# View a specific key
+pocs config get location.latitude
+
+# Set a value
+pocs config set name "My Unit"
+
+# Interactive first-time setup wizard
+pocs config setup
 ```
-
-**Notes:**
-
-- The config server must be running before starting POCS
-- Default port is 6563
-- Use `tests/testing.yaml` as the config file when running tests
-- The server provides a REST API for configuration access
 
 **When modifying configuration:**
 
 - Maintain backward compatibility when possible
 - Update example configs in `conf_files/`
 - Document new configuration options
-- Validate with schema if available
-- Restart config server after modifying config files
+- Config changes take effect immediately for new `get_config` calls; no restart needed
 
 ## Common Tasks
 
@@ -643,12 +647,6 @@ When making changes, update:
 ### Common Commands
 
 ```bash
-# Start config server (required before running POCS)
-panoptes-config-server --host 0.0.0.0 --port 6563 run --config-file conf_files/pocs.yaml
-
-# Start config server for testing
-panoptes-config-server --host 0.0.0.0 --port 6563 run --config-file tests/testing.yaml
-
 # Install dependencies
 uv sync
 

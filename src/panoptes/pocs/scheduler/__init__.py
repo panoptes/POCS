@@ -9,7 +9,7 @@ constraints using panoptes.utils.library.load_module.
 from pathlib import Path
 
 from panoptes.utils import error
-from panoptes.utils.config.client import get_config
+from panoptes.utils.config.store import get_config
 from panoptes.utils.library import load_module
 
 from panoptes.pocs.scheduler.constraint import BaseConstraint

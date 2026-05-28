@@ -32,7 +32,7 @@ from rich.progress import (
 from rich.table import Table
 from rich.text import Text
 
-from panoptes.utils.config.client import get_config, set_config
+from panoptes.utils.config.store import get_config, set_config
 from panoptes.utils.error import PanError
 from panoptes.utils.images import cr2 as cr2_utils
 from panoptes.utils.images import make_pretty_image

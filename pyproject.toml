@@ -38,7 +38,7 @@ dependencies = [
     "GitPython",
     "human-readable",
     "numpy>=2",
-    "panoptes-utils[config,images]>=0.3.3,<3.0",
+    "panoptes-utils[images]>=0.5.0,<3.0",
     "pandas",
     "pick",
     "pillow>=12.2.0",
@@ -213,3 +213,4 @@ indent-style = "space"
 [tool.uv]
 # Modern uv configuration
 dev-dependencies = []  # Use dependency-groups instead
+

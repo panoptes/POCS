@@ -8,7 +8,7 @@ from astropy import units as u
 from astropy.coordinates import EarthLocation
 from astropy.time import Time
 
-from panoptes.utils.config.client import get_config
+from panoptes.utils.config.store import get_config
 
 from panoptes.pocs.scheduler.constraint import Duration, MoonAvoidance
 from panoptes.pocs.scheduler.dispatch import Scheduler

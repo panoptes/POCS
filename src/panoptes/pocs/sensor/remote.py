@@ -7,7 +7,7 @@ reading in the local PANOPTES database.
 import requests
 
 from panoptes.utils import error
-from panoptes.utils.config.client import get_config
+from panoptes.utils.config.store import get_config
 from panoptes.utils.time import current_time
 
 from panoptes.pocs.base import PanBase

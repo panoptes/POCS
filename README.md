@@ -66,8 +66,7 @@ bash install.sh
 The install script will ask a few questions at the beginning of the process. If you are unsure of 
 the answer the default is probably okay.
 
-In addition to installing `POCS`, the install script will create the Config Server
-and Power Monitor services, which will automatically  be restarted upon reboot of the computer.
+In addition to installing `POCS`, the install script will create the Power Monitor service, which will automatically be restarted upon reboot of the computer.
 
 
 ### POCS Module
@@ -89,41 +88,15 @@ pip install "panoptes-pocs[google,focuser,testing]"
 
 #### Running POCS
 
-`POCS` requires a few things to properly run:
-
-1. A [`panoptes-utils`](https://github.com/panoptes/panoptes-utils.git) `config-server` running to provide dynamic configuration.
-2. An `Observatory` instance that has details about the location of a POCS unit (real or simulated), which hardware is available, etc.
+`POCS` requires an `Observatory` instance that has details about the location of a POCS unit (real or simulated), which hardware is available, etc. Configuration is loaded directly from a YAML file — no separate server process is needed.
 
 A minimal working example with a simulated `Observatory` would be:
 
 ```python
-import os
-from panoptes.utils.config.server import config_server
 from panoptes.pocs.core import POCS
 
-os.environ['PANDIR'] = '/var/panoptes'
-conf_server = config_server('conf_files/pocs.yaml')
-I 01-20 01:01:10.886 Starting panoptes-config-server with  config_file='conf_files/pocs.yaml'
-S 01-20 01:01:10.926 Config server Loaded 17 top-level items
-I 01-20 01:01:10.928 Config items saved to flask config-server
-I 01-20 01:01:10.934 Starting panoptes config server with localhost:6563
-
 pocs = POCS.from_config(simulators=['all'])
-I 01-20 01:01:20.408 Initializing PANOPTES unit - Generic PANOPTES Unit - Mauna Loa Observatory
-I 01-20 01:01:20.419 Making a POCS state machine from panoptes
-I 01-20 01:01:20.420 Loading state table: panoptes
-S 01-20 01:01:20.485 Unit says: Hi there!
-W 01-20 01:01:20.494 Scheduler not present
-W 01-20 01:01:20.495 Cameras not present
-W 01-20 01:01:20.496 Mount not present
-I 01-20 01:01:20.497 Scheduler not present, cannot get current observation.
-
 pocs.initialize()
-W 01-20 01:01:28.386 Scheduler not present
-W 01-20 01:01:28.388 Cameras not present
-W 01-20 01:01:28.389 Mount not present
-S 01-20 01:01:28.390 Unit says: Looks like we're missing some required hardware.
-Out[10]: False
 ```
 
 For a more realistic usage, see the full documentation at: [https://panoptes.github.io/POCS/](https://panoptes.github.io/POCS/).

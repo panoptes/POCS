@@ -9,7 +9,7 @@ import requests
 from pydantic import AnyHttpUrl
 
 from panoptes.utils import error
-from panoptes.utils.config.client import get_config
+from panoptes.utils.config.store import get_config
 from panoptes.utils.library import load_module
 
 from panoptes.pocs.camera.camera import AbstractCamera  # noqa
@@ -72,7 +72,7 @@ def create_cameras_from_config(
 
     Args:
         config (dict or None): A config object for a camera or None to lookup in
-            config-server.
+            config store.
         cameras (list of panoptes.pocs.camera.Camera or None): A list of camera
             objects or None.
         auto_primary (bool): If True, when no camera is marked as the primary camera,

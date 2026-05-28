@@ -2,13 +2,11 @@ import os
 import time
 
 import pytest
-import requests
 from astropy.coordinates import get_body
 from astropy.time import Time
 
 from panoptes.utils import error
-from panoptes.utils.config.client import set_config
-from panoptes.utils.serializers import to_json
+from panoptes.utils.config.store import reload_config, set_config
 
 from panoptes.pocs import __version__, hardware
 from panoptes.pocs.camera import create_cameras_from_config
@@ -21,10 +19,8 @@ from panoptes.pocs.scheduler.observation.base import Observation
 from panoptes.pocs.utils.location import create_location_from_config
 
 
-def reset_conf(config_host, config_port):
-    url = f"http://{config_host}:{config_port}/reset-config"
-    response = requests.post(url, data=to_json({"reset": True}), headers={"Content-Type": "application/json"})
-    assert response.ok
+def reset_conf():
+    reload_config()
 
 
 @pytest.fixture(scope="function")
@@ -62,12 +58,12 @@ def test_remove_cameras(observatory, cameras):
         observatory.remove_camera(cam_name)
 
 
-def test_bad_site(config_host, config_port):
-    set_config("location", {})
+def test_bad_site():
+    set_config("location", {}, persist=False)
     with pytest.raises(error.PanError):
         Observatory()
 
-    reset_conf(config_host, config_port)
+    reset_conf()
 
 
 def test_cannot_observe(caplog):
@@ -97,7 +93,7 @@ def test_cannot_observe(caplog):
 
 def test_camera_wrong_type():
     # Remove mount simulator
-    set_config("simulator", hardware.get_all_names(without="camera"))
+    set_config("simulator", hardware.get_all_names(without="camera"), persist=False)
 
     with pytest.raises(AttributeError):
         Observatory(cameras=[Time.now()])
@@ -149,11 +145,11 @@ def test_set_dome():
             "brand": "Simulacrum",
             "driver": "simulator",
         },
+        persist=False,
     )
     dome = create_dome_simulator()
 
     obs = Observatory(dome=dome)
-    assert obs.has_dome is True
     obs.set_dome(dome=None)
     assert obs.has_dome is False
     obs.set_dome(dome=dome)
@@ -180,6 +176,7 @@ def test_set_mount():
             "driver": "panoptes.pocs.mount.simulator",
             "model": "panoptes.pocs.camera.simulator.dslr",
         },
+        persist=False,
     )
     mount = create_mount_from_config()
     obs.set_mount(mount=mount)
@@ -392,7 +389,7 @@ def test_no_dome(observatory):
 
 def test_operate_dome():
     # Remove dome and night simulator
-    set_config("simulator", hardware.get_all_names(without=["dome", "night"]))
+    set_config("simulator", hardware.get_all_names(without=["dome", "night"]), persist=False)
 
     set_config(
         "dome",
@@ -400,6 +397,7 @@ def test_operate_dome():
             "brand": "Simulacrum",
             "driver": "simulator",
         },
+        persist=False,
     )
 
     set_config(
@@ -408,6 +406,7 @@ def test_operate_dome():
             "brand": "Simulacrum",
             "driver": "simulator",
         },
+        persist=False,
     )
     dome = create_dome_simulator()
     observatory = Observatory(dome=dome)

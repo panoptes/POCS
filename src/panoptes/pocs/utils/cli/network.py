@@ -17,7 +17,7 @@ from rich import print
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
 
-from panoptes.utils.config.client import get_config, set_config
+from panoptes.utils.config.store import get_config, set_config
 
 from panoptes.pocs.utils.cloud import upload_image
 
@@ -98,11 +98,11 @@ def get_key_cmd(
         try:
             response = set_config("panoptes_network.service_account_key", save_path.absolute().as_posix())
             if response is None:
-                raise ValueError("No response from config server")
+                raise ValueError("No response from config store")
 
             response = set_config("observations.upload_image", True)
             if response is None:
-                raise ValueError("No response from config server")
+                raise ValueError("No response from config store")
 
             print("Service account key added to config and image uploading turned on.")
 

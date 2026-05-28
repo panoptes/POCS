@@ -4,7 +4,7 @@ from astropy import units as u
 from astropy.coordinates import EarthLocation
 
 from panoptes.utils import error
-from panoptes.utils.config.client import get_config, set_config
+from panoptes.utils.config.store import get_config, set_config
 from panoptes.utils.serializers import from_yaml
 
 from panoptes.pocs.scheduler import create_constraints_from_config
@@ -110,7 +110,7 @@ def test_bad_observer(simple_fields_file, constraints):
 
 
 def test_loading_target_file_check_file(observer, simple_fields_file, constraints):
-    set_config("scheduler.check_file", True)
+    set_config("scheduler.check_file", True, persist=False)
     scheduler = Scheduler(
         observer,
         fields_file=simple_fields_file,

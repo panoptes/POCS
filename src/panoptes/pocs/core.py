@@ -7,10 +7,12 @@ and manages the high-level observing loop, safety checks, and lifecycle.
 import os
 from contextlib import suppress
 from multiprocessing import Process
+from pathlib import Path
 from zoneinfo import ZoneInfo
 
 from astropy import units as u
 from astropy.time import Time
+from loguru import logger as module_logger
 
 from panoptes.utils.time import CountdownTimer, current_time
 from panoptes.utils.utils import get_free_space
@@ -53,9 +55,9 @@ class POCS(PanStateMachine, PanBase):
         # Explicitly call the base class.
         PanBase.__init__(self, *args, **kwargs)
 
-        simulators = self.set_config("simulator", simulators)["simulator"]
+        self.set_config("simulator", simulators, persist=False)
+        simulators = self.get_config("simulator", default=[])
         if simulators and len(simulators) > 0:
-            print(f"Running POCS with simulators: {simulators=}")
             self.logger.warning(f"Using {simulators=}")
 
         assert isinstance(observatory, Observatory)
@@ -417,7 +419,7 @@ class POCS(PanStateMachine, PanBase):
         return safe
 
     def _in_simulator(self, key):
-        """Checks the config server for the given simulator key value."""
+        """Checks the config for the given simulator key value."""
         with suppress(KeyError):
             if key in self.get_config("simulator", default=list()):
                 self.logger.debug(f"Using {key} simulator")
@@ -632,19 +634,69 @@ class POCS(PanStateMachine, PanBase):
     ################################################################################################
 
     @classmethod
-    def from_config(cls, simulators: list[str] = None):
+    def from_config(cls, simulators: list[str] | None = None):
         """Create a new POCS instance using the config system.
 
-        Args:
-            simulators (List[str], optional): A list of the different modules that can run in
-                simulator mode. Possible modules include: all, mount, camera, weather, night.
-                Defaults to an empty list.
-        """
-        if simulators is None:
-            simulators = list()
+        Performs a preflight check on the config before constructing any components:
+        validates required keys are present and creates any missing configured directories.
 
-        if simulators == "all":
+        Args:
+            simulators: A list of modules to run in simulator mode. Pass ``["all"]`` to
+                simulate everything. Possible values: ``all``, ``mount``, ``camera``,
+                ``weather``, ``night``. Defaults to ``None`` (no simulators).
+        """
+        import os
+
+        from panoptes.utils.config import store as config_store
+        from panoptes.utils.config.store import get_config, init_config
+        from panoptes.utils.serializers import from_yaml
+
+        if simulators is None:
+            simulators = []
+
+        # Normalize to a list and expand "all" to the full set of simulator names.
+        if isinstance(simulators, str):
+            simulators = [simulators]
+        if "all" in simulators:
             simulators = get_simulator_names("all")
+
+        # Use the store's already-resolved path (e.g. set by tests via init_config()),
+        # otherwise mirror the store's own file resolution logic.
+        if config_store._CONFIG_FILE is not None and config_store._CONFIG_FILE.exists():
+            config_file = config_store._CONFIG_FILE
+        else:
+            env_path = os.environ.get("PANOPTES_CONFIG_FILE")
+            config_file = (
+                Path(env_path).expanduser() if env_path else Path("~/.panoptes/config.yaml").expanduser()
+            )
+            if not config_file.exists():
+                raise error.PanError(
+                    f"No config file found at {config_file}. Run 'pocs config setup' to create one."
+                )
+
+        # Pre-create any missing configured directories from the raw YAML *before*
+        # init_config() so parse_config_directories runs cleanly without warnings.
+        raw = from_yaml(config_file.read_text(), parse=False)
+        raw_dirs = raw.get("directories", {})
+        base = Path(str(raw_dirs.get("base", "."))).expanduser()
+        for dir_name, dir_path in raw_dirs.items():
+            if dir_name == "base":
+                continue
+            path = Path(dir_path) if str(dir_path).startswith("/") else (base / dir_path).absolute()
+            if not path.exists():
+                path.mkdir(parents=True, exist_ok=True)
+                module_logger.info(f"Created missing {dir_name} directory: {path}")
+
+        # Load and validate config; raise early with a helpful message on failure.
+        try:
+            init_config()
+        except Exception as e:
+            raise error.PanError(f"Cannot load config: {e!r}. Run 'pocs config setup' to create one.")
+
+        required_keys = ["name", "location"]
+        missing = [k for k in required_keys if get_config(k) is None]
+        if missing:
+            raise error.PanError(f"Config is missing required keys: {missing}. Run 'pocs config setup'.")
 
         try:
             from panoptes.pocs.camera import create_cameras_from_config

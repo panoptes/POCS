@@ -1,6 +1,6 @@
 import pytest
 
-from panoptes.utils.config.client import set_config
+from panoptes.utils.config.store import set_config
 
 from panoptes.pocs.dome import create_dome_simulator, simulator
 
@@ -13,6 +13,7 @@ def dome():
             "brand": "Simulacrum",
             "driver": "simulator",
         },
+        persist=False,
     )
 
     the_dome = create_dome_simulator()

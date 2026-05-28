@@ -267,8 +267,8 @@ def setup_weather(
     and serial number (when present).  ``udevadm`` is then called to reload
     rules immediately.
 
-    The config server key ``environment.weather.serial_port`` is updated to
-    ``/dev/weather`` if the config server is reachable.
+    The config value ``environment.weather.serial_port`` is updated to
+    ``/dev/weather`` in the in-memory config store.
 
     Args:
         port_glob: Shell glob for candidate ports, e.g. ``/dev/ttyUSB*``.
@@ -422,16 +422,16 @@ def setup_weather(
         )
 
     # ------------------------------------------------------------------
-    # Update the config server if reachable.
+    # Update the in-memory config store.
     # ------------------------------------------------------------------
     try:
-        from panoptes.utils.config.client import set_config
+        from panoptes.utils.config.store import set_config
 
         set_config("environment.weather.serial_port", "/dev/weather")
         console.print("[green]Updated config:[/green] environment.weather.serial_port → /dev/weather")
     except Exception as exc:
         console.print(
-            f"[yellow]Could not update config server ({exc}). "
+            f"[yellow]Could not update config ({exc}). "
             "You may need to set environment.weather.serial_port to /dev/weather manually.[/yellow]"
         )
 

@@ -1,13 +1,13 @@
 import os
+import sys
 import threading
 import time
 
 import pytest
-import requests
 from astropy import units as u
 
-from panoptes.utils.config.client import set_config
-from panoptes.utils.serializers import to_json, to_yaml
+from panoptes.utils.config.store import reload_config, set_config
+from panoptes.utils.serializers import to_yaml
 from panoptes.utils.time import current_time
 
 from panoptes.pocs import hardware
@@ -20,10 +20,8 @@ from panoptes.pocs.scheduler import create_scheduler_from_config
 from panoptes.pocs.utils.location import create_location_from_config
 
 
-def reset_conf(config_host, config_port):
-    url = f"http://{config_host}:{config_port}/reset-config"
-    response = requests.post(url, data=to_json({"reset": True}), headers={"Content-Type": "application/json"})
-    assert response.ok
+def reset_conf():
+    reload_config()
 
 
 @pytest.fixture(scope="function")
@@ -77,19 +75,20 @@ def dome():
             "brand": "Simulacrum",
             "driver": "simulator",
         },
+        persist=False,
     )
 
     return create_dome_simulator()
 
 
 @pytest.fixture(scope="function")
-def pocs(observatory, config_host, config_port):
+def pocs(observatory):
     os.environ["POCSTIME"] = "2020-01-01 08:00:00"
 
     pocs = POCS(observatory, run_once=True, simulators=["power"])
     yield pocs
     pocs.power_down()
-    reset_conf(config_host, config_port)
+    reset_conf()
 
 
 @pytest.fixture(scope="function")
@@ -139,7 +138,7 @@ def test_pocs_get_config(pocs):
 def test_simple_simulator(caplog):
     pocs = POCS.from_config(simulators="all")
     assert isinstance(pocs, POCS)
-    pocs.set_config("simulator", "all")
+    pocs.set_config("simulator", "all", persist=False)
 
     assert pocs.is_initialized is not True
 
@@ -163,30 +162,38 @@ def test_simple_simulator(caplog):
     assert pocs.is_safe()
 
 
+def test_simple_simulator_list(caplog):
+    """simulators=['all'] (a list) should expand identically to simulators='all'."""
+    pocs = POCS.from_config(simulators=["all"])
+    assert isinstance(pocs, POCS)
+    pocs.initialize()
+    assert pocs.is_initialized
+
+
 def test_is_weather_and_dark_simulator(pocs, pocstime_night, pocstime_day):
     pocs.initialize()
 
     # Night simulator
-    pocs.set_config("simulator", "all")
+    pocs.set_config("simulator", "all", persist=False)
     os.environ["POCSTIME"] = pocstime_night  # is dark
     assert pocs.is_dark() is True
     os.environ["POCSTIME"] = pocstime_day  # is day
     assert pocs.is_dark() is True
 
     # No night simulator
-    pocs.set_config("simulator", hardware.get_all_names(without=["night"]))
+    pocs.set_config("simulator", hardware.get_all_names(without=["night"]), persist=False)
     os.environ["POCSTIME"] = pocstime_night  # is dark
     assert pocs.is_dark() is True
     os.environ["POCSTIME"] = pocstime_day  # is day
     assert pocs.is_dark() is False
 
-    pocs.set_config("simulator", ["camera", "mount", "weather", "night"])
+    pocs.set_config("simulator", ["camera", "mount", "weather", "night"], persist=False)
     assert pocs.is_weather_safe() is True
 
 
 def test_is_weather_safe_no_simulator(pocs):
     pocs.initialize()
-    pocs.set_config("simulator", hardware.get_all_names(without=["weather"]))
+    pocs.set_config("simulator", hardware.get_all_names(without=["weather"]), persist=False)
 
     more_than_wait_delay = 24 * u.hour
 
@@ -207,12 +214,13 @@ def test_is_weather_safe_no_simulator(pocs):
     assert pocs.is_weather_safe() is False
 
 
+@pytest.mark.skipif(sys.platform == "darwin", reason="PanDB file locking unreliable on macOS")
 def test_no_ac_power(pocs):
     # Simulator makes AC power safe
     assert pocs.has_ac_power() is True
 
     # Remove 'power' from simulator
-    pocs.set_config("simulator", hardware.get_all_names(without=["power"]))
+    pocs.set_config("simulator", hardware.get_all_names(without=["power"]), persist=False)
 
     pocs.initialize()
 
@@ -270,7 +278,7 @@ def test_power_down_dome_while_running(pocs_with_dome):
 
 def test_run_no_targets_and_exit(pocs):
     os.environ["POCSTIME"] = "2020-01-01 19:00:00"
-    pocs.set_config("simulator", "all")
+    pocs.set_config("simulator", "all", persist=False)
 
     pocs.state = "sleeping"
 
@@ -349,7 +357,7 @@ def test_run_wait_until_safe(observatory, valid_observation, pocstime_day, pocst
 
     # Remove weather simulator, else it would always be safe.
     pocs = POCS(observatory, run_once=True, simulators=hardware.get_all_names(without=["night"]))
-    pocs.set_config("wait_delay", 5)  # Check safety every 5 seconds.
+    pocs.set_config("wait_delay", 5, persist=False)  # Check safety every 5 seconds.
 
     pocs.observatory.scheduler.clear_available_observations()
     pocs.observatory.scheduler.add_observation(valid_observation)
@@ -366,7 +374,7 @@ def test_run_wait_until_safe(observatory, valid_observation, pocstime_day, pocst
     assert pocs.do_states
     assert pocs.next_state is None
 
-    pocs.set_config("wait_delay", 1)
+    pocs.set_config("wait_delay", 1, persist=False)
 
     def start_pocs():
         # Start running, BLOCKING.
@@ -416,7 +424,7 @@ def test_unsafe_park(observatory, valid_observation, pocstime_night):
     simulators = hardware.get_all_names(without=["night", "weather"])
     observatory.logger.warning(f"Using simulators: {simulators}")
     pocs = POCS(observatory, run_once=True, simulators=simulators)
-    pocs.set_config("wait_delay", 5)  # Check safety every 5 seconds.
+    pocs.set_config("wait_delay", 5, persist=False)  # Check safety every 5 seconds.
 
     pocs.observatory.scheduler.clear_available_observations()
     pocs.observatory.scheduler.add_observation(valid_observation)
@@ -435,7 +443,7 @@ def test_unsafe_park(observatory, valid_observation, pocstime_night):
     assert pocs.do_states
     assert pocs.next_state is None
 
-    pocs.set_config("wait_delay", 1)
+    pocs.set_config("wait_delay", 1, persist=False)
 
     def start_pocs():
         # Start running, BLOCKING.
@@ -483,7 +491,7 @@ def test_run_power_down_interrupt(observatory, valid_observation, pocstime_night
     simulators = hardware.get_simulator_names("all")
     observatory.logger.warning(f"Using simulators: {simulators}")
     pocs = POCS(observatory, simulators=simulators)
-    pocs.set_config("wait_delay", 5)  # Check safety every 5 seconds.
+    pocs.set_config("wait_delay", 5, persist=False)  # Check safety every 5 seconds.
 
     pocs.observatory.scheduler.clear_available_observations()
     pocs.observatory.scheduler.add_observation(valid_observation)
@@ -519,7 +527,7 @@ def test_run_power_down_interrupt(observatory, valid_observation, pocstime_night
     assert pocs_thread.is_alive() is False
 
 
-def test_custom_state_file(observatory, temp_file, config_host, config_port):
+def test_custom_state_file(observatory, temp_file, config_port):
     state_table = POCS.load_state_table()
     assert isinstance(state_table, dict)
 
@@ -531,7 +539,7 @@ def test_custom_state_file(observatory, temp_file, config_host, config_port):
     pocs = POCS(observatory, state_machine_file=file_path, run_once=True, simulators=["power"])
     pocs.initialize()
     pocs.power_down()
-    reset_conf(config_host, config_port)
+    reset_conf()
 
 
 def test_free_space(pocs, caplog):
@@ -544,7 +552,7 @@ def test_free_space(pocs, caplog):
 
 def test_run_complete(pocs, valid_observation):
     os.environ["POCSTIME"] = "2020-01-01 08:00:00"
-    pocs.set_config("simulator", "all")
+    pocs.set_config("simulator", "all", persist=False)
 
     pocs.observatory.scheduler.clear_available_observations()
     pocs.observatory.scheduler.add_observation(valid_observation)

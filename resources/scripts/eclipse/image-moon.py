@@ -9,7 +9,7 @@ from pathlib import Path
 from threading import Thread
 
 from google.cloud import storage
-from panoptes.utils.config.client import get_config
+from panoptes.utils.config.store import get_config
 from panoptes.utils.images import make_pretty_image
 from panoptes.utils.serializers import from_yaml
 from panoptes.utils.time import current_time, flatten_time

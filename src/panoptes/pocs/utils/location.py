@@ -13,7 +13,7 @@ from astropy.coordinates import EarthLocation
 from astropy.utils.iers import Conf as iers_conf
 
 from panoptes.utils import error
-from panoptes.utils.config.client import get_config
+from panoptes.utils.config.store import get_config
 from panoptes.utils.utils import get_quantity_value
 
 from panoptes.pocs.utils.logger import get_logger

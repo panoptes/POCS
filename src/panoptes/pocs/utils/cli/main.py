@@ -1,8 +1,7 @@
 """Top-level Typer application entry point for POCS CLI.
 
 Aggregates feature subcommands (camera, mount, config, network, etc.) and
-provides a shared callback to set common options like config server host/port
-and verbosity.
+provides a shared callback to set common options like verbosity.
 """
 
 import os
@@ -30,7 +29,7 @@ from panoptes.pocs.utils.cli import (
 app = typer.Typer(no_args_is_help=True)
 state = {"verbose": False}
 
-app.add_typer(config.app, name="config", help="Interact with the config server.")
+app.add_typer(config.app, name="config", help="Interact with the config store.")
 app.add_typer(network.app, name="network", help="Interact with panoptes network.")
 app.add_typer(mount.app, name="mount", help="Simple mount controls.")
 app.add_typer(camera.app, name="camera", help="Simple camera controls.")
@@ -44,16 +43,14 @@ app.add_typer(weather.app, name="weather", help="Interact with weather station s
 @app.callback()
 def main(
     context: typer.Context,
-    config_host: str = "127.0.0.1",
-    config_port: int = 6563,
+    config_host: str = typer.Option("127.0.0.1", hidden=True),
+    config_port: int = typer.Option(6563, hidden=True),
     verbose: bool = False,
 ):
     """Top-level CLI callback to set shared options for subcommands.
 
     Args:
         context: Typer context object.
-        config_host: Hostname or IP address of the config server.
-        config_port: Port number for the config server.
         verbose: If True, enables verbose output.
 
     Returns:

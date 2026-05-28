@@ -111,6 +111,7 @@ source ./install-zwo-drivers.sh >> install.log 2>&1
 print_success "ZWO drivers installed"
 
 echo -e "\n${YELLOW}Running POCS configuration setup...${NC}"
+cd "${HOME}"
 "${HOME}/bin/pocs" config setup
 
 echo -e "\n${GREEN}${BOLD}"

@@ -1,6 +1,6 @@
 from abc import ABCMeta, abstractmethod
 
-from panoptes.utils.config.client import get_config
+from panoptes.utils.config.store import get_config
 from panoptes.utils.library import load_module
 
 from panoptes.pocs.base import PanBase
