@@ -86,6 +86,15 @@ class POCS(PanStateMachine, PanBase):
 
         self.say("Hi there!")
 
+        # Clear any stale telemetry run left over from a previous session so
+        # that events recorded before the first scheduling cycle are not
+        # incorrectly associated with an old run.
+        try:
+            self.db.stop_run()
+            self.logger.debug("Stopped stale telemetry run on POCS init")
+        except Exception:
+            pass  # No active run — that's expected on a clean start.
+
     @property
     def is_initialized(self) -> bool:
         """Indicates if POCS has been initialized or not."""
