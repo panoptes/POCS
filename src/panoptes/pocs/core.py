@@ -7,6 +7,7 @@ and manages the high-level observing loop, safety checks, and lifecycle.
 import os
 from contextlib import suppress
 from multiprocessing import Process
+from pathlib import Path
 from zoneinfo import ZoneInfo
 
 from astropy import units as u
@@ -58,6 +59,8 @@ class POCS(PanStateMachine, PanBase):
         if simulators and len(simulators) > 0:
             print(f"Running POCS with simulators: {simulators=}")
             self.logger.warning(f"Using {simulators=}")
+
+        self._ensure_directories()
 
         assert isinstance(observatory, Observatory)
 
@@ -416,6 +419,15 @@ class POCS(PanStateMachine, PanBase):
 
         self.update_status()
         return safe
+
+    def _ensure_directories(self) -> None:
+        """Create any configured directories that do not yet exist."""
+        dirs = self.get_config("directories", default={})
+        for name, path_str in dirs.items():
+            path = Path(path_str)
+            if not path.exists():
+                path.mkdir(parents=True, exist_ok=True)
+                self.logger.info(f"Created missing {name} directory: {path}")
 
     def _in_simulator(self, key):
         """Checks the config for the given simulator key value."""
