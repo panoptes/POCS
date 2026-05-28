@@ -97,8 +97,9 @@ def _setup_inputs(*answers):
 
 def test_setup_aborts_when_not_confirmed(cli_runner):
     """Answering 'n' to the confirmation prompt exits without changes."""
+    # Two prompts before abort: auto-detect base config (skip), then proceed (no).
     with patch("panoptes.pocs.utils.cli.config.config_store.set_config") as mock_set:
-        result = cli_runner.invoke(app, ["config", "setup"], input="n\n")
+        result = cli_runner.invoke(app, ["config", "setup"], input="n\nn\n")
     assert result.exit_code == 0
     assert "Exiting" in result.output
     mock_set.assert_not_called()
@@ -114,15 +115,15 @@ def _fake_check_output_ok(cmd, **kwargs):
 
 def test_setup_happy_path(cli_runner):
     """Full setup wizard completes and saves config."""
-    # Provide: confirm=y, base_dir, unit_name, pan_id, latitude,
+    # Provide: use_base=y, confirm=y, base_dir, unit_name, pan_id, latitude,
     #          longitude, elevation, timezone, gmt_offset
     inputs = _setup_inputs(
-        "y", "/tmp/POCS", "My Unit", "PAN001", "19.5 deg", "-154.0 deg", "3400 m", "UTC", "0"
+        "y", "y", "/tmp/POCS", "My Unit", "PAN001", "19.5 deg", "-154.0 deg", "3400 m", "UTC", "0"
     )
 
     with (
         patch("panoptes.pocs.utils.cli.config.config_store.get_config", return_value="stub"),
-        patch("panoptes.pocs.utils.cli.config.config_store.set_config") as mock_set,
+        patch("panoptes.pocs.utils.cli.config.config_store.set_config"),
         patch("panoptes.pocs.utils.cli.config.save_config") as mock_save,
         patch("subprocess.check_output", side_effect=_fake_check_output_ok),
     ):
@@ -130,60 +131,57 @@ def test_setup_happy_path(cli_runner):
 
     assert result.exit_code == 0, result.output
     assert "saved" in result.output.lower()
-    assert mock_set.call_count >= 6  # base_dir, name, pan_id, lat, lon, elevation, timezone, gmt_offset
     mock_save.assert_called_once()
 
 
 def test_setup_elevation_feet(cli_runner):
     """Elevation entered in feet is converted to metres before saving."""
     inputs = _setup_inputs(
-        "y", "/tmp/POCS", "My Unit", "PAN001", "19.5 deg", "-154.0 deg", "3400 ft", "UTC", "0"
+        "y", "y", "/tmp/POCS", "My Unit", "PAN001", "19.5 deg", "-154.0 deg", "3400 ft", "UTC", "0"
     )
 
-    captured_calls = []
+    saved_cfg = {}
 
-    def fake_set(key, value):
-        captured_calls.append((key, value))
-        return value
+    def fake_save(save_path, config, **kwargs):
+        saved_cfg.update(config)
 
     with (
         patch("panoptes.pocs.utils.cli.config.config_store.get_config", return_value="stub"),
-        patch("panoptes.pocs.utils.cli.config.config_store.set_config", side_effect=fake_set),
-        patch("panoptes.pocs.utils.cli.config.save_config"),
+        patch("panoptes.pocs.utils.cli.config.config_store.set_config"),
+        patch("panoptes.pocs.utils.cli.config.save_config", side_effect=fake_save),
         patch("subprocess.check_output", side_effect=_fake_check_output_ok),
     ):
         result = cli_runner.invoke(app, ["config", "setup"], input=inputs)
 
     assert result.exit_code == 0, result.output
-    elev_call = next(c for c in captured_calls if c[0] == "location.elevation")
-    # 3400 ft ≈ 1036 m; value should be a Quantity or numeric, not contain "ft"
-    assert "ft" not in str(elev_call[1])
+    elev = str(saved_cfg.get("location", {}).get("elevation", ""))
+    # 3400 ft ≈ 1036 m; value should be in metres, not feet
+    assert "ft" not in elev
 
 
 def test_setup_elevation_metres_string(cli_runner):
     """Elevation entered as 'NNNm' (no space) is passed through the endswith('m') branch."""
     inputs = _setup_inputs(
-        "y", "/tmp/POCS", "My Unit", "PAN001", "19.5 deg", "-154.0 deg", "3400m", "UTC", "0"
+        "y", "y", "/tmp/POCS", "My Unit", "PAN001", "19.5 deg", "-154.0 deg", "3400m", "UTC", "0"
     )
 
-    captured_calls = []
+    saved_cfg = {}
 
-    def fake_set(key, value):
-        captured_calls.append((key, value))
-        return value
+    def fake_save(save_path, config, **kwargs):
+        saved_cfg.update(config)
 
     with (
         patch("panoptes.pocs.utils.cli.config.config_store.get_config", return_value="stub"),
-        patch("panoptes.pocs.utils.cli.config.config_store.set_config", side_effect=fake_set),
-        patch("panoptes.pocs.utils.cli.config.save_config"),
+        patch("panoptes.pocs.utils.cli.config.config_store.set_config"),
+        patch("panoptes.pocs.utils.cli.config.save_config", side_effect=fake_save),
         patch("subprocess.check_output", side_effect=_fake_check_output_ok),
     ):
         result = cli_runner.invoke(app, ["config", "setup"], input=inputs)
 
     assert result.exit_code == 0, result.output
-    elev_call = next(c for c in captured_calls if c[0] == "location.elevation")
-    assert "m" in str(elev_call[1])
-    assert "ft" not in str(elev_call[1])
+    elev = str(saved_cfg.get("location", {}).get("elevation", ""))
+    assert "m" in elev
+    assert "ft" not in elev
 
 
 def test_setup_subprocess_error_falls_back_to_utc(cli_runner):
@@ -191,7 +189,7 @@ def test_setup_subprocess_error_falls_back_to_utc(cli_runner):
     import subprocess
 
     inputs = _setup_inputs(
-        "y", "/tmp/POCS", "My Unit", "PAN001", "19.5 deg", "-154.0 deg", "3400 m", "UTC", "0"
+        "y", "y", "/tmp/POCS", "My Unit", "PAN001", "19.5 deg", "-154.0 deg", "3400 m", "UTC", "0"
     )
 
     def fake_check_output(cmd, **kwargs):

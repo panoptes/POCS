@@ -22,7 +22,13 @@ logger = get_logger(stderr_log_level="ERROR")
 
 
 def _resolve_config_path() -> Path:
-    """Return the config file path using the same resolution order as the store."""
+    """Return the config file path using the same resolution order as the store.
+
+    Checks the store's already-resolved path first (set by init_config or tests),
+    then falls back to $PANOPTES_CONFIG_FILE and the default location.
+    """
+    if config_store._CONFIG_FILE is not None:
+        return config_store._CONFIG_FILE
     env = os.environ.get("PANOPTES_CONFIG_FILE")
     return Path(env).expanduser() if env else DEFAULT_CONFIG_PATH
 
