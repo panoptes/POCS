@@ -2,6 +2,7 @@ import os
 import sys
 import threading
 import time
+from unittest.mock import MagicMock, patch
 
 import pytest
 from astropy import units as u
@@ -351,6 +352,92 @@ def test_pocs_park_to_ready_without_observations(pocs):
 
     assert pocs.connected is False
     assert pocs.is_safe() is False
+
+
+def _make_scheduling_event(pocs):
+    """Initialize pocs and return (event_data_mock, scheduling module).
+
+    Calls scheduling.on_enter() directly to avoid the blocking while-loop
+    in the ready state.
+    """
+    from panoptes.pocs.state.states.default import scheduling as scheduling_state
+
+    pocs.initialize()
+
+    event_data = MagicMock()
+    event_data.model = pocs
+    return event_data, scheduling_state
+
+
+class TestSchedulingState:
+    """Unit tests for the scheduling state covering all branches."""
+
+    def test_run_once_with_observed_list_parks(self, pocs):
+        """run_once=True after observations have been recorded goes straight to parking."""
+        event_data, scheduling_state = _make_scheduling_event(pocs)
+
+        pocs.run_once = True
+        pocs.observatory.scheduler.observed_list["dummy_seq"] = MagicMock()
+
+        scheduling_state.on_enter(event_data)
+
+        assert pocs.next_state == "parking"
+
+    def test_get_observation_generic_error_parks(self, pocs):
+        """An unexpected exception from get_observation is caught and parks."""
+        event_data, scheduling_state = _make_scheduling_event(pocs)
+
+        with patch.object(pocs.observatory, "get_observation", side_effect=RuntimeError("boom")):
+            scheduling_state.on_enter(event_data)
+
+        assert pocs.next_state == "parking"
+
+    def test_no_observation_available_parks(self, pocs):
+        """NoObservation from get_observation is caught and parks."""
+        from panoptes.utils.error import NoObservation
+
+        event_data, scheduling_state = _make_scheduling_event(pocs)
+
+        with patch.object(pocs.observatory, "get_observation", side_effect=NoObservation("no targets")):
+            scheduling_state.on_enter(event_data)
+
+        assert pocs.next_state == "parking"
+
+    def test_same_observation_goes_to_tracking(self, pocs):
+        """Re-scheduling the same target reuses the existing observation and goes to tracking."""
+        event_data, scheduling_state = _make_scheduling_event(pocs)
+
+        # Grab a real observation, pre-seed it as the current one, and have get_observation
+        # return it again — simulating a re-schedule of the same target.
+        obs = pocs.observatory.get_observation()
+        # get_observation() adds to observed_list; reset it so run_once doesn't park early.
+        pocs.observatory.scheduler.reset_observed_list()
+        pocs.run_once = False
+        pocs.observatory.current_observation = obs
+
+        with patch.object(pocs.observatory, "get_observation", return_value=obs):
+            scheduling_state.on_enter(event_data)
+
+        assert pocs.next_state == "tracking"
+        assert pocs.observatory.current_observation is obs
+
+    def test_start_run_failure_still_slews(self, pocs):
+        """A start_run error is logged but slewing still proceeds normally."""
+        event_data, scheduling_state = _make_scheduling_event(pocs)
+
+        with patch.object(pocs.db, "start_run", side_effect=RuntimeError("telemetry down")):
+            scheduling_state.on_enter(event_data)
+
+        assert pocs.next_state == "slewing"
+
+    def test_mount_set_coordinates_failure_parks(self, pocs):
+        """Mount rejecting target coordinates results in next_state='parking'."""
+        event_data, scheduling_state = _make_scheduling_event(pocs)
+
+        with patch.object(pocs.observatory.mount, "set_target_coordinates", return_value=False):
+            scheduling_state.on_enter(event_data)
+
+        assert pocs.next_state == "parking"
 
 
 def test_run_wait_until_safe(observatory, valid_observation, pocstime_day, pocstime_night):
