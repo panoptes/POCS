@@ -644,7 +644,10 @@ class POCS(PanStateMachine, PanBase):
         if simulators is None:
             simulators = list()
 
-        if simulators == "all":
+        # Normalize to a list and expand "all" to the full set of simulator names.
+        if isinstance(simulators, str):
+            simulators = [simulators]
+        if "all" in simulators:
             simulators = get_simulator_names("all")
 
         try:

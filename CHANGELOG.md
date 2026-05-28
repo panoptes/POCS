@@ -6,6 +6,7 @@
 
 - Added `--dev` option to `pocs update` to pull the latest commit from `main` instead of the latest tagged release.
 - Added `--branch/-b` option to `pocs update` to update from a specific branch (bypasses the tagged-release requirement).
+- `POCS.from_config` now accepts `simulators=["all"]` (a list) in addition to `simulators="all"` (a string).
 - Improvements to `pocs config setup`: base directory now defaults to the current working directory; added `--from` option to load a base config (auto-detects `conf_files/pocs.yaml` if present); added `--force` to skip the overwrite prompt; timezone detection now uses the system's `/etc/localtime` symlink (no subprocess, no confusing errors); GMT offset computed via Python's `datetime`; fixed double-colon in unit prompts.
 
 ### Changed

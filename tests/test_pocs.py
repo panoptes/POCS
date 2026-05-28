@@ -162,6 +162,14 @@ def test_simple_simulator(caplog):
     assert pocs.is_safe()
 
 
+def test_simple_simulator_list(caplog):
+    """simulators=['all'] (a list) should expand identically to simulators='all'."""
+    pocs = POCS.from_config(simulators=["all"])
+    assert isinstance(pocs, POCS)
+    pocs.initialize()
+    assert pocs.is_initialized
+
+
 def test_is_weather_and_dark_simulator(pocs, pocstime_night, pocstime_day):
     pocs.initialize()
 
