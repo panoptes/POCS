@@ -12,6 +12,7 @@ from zoneinfo import ZoneInfo
 
 from astropy import units as u
 from astropy.time import Time
+from loguru import logger as module_logger
 
 from panoptes.utils.time import CountdownTimer, current_time
 from panoptes.utils.utils import get_free_space
@@ -59,8 +60,6 @@ class POCS(PanStateMachine, PanBase):
         if simulators and len(simulators) > 0:
             print(f"Running POCS with simulators: {simulators=}")
             self.logger.warning(f"Using {simulators=}")
-
-        self._ensure_directories()
 
         assert isinstance(observatory, Observatory)
 
@@ -420,15 +419,6 @@ class POCS(PanStateMachine, PanBase):
         self.update_status()
         return safe
 
-    def _ensure_directories(self) -> None:
-        """Create any configured directories that do not yet exist."""
-        dirs = self.get_config("directories", default={})
-        for name, path_str in dirs.items():
-            path = Path(path_str)
-            if not path.exists():
-                path.mkdir(parents=True, exist_ok=True)
-                self.logger.info(f"Created missing {name} directory: {path}")
-
     def _in_simulator(self, key):
         """Checks the config for the given simulator key value."""
         with suppress(KeyError):
@@ -645,22 +635,47 @@ class POCS(PanStateMachine, PanBase):
     ################################################################################################
 
     @classmethod
-    def from_config(cls, simulators: list[str] = None):
+    def from_config(cls, simulators: list[str] | None = None):
         """Create a new POCS instance using the config system.
 
+        Performs a preflight check on the config before constructing any components:
+        validates required keys are present and creates any missing configured directories.
+
         Args:
-            simulators (List[str], optional): A list of the different modules that can run in
-                simulator mode. Possible modules include: all, mount, camera, weather, night.
-                Defaults to an empty list.
+            simulators: A list of modules to run in simulator mode. Pass ``["all"]`` to
+                simulate everything. Possible values: ``all``, ``mount``, ``camera``,
+                ``weather``, ``night``. Defaults to ``None`` (no simulators).
         """
+        from panoptes.utils.config.store import get_config, init_config
+
         if simulators is None:
-            simulators = list()
+            simulators = []
 
         # Normalize to a list and expand "all" to the full set of simulator names.
         if isinstance(simulators, str):
             simulators = [simulators]
         if "all" in simulators:
             simulators = get_simulator_names("all")
+
+        # Force an early config load so any missing/broken config surfaces immediately.
+        try:
+            init_config()
+        except Exception as e:
+            raise error.PanError(f"Cannot load config: {e!r}. Run 'pocs config setup' to create one.")
+
+        # Sanity-check required top-level keys.
+        required_keys = ["name", "location"]
+        missing = [k for k in required_keys if get_config(k) is None]
+        if missing:
+            raise error.PanError(f"Config is missing required keys: {missing}. Run 'pocs config setup'.")
+
+        # Ensure all configured directories exist before any component tries to use them.
+        dirs = get_config("directories", default={})
+        for dir_name, path_str in dirs.items():
+            path = Path(path_str)
+            if not path.exists():
+                path.mkdir(parents=True, exist_ok=True)
+                module_logger.info(f"Created missing {dir_name} directory: {path}")
 
         try:
             from panoptes.pocs.camera import create_cameras_from_config
