@@ -1,4 +1,3 @@
-from contextlib import suppress
 from glob import glob
 
 from panoptes.utils import error
@@ -123,12 +122,6 @@ def create_mount_simulator(mount_info=None, earth_location=None, db_type="memory
     Returns:
         AbstractMount: A newly constructed simulator Mount instance.
     """
-    # Remove mount simulator
-    current_simulators = get_config("simulator", default=[]) or []
-    logger.warning(f"Current simulators: {current_simulators}")
-    with suppress(ValueError):
-        current_simulators.remove("mount")
-
     mount_config = mount_info or {
         "model": "Mount Simulator",
         "driver": "panoptes.pocs.mount.simulator",
