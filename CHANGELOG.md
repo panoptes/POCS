@@ -11,6 +11,9 @@
 - POCS now auto-creates any missing configured directories (e.g. `images`, `resources`) on startup, logging each creation.
 - Added `pocs telemetry run` CLI command (`src/panoptes/pocs/utils/cli/telemetry.py`) — starts the POCS-flavoured telemetry server with an optional Firestore upload hook (`--no-upload` disables it for local dev).
 - Added `src/panoptes/pocs/utils/service/telemetry.py` with `make_firestore_hook()` and `make_pocs_telemetry_app()` — Firestore upload is non-blocking and non-fatal.
+- Added `pocs telemetry current` subcommand — thin wrapper around `panoptes-utils telemetry current` for live telemetry inspection.
+- Added `sequence_id` property to `Observation` (returns `seq_time`) so callers can use a stable name for an observation run before any exposures start.
+- Telemetry run directories are now `telemetry/runs/<sequence_id>/` (no unit-id prefix, images remain in `images/`); `seq_time` is stamped at scheduling time.
 
 ### Changed
 
@@ -19,6 +22,7 @@
 - Bumped `panoptes-utils` requirement to `>=0.5.0`. #1448
 - Migrated from `PanDB` / `PanFileDB` JSON database to `TelemetryClient` / telemetry server (`panoptes-utils` v0.5.0+). Requires the `panoptes-utils telemetry run` server running on port 6562 before POCS starts.
 - Added `pocs-telemetry-server` program to `pocs-supervisord.conf` (port 6562, `priority=1`, data stored in `/home/panoptes/telemetry`).
+- `make_firestore_hook` now emits a clear warning (`pip install panoptes-pocs[google]`) at hook-creation time when `google-cloud-firestore` is not installed, instead of a per-event error.
 
 ### Removed
 

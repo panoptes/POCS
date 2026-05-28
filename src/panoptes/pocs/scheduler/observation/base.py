@@ -219,6 +219,20 @@ class Observation(PanBase):
         self._seq_time = time
 
     @property
+    def sequence_id(self) -> str | None:
+        """Unique identifier for this observation run, derived from the selection timestamp.
+
+        Returns ``None`` until ``seq_time`` has been set (i.e. before the observation is
+        scheduled).  Use this as the run directory name under the telemetry ``runs/``
+        subfolder so that all run-scoped telemetry is co-located:
+        ``<site_dir>/runs/<sequence_id>/``.
+
+        Returns:
+            str: ISO-formatted selection timestamp, or ``None`` if not yet scheduled.
+        """
+        return self._seq_time
+
+    @property
     def directory(self) -> Path:
         """Return the directory for this Observation.
 

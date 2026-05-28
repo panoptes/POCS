@@ -5,6 +5,7 @@ proper next state (slewing, tracking, or parking) based on availability.
 """
 
 from panoptes.utils import error
+from panoptes.utils.time import current_time
 
 
 def on_enter(event_data):
@@ -43,10 +44,16 @@ def on_enter(event_data):
             else:
                 pocs.say(f"Got it! I'm going to check out: {observation.name}")
 
-                # Start a new telemetry run scoped to this observation's directory.
+                # Stamp the observation with the scheduler selection time so that
+                # seq_time is available immediately (cameras will reuse it rather
+                # than stamping again on first exposure).
+                observation.seq_time = current_time(flatten=True)
+
+                # Start a new telemetry run under runs/<sequence_id>/ inside the
+                # telemetry site directory.  Images remain in directories.images.
                 try:
-                    pocs.db.start_run(run_dir=observation.directory)
-                    pocs.logger.debug(f"Telemetry run started for {observation.directory}")
+                    pocs.db.start_run(run_dir=f"runs/{observation.sequence_id}")
+                    pocs.logger.debug(f"Telemetry run started: runs/{observation.sequence_id}")
                 except Exception as e:
                     pocs.logger.warning(f"Unable to start telemetry run: {e!r}")
 
