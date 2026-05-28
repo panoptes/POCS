@@ -23,6 +23,7 @@
 - Migrated from `PanDB` / `PanFileDB` JSON database to `TelemetryClient` / telemetry server (`panoptes-utils` v0.5.0+). Requires the `panoptes-utils telemetry run` server running on port 6562 before POCS starts.
 - Added `pocs-telemetry-server` program to `pocs-supervisord.conf` (port 6562, `priority=1`, data stored in `/home/panoptes/telemetry`).
 - `make_firestore_hook` now emits a clear warning (`pip install panoptes-pocs[google]`) at hook-creation time when `google-cloud-firestore` is not installed, instead of a per-event error.
+- Telemetry persistence defaults updated: `state` transitions, `weather` readings, `power` readings, and `images` metadata are now written permanently to the NDJSON log. `safety` is written permanently only when values change (ephemeral otherwise). `status` remains ephemeral (current-snapshot only).
 
 ### Removed
 

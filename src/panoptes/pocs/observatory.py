@@ -664,12 +664,9 @@ class Observatory(PanBase):
                 except Exception as e:
                     self.logger.warning(f"Problem uploading exposure: {e!r}")
 
-            if record_observations is None:
-                record_observations = self.get_config("observations.record_observations", default=False)
-            if record_observations:
-                self.logger.debug(f"Adding current observation to db: {image_id}")
-                metadata["status"] = "complete"
-                self.db.insert_current("images", metadata, store_permanently=False)
+            self.logger.debug(f"Adding current observation to db: {image_id}")
+            metadata["status"] = "complete"
+            self.db.insert_current("images", metadata)
 
     def analyze_recent(self):
         """Analyze the most recent exposure

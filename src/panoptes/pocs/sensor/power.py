@@ -253,7 +253,7 @@ class PowerBoard(PanBase):
         recent_values = self.readings
 
         collection_name = collection_name or self.arduino_board_name
-        self.db.insert_current(collection_name, recent_values, store_permanently=False)
+        self.db.insert_current(collection_name, recent_values)
 
         return recent_values
 

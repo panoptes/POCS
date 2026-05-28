@@ -402,8 +402,13 @@ class POCS(PanStateMachine, PanBase):
             )
         safe = all([v for k, v in is_safe_values.items() if k not in ignore])
 
-        # Insert safety reading
-        self.db.insert_current("safety", is_safe_values, store_permanently=False)
+        # Insert safety reading — only persist when values change to avoid
+        # flooding the telemetry log at loop cadence.
+        if is_safe_values != getattr(self, "_last_safety_values", None):
+            self._last_safety_values = is_safe_values
+            self.db.insert_current("safety", is_safe_values)
+        else:
+            self.db.insert_current("safety", is_safe_values, store_permanently=False)
 
         if not safe:
             if no_warning is False:
