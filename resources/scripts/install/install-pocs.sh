@@ -30,7 +30,7 @@ ln -s "${PANDIR}/conf_files" "${HOME}"
 ln -s "${PANDIR}/resources" "${HOME}"
 ln -s "${PANDIR}/notebooks" "${HOME}"
 
-# Create a symlink to the bin dir for our hatch environment.
+# Create a symlink to the bin dir for our uv venv environment.
 ln -s "${PANDIR}/.venv/bin/" "${HOME}/"
 echo "source ${HOME}/bin/activate" >> "${HOME}/.bashrc"
 echo "source ${HOME}/bin/activate" >> "${HOME}/.zshrc"
