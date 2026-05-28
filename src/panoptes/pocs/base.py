@@ -4,6 +4,7 @@ Provides PanBase, which centralizes access to configuration, logging, and the
 shared lightweight telemetry client handle used throughout the project.
 """
 
+import os
 import warnings
 from typing import Any
 

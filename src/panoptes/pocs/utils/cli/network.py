@@ -14,7 +14,7 @@ import typer
 from google.cloud import storage
 from rich import print
 
-from panoptes.utils.config.store import get_config, set_config
+from panoptes.utils.config.store import set_config
 
 from panoptes.pocs.utils.cloud import upload_image
 
