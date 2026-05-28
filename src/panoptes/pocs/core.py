@@ -646,7 +646,10 @@ class POCS(PanStateMachine, PanBase):
                 simulate everything. Possible values: ``all``, ``mount``, ``camera``,
                 ``weather``, ``night``. Defaults to ``None`` (no simulators).
         """
+        import os
+
         from panoptes.utils.config.store import get_config, init_config
+        from panoptes.utils.serializers import from_yaml
 
         if simulators is None:
             simulators = []
@@ -657,25 +660,39 @@ class POCS(PanStateMachine, PanBase):
         if "all" in simulators:
             simulators = get_simulator_names("all")
 
-        # Force an early config load so any missing/broken config surfaces immediately.
+        # Resolve config file (mirrors panoptes-utils store resolution).
+        env_path = os.environ.get("PANOPTES_CONFIG_FILE")
+        config_file = (
+            Path(env_path).expanduser() if env_path else Path("~/.panoptes/config.yaml").expanduser()
+        )
+        if not config_file.exists():
+            raise error.PanError(
+                f"No config file found at {config_file}. Run 'pocs config setup' to create one."
+            )
+
+        # Pre-create any missing configured directories from the raw YAML *before*
+        # init_config() so parse_config_directories runs cleanly without warnings.
+        raw = from_yaml(config_file.read_text(), parse=False)
+        raw_dirs = raw.get("directories", {})
+        base = Path(str(raw_dirs.get("base", "."))).expanduser()
+        for dir_name, dir_path in raw_dirs.items():
+            if dir_name == "base":
+                continue
+            path = Path(dir_path) if str(dir_path).startswith("/") else (base / dir_path).absolute()
+            if not path.exists():
+                path.mkdir(parents=True, exist_ok=True)
+                module_logger.info(f"Created missing {dir_name} directory: {path}")
+
+        # Load and validate config; raise early with a helpful message on failure.
         try:
             init_config()
         except Exception as e:
             raise error.PanError(f"Cannot load config: {e!r}. Run 'pocs config setup' to create one.")
 
-        # Sanity-check required top-level keys.
         required_keys = ["name", "location"]
         missing = [k for k in required_keys if get_config(k) is None]
         if missing:
             raise error.PanError(f"Config is missing required keys: {missing}. Run 'pocs config setup'.")
-
-        # Ensure all configured directories exist before any component tries to use them.
-        dirs = get_config("directories", default={})
-        for dir_name, path_str in dirs.items():
-            path = Path(path_str)
-            if not path.exists():
-                path.mkdir(parents=True, exist_ok=True)
-                module_logger.info(f"Created missing {dir_name} directory: {path}")
 
         try:
             from panoptes.pocs.camera import create_cameras_from_config
