@@ -51,6 +51,12 @@ def on_enter(event_data):
 
                 # Start a new telemetry run under runs/<sequence_id>/ inside the
                 # telemetry site directory.  Images remain in directories.images.
+                # Stop any stale run first (e.g. leftover from a previous POCS
+                # session) so start_run never gets a 409.
+                try:
+                    pocs.db.stop_run()
+                except Exception:
+                    pass  # No active run — that's fine.
                 try:
                     pocs.db.start_run(run_dir=f"runs/{observation.sequence_id}")
                     pocs.logger.debug(f"Telemetry run started: runs/{observation.sequence_id}")
