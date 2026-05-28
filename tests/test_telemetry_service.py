@@ -210,7 +210,7 @@ class TestRunTelemetryServerCli:
         with patch("uvicorn.run", mock_run):
             result = runner.invoke(
                 telemetry_cli_app,
-                ["--no-upload", "--site-dir", str(tmp_path), "--port", "16562"],
+                ["run", "--no-upload", "--site-dir", str(tmp_path), "--port", "16562"],
             )
         assert result.exit_code == 0, result.output
         mock_run.assert_called_once()
@@ -226,7 +226,7 @@ class TestRunTelemetryServerCli:
                 mock_svc.return_value = MagicMock(_post_event_hooks=[])
                 result = runner.invoke(
                     telemetry_cli_app,
-                    ["--unit-id", "PAN001", "--no-upload", "--site-dir", str(tmp_path)],
+                    ["run", "--unit-id", "PAN001", "--no-upload", "--site-dir", str(tmp_path)],
                 )
         assert result.exit_code == 0, result.output
         mock_run.assert_called_once()
