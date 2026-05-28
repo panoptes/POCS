@@ -58,7 +58,6 @@ class POCS(PanStateMachine, PanBase):
         self.set_config("simulator", simulators, persist=False)
         simulators = self.get_config("simulator", default=[])
         if simulators and len(simulators) > 0:
-            print(f"Running POCS with simulators: {simulators=}")
             self.logger.warning(f"Using {simulators=}")
 
         assert isinstance(observatory, Observatory)
