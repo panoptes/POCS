@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import subprocess
 from pathlib import Path
 
 import typer
@@ -46,3 +47,34 @@ def run_telemetry_server(
 
     typer.echo(f"Starting POCS telemetry server on {host}:{port} (site_dir={site_dir}, firestore={upload})")
     uvicorn.run(telemetry_app, host=host, port=port)
+
+
+@app.command("current")
+def current_telemetry(
+    event_type: str = typer.Argument(None, help="Optional event type to fetch (e.g. 'weather', 'power')."),
+    host: str = typer.Option("localhost", envvar="PANOPTES_TELEMETRY_HOST", help="Telemetry server host."),
+    port: int = typer.Option(6562, envvar="PANOPTES_TELEMETRY_PORT", help="Telemetry server port."),
+    follow: bool = typer.Option(False, "--follow", "-f", help="Poll repeatedly and print updated readings."),
+    interval: float = typer.Option(2.0, min=0.1, help="Polling interval in seconds when following."),
+):
+    """Display the current telemetry reading.
+
+    Thin wrapper around ``panoptes-utils telemetry current`` using the same
+    server connection options.
+
+    Args:
+        event_type: Limit output to a single event type instead of the full snapshot.
+        host: Host address of the telemetry server.
+        port: Port number of the telemetry server.
+        follow: When set, poll repeatedly and print updates as they change.
+        interval: Seconds between polls when ``--follow`` is active.
+    """
+    cmd = ["panoptes-utils", "telemetry", "current"]
+    if event_type:
+        cmd.append(event_type)
+    cmd += ["--host", host, "--port", str(port), "--interval", str(interval)]
+    if follow:
+        cmd.append("--follow")
+
+    result = subprocess.run(cmd)
+    raise typer.Exit(result.returncode)
