@@ -95,7 +95,10 @@ def main(stdscr: Any, pocs: Any = None) -> None:
         stdscr: Curses screen.
         pocs: Optional in-process POCS instance.
     """
-    curses.curs_set(0)
+    try:
+        curses.curs_set(0)  # hide cursor; not supported by all terminals
+    except curses.error:
+        pass
     stdscr.nodelay(True)
     init_colors(stdscr)
 
