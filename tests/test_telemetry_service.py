@@ -233,3 +233,57 @@ class TestRunTelemetryServerCli:
         # Confirm --no-upload was respected (no Firestore hook registered).
         args, _ = mock_svc.call_args
         assert mock_svc.call_args.kwargs.get("post_event_hooks", []) == []
+
+
+class TestCurrentTelemetryCli:
+    def test_current_no_event_type(self):
+        """current with no args delegates to panoptes-utils with host/port defaults."""
+        runner = CliRunner()
+        mock_proc = MagicMock(returncode=0)
+        with patch("subprocess.run", return_value=mock_proc) as mock_run:
+            result = runner.invoke(telemetry_cli_app, ["current"])
+        assert result.exit_code == 0, result.output
+        cmd = mock_run.call_args[0][0]
+        assert cmd[:3] == ["panoptes-utils", "telemetry", "current"]
+        assert "--host" in cmd
+        assert "--port" in cmd
+        assert "--follow" not in cmd
+
+    def test_current_with_event_type(self):
+        """current <event_type> passes the event type as a positional arg."""
+        runner = CliRunner()
+        mock_proc = MagicMock(returncode=0)
+        with patch("subprocess.run", return_value=mock_proc) as mock_run:
+            result = runner.invoke(telemetry_cli_app, ["current", "weather"])
+        assert result.exit_code == 0, result.output
+        cmd = mock_run.call_args[0][0]
+        assert "weather" in cmd
+
+    def test_current_follow_flag(self):
+        """--follow is passed through to the subprocess command."""
+        runner = CliRunner()
+        mock_proc = MagicMock(returncode=0)
+        with patch("subprocess.run", return_value=mock_proc) as mock_run:
+            result = runner.invoke(telemetry_cli_app, ["current", "--follow"])
+        assert result.exit_code == 0, result.output
+        cmd = mock_run.call_args[0][0]
+        assert "--follow" in cmd
+
+    def test_current_propagates_nonzero_exit_code(self):
+        """A non-zero subprocess returncode is propagated as the CLI exit code."""
+        runner = CliRunner()
+        mock_proc = MagicMock(returncode=1)
+        with patch("subprocess.run", return_value=mock_proc):
+            result = runner.invoke(telemetry_cli_app, ["current"])
+        assert result.exit_code == 1
+
+    def test_current_custom_host_port(self):
+        """--host and --port options are forwarded to the subprocess."""
+        runner = CliRunner()
+        mock_proc = MagicMock(returncode=0)
+        with patch("subprocess.run", return_value=mock_proc) as mock_run:
+            result = runner.invoke(telemetry_cli_app, ["current", "--host", "192.168.1.10", "--port", "9999"])
+        assert result.exit_code == 0, result.output
+        cmd = mock_run.call_args[0][0]
+        assert "192.168.1.10" in cmd
+        assert "9999" in cmd
