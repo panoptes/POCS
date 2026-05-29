@@ -35,10 +35,6 @@ directories:
   fields: conf_files/fields
   mounts: resources/mounts
 
-db:
-  name: panoptes_testing
-  type: file
-
 telemetry:
   host: localhost
   port: 6572
