@@ -362,6 +362,157 @@ class TestScannerScan:
 
 
 # ---------------------------------------------------------------------------
+# Scanner._scan_direct
+# ---------------------------------------------------------------------------
+
+
+class _MockMount:
+    """Minimal mount stub for direct-read tests."""
+
+    is_parked = False
+    is_tracking = True
+    is_slewing = False
+    is_initialized = True
+
+
+class _MockCamera:
+    """Minimal camera stub for direct-read tests."""
+
+    is_connected = True
+    is_exposing = False
+    temperature = -15.5
+    filter_name = "Ha"
+
+
+class _FullPocs:
+    """POCS stub with enough structure for _scan_direct to populate a model."""
+
+    state = "observing"
+    next_state = "tracking"
+    do_states = True
+
+    @property
+    def status(self) -> dict:
+        return {
+            "state": self.state,
+            "next_state": self.next_state,
+            "observatory": {
+                "can_observe": True,
+                "mount": {
+                    "current_ra": 183.5,
+                    "current_dec": 12.3,
+                    "current_ha": 0.75,
+                    "alt": 55.1,
+                    "az": 200.0,
+                },
+                "observation": {
+                    "field_name": "Andromeda",
+                    "exptime": 60.0,
+                    "current_exp": 2,
+                },
+            },
+        }
+
+    class _Observatory:
+        mount = _MockMount()
+        cameras = {"cam_a": _MockCamera()}
+
+    observatory = _Observatory()
+
+
+class _ErrorPocs:
+    """POCS stub whose .status raises."""
+
+    @property
+    def status(self) -> dict:
+        raise RuntimeError("hardware error")
+
+
+class TestScannerDirect:
+    def test_scan_direct_preferred_when_pocs_present(self) -> None:
+        """When pocs is provided, _scan() uses _scan_direct() not the telemetry client."""
+        from panoptes.pocs.tui.scanner import Scanner
+
+        scanner = Scanner(pocs=_FullPocs(), interval_s=0.01)
+        # Provide an error client so we'd notice if it were used.
+        scanner._client = _ErrorTelemetryClient()
+        model = scanner._scan()
+        assert model.system.state == "observing"
+
+    def test_scan_direct_state_and_run_active(self) -> None:
+        from panoptes.pocs.tui.scanner import Scanner
+
+        scanner = Scanner(pocs=_FullPocs(), interval_s=0.01)
+        model = scanner._scan_direct()
+        assert model.system.state == "observing"
+        assert model.system.next_state == "tracking"
+        assert model.system.run_active is True
+        assert model.system.connected is True
+
+    def test_scan_direct_mount_fields(self) -> None:
+        from panoptes.pocs.tui.scanner import Scanner
+
+        scanner = Scanner(pocs=_FullPocs(), interval_s=0.01)
+        model = scanner._scan_direct()
+        assert model.mount.is_tracking is True
+        assert model.mount.is_parked is False
+        assert model.mount.is_slewing is False
+        assert model.mount.connected is True
+        assert model.mount.ha == "0.75"
+        assert model.mount.alt == "55.10"
+        assert model.mount.az == "200.00"
+
+    def test_scan_direct_camera_fields(self) -> None:
+        from panoptes.pocs.tui.scanner import Scanner
+
+        scanner = Scanner(pocs=_FullPocs(), interval_s=0.01)
+        model = scanner._scan_direct()
+        assert len(model.cameras) == 1
+        cam = model.cameras[0]
+        assert cam.name == "cam_a"
+        assert cam.connected is True
+        assert cam.is_exposing is False
+        assert cam.temperature == "-15.50"
+        assert cam.filter_name == "Ha"
+
+    def test_scan_direct_observation_fields(self) -> None:
+        from panoptes.pocs.tui.scanner import Scanner
+
+        scanner = Scanner(pocs=_FullPocs(), interval_s=0.01)
+        model = scanner._scan_direct()
+        assert model.scheduler.selected_field == "Andromeda"
+        assert model.scheduler.observing.field_name == "Andromeda"
+        assert model.scheduler.observing.exposure_s == 60.0
+        assert model.scheduler.observing.current_exp_num == 2
+
+    def test_scan_direct_returns_empty_model_on_status_error(self) -> None:
+        from panoptes.pocs.tui.scanner import Scanner
+
+        scanner = Scanner(pocs=_ErrorPocs(), interval_s=0.01)
+        model = scanner._scan_direct()
+        assert model.system.state == "unknown"
+        assert model.cameras == []
+
+    def test_scan_direct_handles_no_observatory(self) -> None:
+        """POCS without observatory should still return a valid model."""
+        from panoptes.pocs.tui.scanner import Scanner
+
+        class _MinimalPocs:
+            state = "sleeping"
+            next_state = ""
+            do_states = False
+
+            @property
+            def status(self) -> dict:
+                return {"state": "sleeping", "next_state": ""}
+
+        scanner = Scanner(pocs=_MinimalPocs(), interval_s=0.01)
+        model = scanner._scan_direct()
+        assert model.system.state == "sleeping"
+        assert model.cameras == []
+
+
+# ---------------------------------------------------------------------------
 # bridge.Bridge
 # ---------------------------------------------------------------------------
 

@@ -87,12 +87,80 @@ class Scanner:
             except Exception as err:  # pragma: no cover - defensive scanner guard
                 self.last_exception = err
 
+    def _scan_direct(self) -> POCSModel:
+        """Read state directly from an in-process POCS instance.
+
+        Used when a ``pocs`` object was passed at construction time, avoiding
+        the need for a running telemetry server.
+
+        Returns:
+            A freshly populated model snapshot.
+        """
+        model = POCSModel()
+        try:
+            status = self._pocs.status
+        except Exception:
+            return model
+
+        model.system.state = str(status.get("state", "unknown"))
+        model.system.next_state = str(status.get("next_state", ""))
+        model.system.run_active = bool(getattr(self._pocs, "do_states", False))
+
+        obs_data = status.get("observatory", {})
+        if obs_data:
+            model.system.connected = bool(obs_data.get("can_observe", False))
+
+            # Mount — boolean state from live properties; coordinates from status dict.
+            obs_obj = getattr(self._pocs, "observatory", None)
+            mount = getattr(obs_obj, "mount", None) if obs_obj else None
+            if mount is not None:
+                model.mount.connected = bool(getattr(mount, "is_initialized", False))
+                model.mount.is_parked = bool(getattr(mount, "is_parked", True))
+                model.mount.is_tracking = bool(getattr(mount, "is_tracking", False))
+                model.mount.is_slewing = bool(getattr(mount, "is_slewing", False))
+                mount_data = obs_data.get("mount", {})
+                model.mount.ha = _fmt_float(mount_data.get("current_ha"))
+                ra = mount_data.get("current_ra")
+                dec = mount_data.get("current_dec")
+                model.mount.ra = _fmt_float(ra) if ra is not None else "--"
+                model.mount.dec = _fmt_float(dec) if dec is not None else "--"
+                alt = mount_data.get("alt")
+                az = mount_data.get("az")
+                model.mount.alt = _fmt_float(alt) if alt is not None else "--"
+                model.mount.az = _fmt_float(az) if az is not None else "--"
+
+            # Cameras — read directly from observatory object.
+            cameras = getattr(obs_obj, "cameras", {}) or {}
+            for cam_name, cam in cameras.items():
+                cam_model = CameraModel(name=cam_name)
+                cam_model.connected = bool(getattr(cam, "is_connected", False))
+                cam_model.is_exposing = bool(getattr(cam, "is_exposing", False))
+                cam_model.temperature = _fmt_float(getattr(cam, "temperature", None))
+                filter_name = getattr(cam, "filter_name", None)
+                cam_model.filter_name = str(filter_name) if filter_name else "--"
+                model.cameras.append(cam_model)
+
+            # Current observation — under "observation" key in direct status.
+            obs_status = obs_data.get("observation", {})
+            if obs_status:
+                field_name = str(obs_status.get("field_name", ""))
+                model.scheduler.selected_field = field_name
+                model.scheduler.observing.field_name = field_name
+                model.scheduler.observing.exposure_s = float(obs_status.get("exptime", 0) or 0)
+                model.scheduler.observing.current_exp_num = int(obs_status.get("current_exp", 0) or 0)
+
+        return model
+
     def _scan(self) -> POCSModel:
         """Query telemetry and populate a fresh model snapshot.
 
         Returns:
             A newly populated model snapshot.
         """
+        # Prefer direct in-process access when POCS is available.
+        if self._pocs is not None:
+            return self._scan_direct()
+
         if self._client is None:
             try:
                 from panoptes.utils.telemetry.client import TelemetryClient

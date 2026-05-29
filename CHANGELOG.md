@@ -7,6 +7,7 @@
 - Added `pocs tui` command launching a curses terminal dashboard with live status panels (Dashboard, Operations, Help) and full lifecycle control (initialize, start/stop run, park, abort exposure, shutdown).
 - Added `src/panoptes/pocs/tui/bridge.py`: in-process command channel from TUI to POCS; actions run in a thread pool to avoid blocking the render loop.
 - TUI scanner (`scanner.py`) now reads live data from `TelemetryClient` to populate the `POCSModel` on every polling cycle.
+- TUI scanner falls back to direct in-process POCS reads when a `pocs` instance is provided (no telemetry server required).
 - TUI input layer simplified to menu-driven navigation (↑↓ Enter Esc Tab q); no memorised hotkeys required.
 - TUI OPERATIONS view provides a navigable menu tree covering all lifecycle, procedure, and hardware actions; destructive actions present a confirmation modal.
 - Added `--dev` option to `pocs update` to pull the latest commit from `main` instead of the latest tagged release.

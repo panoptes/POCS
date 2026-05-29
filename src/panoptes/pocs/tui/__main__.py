@@ -100,7 +100,7 @@ def main(stdscr: Any, pocs: Any = None) -> None:
     init_colors(stdscr)
 
     bridge = Bridge(pocs=pocs)
-    scanner = Scanner(interval_s=0.5)
+    scanner = Scanner(pocs=pocs, interval_s=0.5)
     layout = Layout()
     cmdlog = CmdLog()
     model = POCSModel()
@@ -190,10 +190,22 @@ def main(stdscr: Any, pocs: Any = None) -> None:
 def curses_main(pocs: Any = None) -> None:
     """Launch the curses application.
 
+    Loguru's stderr sink is removed before entering curses to prevent log
+    lines from corrupting the terminal display.  A minimal error-only sink is
+    restored on exit so the caller still sees critical messages.
+
     Args:
         pocs: Optional in-process POCS instance.
     """
-    curses.wrapper(lambda stdscr: main(stdscr, pocs=pocs))
+    import sys
+
+    from loguru import logger
+
+    logger.remove()  # silence all sinks while curses owns the terminal
+    try:
+        curses.wrapper(lambda stdscr: main(stdscr, pocs=pocs))
+    finally:
+        logger.add(sys.stderr, level="ERROR")
 
 
 if __name__ == "__main__":
