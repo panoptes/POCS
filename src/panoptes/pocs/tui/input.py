@@ -1,40 +1,49 @@
-"""Keyboard input mapping and dispatch shims for the TUI skeleton."""
+"""Navigation input handling for the POCS TUI.
+
+All interaction is menu-driven. No memorised hotkeys are required.
+"""
 
 from __future__ import annotations
 
 import curses
-from typing import Any
+
+NAV_UP = "up"
+NAV_DOWN = "down"
+NAV_LEFT = "left"
+NAV_RIGHT = "right"
+NAV_ENTER = "enter"
+NAV_ESCAPE = "escape"
+NAV_TAB = "tab"
+NAV_QUIT = "quit"
 
 KEY_MAP: dict[int, str] = {
-    ord("q"): "quit",
-    ord("p"): "park",
-    ord("a"): "abort_exposure",
-    ord(" "): "pause",
-    ord("/"): "filter",
-    ord("?"): "help",
+    curses.KEY_UP: NAV_UP,
+    curses.KEY_DOWN: NAV_DOWN,
+    curses.KEY_LEFT: NAV_LEFT,
+    curses.KEY_RIGHT: NAV_RIGHT,
+    curses.KEY_BTAB: NAV_LEFT,
     curses.KEY_F1: "view_dashboard",
     curses.KEY_F2: "view_hardware",
     curses.KEY_F3: "view_scheduler",
-    curses.KEY_F4: "view_safety",
-    curses.KEY_F5: "view_help",
-    curses.KEY_UP: "up",
-    curses.KEY_DOWN: "down",
-    curses.KEY_LEFT: "left",
-    curses.KEY_RIGHT: "right",
-    10: "enter",
-    13: "enter",
-    27: "escape",
+    curses.KEY_F4: "view_operations",
+    curses.KEY_F5: "view_config",
+    curses.KEY_F6: "view_help",
+    9: NAV_TAB,
+    10: NAV_ENTER,
+    13: NAV_ENTER,
+    27: NAV_ESCAPE,
+    ord("q"): NAV_QUIT,
+    ord("Q"): NAV_QUIT,
 }
 
 
-def dispatch(action: str, handlers: dict[str, Any] | None = None, **kwargs: Any) -> Any:
-    """Dispatch an action name to an optional handler table.
+def handle(key: int) -> str | None:
+    """Map a raw curses key code to a navigation action name.
 
-    TODO: Expand this dispatcher to support modal input and richer focus-aware routing.
+    Args:
+        key: Raw integer key code from ``stdscr.getch()``.
+
+    Returns:
+        Action name string, or ``None``.
     """
-    if not handlers:
-        return None
-    handler = handlers.get(action)
-    if handler is None:
-        return None
-    return handler(**kwargs)
+    return KEY_MAP.get(key)
