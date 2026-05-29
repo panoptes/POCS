@@ -615,7 +615,7 @@ def test_run_power_down_interrupt(observatory, valid_observation, pocstime_night
     assert pocs_thread.is_alive() is False
 
 
-def test_custom_state_file(observatory, temp_file, config_port):
+def test_custom_state_file(observatory, temp_file):
     state_table = POCS.load_state_table()
     assert isinstance(state_table, dict)
 

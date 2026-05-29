@@ -5,7 +5,6 @@ shared lightweight telemetry client handle used throughout the project.
 """
 
 import os
-import warnings
 from typing import Any
 
 from loguru import logger as _bootstrap_logger
@@ -26,26 +25,26 @@ class PanBase:
     Defines common properties for each class (e.g. logger, config, db).
     """
 
-    def __init__(self, config_host=None, config_port=None, *args, **kwargs):
+    def __init__(self, config_file=None, *args, **kwargs):
         self.__version__ = __version__
-
-        if config_host is not None or config_port is not None:
-            warnings.warn(
-                "config_host and config_port are deprecated and have no effect. "
-                "Config is now loaded directly from the PANOPTES config file.",
-                DeprecationWarning,
-                stacklevel=2,
-            )
 
         # Explicitly initialise the config store on first use so the resolved
         # config file path is logged before any config lookups are made.
         if not config_store._CONFIG:
-            loaded = config_store.init_config()
+            loaded = config_store.init_config(config_file=config_file)
             if loaded:
                 _bootstrap_logger.info(
                     f"PANOPTES config store initialised from {config_store._CONFIG_FILE!r} "
                     f"({len(loaded)} top-level keys)."
                 )
+                try:
+                    from panoptes.pocs.config import POCSConfig
+
+                    POCSConfig(**loaded)
+                except Exception as exc:
+                    _bootstrap_logger.warning(
+                        f"Config validation warning — some values may be incorrect: {exc}"
+                    )
             else:
                 _bootstrap_logger.debug(
                     "PANOPTES config store: no config file found. "
