@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import builtins
 import threading
 from unittest.mock import MagicMock, patch
 
@@ -13,7 +14,7 @@ from panoptes.utils.telemetry.server import EventRequest, TelemetryService
 from panoptes.pocs.utils.cli.telemetry import app as telemetry_cli_app
 from panoptes.pocs.utils.service.telemetry import _get_unit_id, make_firestore_hook, make_pocs_telemetry_app
 
-_REAL_IMPORT = __builtins__.__import__ if hasattr(__builtins__, "__import__") else __import__
+_REAL_IMPORT = builtins.__import__
 
 
 def _raise_for_google(name, *args, **kwargs):
@@ -61,13 +62,16 @@ class TestMakeFirestoreHook:
 
     def test_hook_skips_ephemeral_events(self, unit_id, mock_firestore):
         """Hook must be a no-op when store_permanently=False."""
+        mock_db = MagicMock()
+        mock_firestore.return_value = mock_db
+
         hook = make_firestore_hook(unit_id=unit_id)
 
         envelope = {"type": "power", "data": {}, "ts": "2026-01-01T00:00:00Z"}
         request = EventRequest(type="power", data={}, store_permanently=False)
         hook(envelope, request)
 
-        mock_firestore.assert_not_called()
+        mock_db.document.assert_not_called()
 
     def test_hook_sets_correct_firestore_paths(self, unit_id, mock_firestore):
         """Hook should write to units/{unit_id}/metadata collection."""
@@ -108,14 +112,18 @@ class TestMakeFirestoreHook:
         assert added_data["record_type"] == "weather"
 
     def test_hook_exception_propagates_for_fire_hook(self, unit_id, mock_firestore):
-        """Exceptions in the hook should propagate so TelemetryService can log them."""
-        mock_firestore.side_effect = Exception("no credentials")
+        """Exceptions during hook invocation should propagate so TelemetryService can log them."""
+        mock_db = MagicMock()
+        mock_unit_ref = MagicMock()
+        mock_unit_ref.set.side_effect = Exception("network error")
+        mock_db.document.return_value = mock_unit_ref
+        mock_firestore.return_value = mock_db
 
         hook = make_firestore_hook(unit_id=unit_id)
 
         envelope = {"type": "weather", "data": {}, "ts": "2026-01-01T00:00:00Z"}
         request = EventRequest(type="weather", data={}, store_permanently=True)
-        with pytest.raises(Exception, match="no credentials"):
+        with pytest.raises(Exception, match="network error"):
             hook(envelope, request)
 
     def test_hook_warns_and_returns_noop_when_google_not_installed(self, unit_id, caplog):
@@ -129,6 +137,20 @@ class TestMakeFirestoreHook:
         assert "google" in caplog.text.lower()
 
         # The returned hook must be a harmless no-op.
+        envelope = {"type": "weather", "data": {}, "ts": "2026-01-01T00:00:00Z"}
+        request = EventRequest(type="weather", data={}, store_permanently=True)
+        hook(envelope, request)  # must not raise
+
+    def test_hook_warns_and_returns_noop_when_client_creation_fails(self, unit_id, mock_firestore, caplog):
+        """When firestore.Client() raises at hook-creation time, warn and return a no-op."""
+        import logging
+
+        mock_firestore.side_effect = Exception("no credentials")
+        with caplog.at_level(logging.WARNING):
+            hook = make_firestore_hook(unit_id=unit_id)
+
+        assert "credentials" in caplog.text.lower()
+
         envelope = {"type": "weather", "data": {}, "ts": "2026-01-01T00:00:00Z"}
         request = EventRequest(type="weather", data={}, store_permanently=True)
         hook(envelope, request)  # must not raise

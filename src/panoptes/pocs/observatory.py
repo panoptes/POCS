@@ -510,7 +510,6 @@ class Observatory(PanBase):
     def process_observation(
         self,
         compress_fits: bool | None = None,
-        record_observations: bool | None = None,
         make_pretty_images: bool | None = None,
         plate_solve: bool | None = None,
         upload_image: bool | None = None,
@@ -522,7 +521,7 @@ class Observatory(PanBase):
             1. First checks to make sure that the file exists on the file system.
             2. Calls `_process_fits` with the filename and info, which is specific to each camera.
             3. Makes pretty images if requested.
-            4. Records observation metadata if requested.
+            4. Records observation metadata permanently to the telemetry store.
             5. Compress FITS files if requested.
             6. Sets the observation_event.
 
@@ -532,9 +531,6 @@ class Observatory(PanBase):
         Args:
             compress_fits (bool or None): If FITS files should be fpacked into .fits.fz.
                 If None (default), checks the `observations.compress_fits` config key.
-            record_observations (bool or None): If observation metadata should be saved.
-                If None (default), checks the `observations.record_observations`
-                config key.
             make_pretty_images (bool or None): Make a jpg from raw image.
                 If None (default), checks the `observations.make_pretty_images`
                 config key.

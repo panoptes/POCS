@@ -376,7 +376,7 @@ No separate server process is required.
 **Solution:**
 ```bash
 # Start the telemetry server (stores observatory state, sensor readings, and observations)
-panoptes-utils telemetry run --site-dir telemetry/
+pocs telemetry run --site-dir telemetry/
 ```
 
 The telemetry server must be running before POCS starts. It stores data as NDJSON files under `--site-dir`.

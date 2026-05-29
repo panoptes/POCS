@@ -46,14 +46,31 @@ def make_firestore_hook(unit_id: str | None = None):
         )
         return lambda envelope, request: None
 
-    resolved_unit_id = unit_id or _get_unit_id()
+    try:
+        resolved_unit_id = unit_id or _get_unit_id()
+    except ValueError as exc:
+        logger.warning(
+            "Firestore uploads disabled: {exc}. "
+            "Set the UNIT_ID environment variable or add 'pan_id' to your config.",
+            exc=exc,
+        )
+        return lambda envelope, request: None
+
+    try:
+        db = firestore.Client()
+    except Exception as exc:
+        logger.warning(
+            "Firestore uploads disabled: failed to create Firestore client: {exc!r}. "
+            "Check that Google Cloud credentials are configured.",
+            exc=exc,
+        )
+        return lambda envelope, request: None
 
     def _hook(envelope: dict[str, Any], request: EventRequest) -> None:
         if not request.store_permanently:
             return
 
         try:
-            db = firestore.Client()
             unit_ref = db.document(f"units/{resolved_unit_id}")
             metadata_records_ref = unit_ref.collection("metadata")
 
