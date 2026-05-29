@@ -195,7 +195,6 @@ cameras:
 ################################################################################
 observations:
   make_timelapse: True
-  record_observations: True
 
 ######################## Google Network ########################################
 # By default all images are stored on googlecloud servers and we also

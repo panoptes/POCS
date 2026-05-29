@@ -291,7 +291,6 @@ def run_quick_alignment(
             kwargs=dict(
                 plate_solve=True,
                 compress_fits=False,
-                record_observations=False,
                 make_pretty_images=False,
                 upload_image=False,
             ),

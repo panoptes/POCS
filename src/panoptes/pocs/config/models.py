@@ -110,7 +110,6 @@ class ObservationsConfig(BaseModel):
 
     make_timelapse: bool = False
     compress_fits: bool = True
-    record_observations: bool = True
     make_pretty_images: bool = True
     keep_jpgs: bool = False
     plate_solve: bool = False

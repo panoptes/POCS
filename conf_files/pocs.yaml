@@ -169,7 +169,6 @@ environment:
 observations:
   make_timelapse: False
   compress_fits: True
-  record_observations: True
   make_pretty_images: True
   keep_jpgs: False
   plate_solve: False
