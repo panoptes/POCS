@@ -9,16 +9,26 @@
 - `POCS.from_config` now accepts `simulators=["all"]` (a list) in addition to `simulators="all"` (a string).
 - Improvements to `pocs config setup`: base directory now defaults to the current working directory; added `--from` option to load a base config (auto-detects `conf_files/pocs.yaml` if present); added `--force` to skip the overwrite prompt; timezone detection now uses the system's `/etc/localtime` symlink (no subprocess, no confusing errors); GMT offset computed via Python's `datetime`; fixed double-colon in unit prompts.
 - POCS now auto-creates any missing configured directories (e.g. `images`, `resources`) on startup, logging each creation.
+- Added `pocs telemetry run` CLI command (`src/panoptes/pocs/utils/cli/telemetry.py`) — starts the POCS-flavoured telemetry server with an optional Firestore upload hook (`--no-upload` disables it for local dev).
+- Added `src/panoptes/pocs/utils/service/telemetry.py` with `make_firestore_hook()` and `make_pocs_telemetry_app()` — Firestore upload is non-blocking and non-fatal.
+- Added `pocs telemetry current` subcommand — thin wrapper around `panoptes-utils telemetry current` for live telemetry inspection.
+- Added `sequence_id` property to `Observation` (returns `seq_time`) so callers can use a stable name for an observation run before any exposures start.
+- Telemetry run directories are now `telemetry/runs/<sequence_id>/` (no unit-id prefix, images remain in `images/`); `seq_time` is stamped at scheduling time.
 
 ### Changed
 
 - `pocs update` now defaults to checking out the latest tagged release. Use `--dev` for the latest commit or `--branch` for a specific branch.
 - Config is now loaded and managed via `panoptes.utils.config.store` from `panoptes-utils>=0.5.0`; in-process changes use `persist=False` to avoid writing back to disk. #1448
 - Bumped `panoptes-utils` requirement to `>=0.5.0`. #1448
+- Migrated from `PanDB` / `PanFileDB` JSON database to `TelemetryClient` / telemetry server (`panoptes-utils` v0.5.0+). Requires the `panoptes-utils telemetry run` server running on port 6562 before POCS starts.
+- Added `pocs-telemetry-server` program to `pocs-supervisord.conf` (port 6562, `priority=1`, data stored in `/home/panoptes/telemetry`).
+- `make_firestore_hook` now emits a clear warning (`pip install panoptes-pocs[google]`) at hook-creation time when `google-cloud-firestore` is not installed, instead of a per-event error.
+- Telemetry persistence defaults updated: `state` transitions, `weather` readings, `power` readings, and `images` metadata are now written permanently to the NDJSON log. `safety` is written permanently only when values change (ephemeral otherwise). `status` remains ephemeral (current-snapshot only).
 
 ### Removed
 
 - Legacy HTTP config server; POCS no longer depends on a running config server process. #1448
+- Removed `pocs-metadata-uploader` supervisord program — Firestore metadata uploads are now handled directly inside the telemetry server process via `post_event_hooks`.
 
 
 ## 0.8.3 - 2026-05-26
@@ -41,6 +51,7 @@ Security and dependency updates, plus a new weather station setup command.
 - Updated `Pillow` to `>=12.2.0` (OOB write with invalid PSD tiles; FITS GZIP decompression bomb).
 - Updated `urllib3` to `>=2.7.0` (decompression-bomb bypass; sensitive header forwarding).
 - Updated `pyopenssl` to `>=26.0.0` (DTLS cookie callback buffer overflow).
+
 
 ## 0.8.2 - 2026-04-15
 

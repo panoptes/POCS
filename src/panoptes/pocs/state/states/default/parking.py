@@ -9,6 +9,13 @@ def on_enter(event_data):
     """Handle transition into the parking state."""
     pocs = event_data.model
 
+    # Stop the telemetry run for the current observation (if one is active).
+    try:
+        pocs.db.stop_run()
+        pocs.logger.debug("Telemetry run stopped")
+    except Exception as e:
+        pocs.logger.warning(f"Unable to stop telemetry run: {e!r}")
+
     # Clear any current observation
     pocs.observatory.current_observation = None
     pocs.observatory.current_offset_info = None

@@ -41,7 +41,7 @@ class WeatherStation(PanBase):
         self.serial_port = serial_port or conf.get("serial_port", "/dev/ttyUSB0")
         self.name = name
         self.collection_name = db_collection
-        self.store_permanently = conf.pop("store_permanently", False)
+        self.store_permanently = conf.pop("store_permanently", True)
 
         self.logger.debug(f"Setting up weather station connection for {name=} on {self.serial_port}")
         self.weather_station = CloudSensor(serial_port=self.serial_port, **conf)
@@ -88,11 +88,11 @@ class WeatherStation(PanBase):
         return reading
 
     def record(self):
-        """Capture a fresh reading and persist it to the database.
+        """Capture a fresh reading and persist it to the telemetry store.
 
         Calls :meth:`aag.weather.CloudSensor.get_reading` to obtain an averaged
-        sensor snapshot, then stores it in the ``weather`` database collection via
-        :meth:`panoptes.utils.db.PanDB.insert_current`.
+        sensor snapshot, then stores it in the ``weather`` collection via
+        :meth:`panoptes.utils.telemetry.client.TelemetryClient.insert_current`.
 
         The stored document contains the same fields described in :attr:`status`.
         The two fields that POCS reads back when evaluating safety are:

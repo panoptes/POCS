@@ -30,6 +30,13 @@ def test_remote_sensor(remote_response, remote_response_power):
     endpoint_url_with_power = "http://192.168.1.241:8080"
     responses.add(responses.GET, endpoint_url_no_power, json=remote_response)
     responses.add(responses.GET, endpoint_url_with_power, json=remote_response_power)
+    # Mock the telemetry server event endpoint used by TelemetryClient.
+    responses.add(
+        responses.POST,
+        "http://localhost:6572/event",
+        json={"seq": 1, "ts": "2020-01-01T08:00:00.000Z", "type": "power", "data": {}, "meta": {}},
+        status=200,
+    )
 
     remote_monitor = remote.RemoteMonitor(
         sensor_name="test_remote", endpoint_url=endpoint_url_no_power, db_type="memory"

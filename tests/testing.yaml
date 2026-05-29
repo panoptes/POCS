@@ -35,9 +35,9 @@ directories:
   fields: conf_files/fields
   mounts: resources/mounts
 
-db:
-  name: panoptes_testing
-  type: file
+telemetry:
+  host: localhost
+  port: 6572
 
 scheduler:
   type: panoptes.pocs.scheduler.dispatch
@@ -191,7 +191,6 @@ cameras:
 ################################################################################
 observations:
   make_timelapse: True
-  record_observations: True
 
 ######################## Google Network ########################################
 # By default all images are stored on googlecloud servers and we also

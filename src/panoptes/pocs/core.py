@@ -86,6 +86,15 @@ class POCS(PanStateMachine, PanBase):
 
         self.say("Hi there!")
 
+        # Clear any stale telemetry run left over from a previous session so
+        # that events recorded before the first scheduling cycle are not
+        # incorrectly associated with an old run.
+        try:
+            self.db.stop_run()
+            self.logger.debug("Stopped stale telemetry run on POCS init")
+        except Exception:
+            pass  # No active run — that's expected on a clean start.
+
     @property
     def is_initialized(self) -> bool:
         """Indicates if POCS has been initialized or not."""
@@ -402,8 +411,13 @@ class POCS(PanStateMachine, PanBase):
             )
         safe = all([v for k, v in is_safe_values.items() if k not in ignore])
 
-        # Insert safety reading
-        self.db.insert_current("safety", is_safe_values, store_permanently=False)
+        # Insert safety reading — only persist when values change to avoid
+        # flooding the telemetry log at loop cadence.
+        if is_safe_values != getattr(self, "_last_safety_values", None):
+            self._last_safety_values = is_safe_values
+            self.db.insert_current("safety", is_safe_values)
+        else:
+            self.db.insert_current("safety", is_safe_values, store_permanently=False)
 
         if not safe:
             if no_warning is False:
@@ -581,7 +595,7 @@ class POCS(PanStateMachine, PanBase):
                 with suppress(KeyError):
                     has_power = bool(record["data"][power_key])
 
-            date = record["date"].replace(tzinfo=None)  # current_time is timezone naive
+            date = Time(record["date"]).datetime  # ts is an ISO string; Time parses it as UTC naive
             age = (current_time().datetime - date).total_seconds()
 
             self.logger.debug(f"Power Safety: {has_power} [{age:.0f}s old - {date:%m-%d %H:%M:%S}]")

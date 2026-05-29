@@ -33,10 +33,9 @@ directories:
   mounts: resources/mounts
   fields: conf_files/fields
 
-db:
-  name: panoptes
-  type: file
-  folder: json_store
+telemetry:
+  host: localhost
+  port: 6562
 
 wait_delay: 180 # time in seconds before checking safety/etc while waiting.
 max_transition_attempts: 5  # number of transitions attempts.
@@ -170,7 +169,6 @@ environment:
 observations:
   make_timelapse: False
   compress_fits: True
-  record_observations: True
   make_pretty_images: True
   keep_jpgs: False
   plate_solve: False

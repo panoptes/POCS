@@ -1,22 +1,23 @@
 """Common base utilities for POCS classes.
 
 Provides PanBase, which centralizes access to configuration, logging, and the
-shared lightweight database handle used throughout the project.
+shared lightweight telemetry client handle used throughout the project.
 """
 
+import os
 import warnings
 from typing import Any
 
 from loguru import logger as _bootstrap_logger
 
 from panoptes.utils.config import store as config_store
-from panoptes.utils.database import PanDB
+from panoptes.utils.telemetry import TelemetryClient
 
 from panoptes.pocs import __version__, hardware
 from panoptes.pocs.utils.logger import get_logger
 
-# Global database.
-PAN_DB_OBJ = None
+# Global telemetry client.
+PAN_TELEMETRY_OBJ = None
 
 
 class PanBase:
@@ -61,14 +62,23 @@ class PanBase:
             log_dir=kwargs.get("log_dir", log_dir), cloud_logging_level=cloud_logging_level
         )
 
-        global PAN_DB_OBJ
-        if PAN_DB_OBJ is None:
-            db_name = kwargs.get("db_name", self.get_config("db.name", default="panoptes"))
-            db_folder = kwargs.get("db_folder", self.get_config("db.folder", default="json_store"))
-            db_type = kwargs.get("db_type", self.get_config("db.type", default="file"))
-            PAN_DB_OBJ = PanDB(db_name=db_name, storage_dir=db_folder, db_type=db_type)
+        global PAN_TELEMETRY_OBJ
+        if "db" in kwargs:
+            PAN_TELEMETRY_OBJ = kwargs.pop("db")
+        elif PAN_TELEMETRY_OBJ is None:
+            telemetry_host = kwargs.get(
+                "telemetry_host",
+                os.getenv("PANOPTES_TELEMETRY_HOST", self.get_config("telemetry.host", default="localhost")),
+            )
+            telemetry_port = int(
+                kwargs.get(
+                    "telemetry_port",
+                    os.getenv("PANOPTES_TELEMETRY_PORT", self.get_config("telemetry.port", default=6562)),
+                )
+            )
+            PAN_TELEMETRY_OBJ = TelemetryClient(host=telemetry_host, port=telemetry_port)
 
-        self.db = PAN_DB_OBJ
+        self.db = PAN_TELEMETRY_OBJ
 
     def get_config(
         self, key: str | None = None, default: Any | None = None, remember: bool = False, *args, **kwargs
