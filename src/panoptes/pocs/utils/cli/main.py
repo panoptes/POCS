@@ -45,8 +45,6 @@ app.add_typer(weather.app, name="weather", help="Interact with weather station s
 @app.callback()
 def main(
     context: typer.Context,
-    config_host: str = typer.Option("127.0.0.1", hidden=True),
-    config_port: int = typer.Option(6563, hidden=True),
     verbose: bool = False,
 ):
     """Top-level CLI callback to set shared options for subcommands.
@@ -60,8 +58,6 @@ def main(
     """
     state.update(
         {
-            "config_host": config_host,
-            "config_port": config_port,
             "verbose": verbose,
         }
     )

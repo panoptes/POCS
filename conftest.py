@@ -202,11 +202,6 @@ def config_host():
     return "localhost"  # kept for backward compat; no longer used
 
 
-@pytest.fixture(scope="session")
-def config_port():
-    return 6563  # kept for backward compat; no longer used
-
-
 @pytest.fixture
 def temp_file(tmp_path):
     d = tmp_path
