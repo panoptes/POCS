@@ -91,8 +91,31 @@ class SystemModel:
     next_state: str = ""
     initialized: bool = False
     connected: bool = False
+    run_active: bool = False
     free_space: float = 0.0
     uptime: str = "--"
+
+
+@dataclass(slots=True)
+class ModalModel:
+    """Active confirmation dialog, if any."""
+
+    active: bool = False
+    prompt: str = ""
+    choices: list[str] = field(default_factory=list)
+    selected: int = 0
+    callback: str = ""
+
+
+@dataclass(slots=True)
+class ConfigEditorModel:
+    """State for the CONFIG view."""
+
+    keys: list[str] = field(default_factory=list)
+    values: list[str] = field(default_factory=list)
+    cursor: int = 0
+    editing: bool = False
+    edit_buffer: str = ""
 
 
 @dataclass(slots=True)
@@ -106,6 +129,8 @@ class POCSModel:
     focuser: FocuserModel = field(default_factory=FocuserModel)
     dome: DomeModel = field(default_factory=DomeModel)
     system: SystemModel = field(default_factory=SystemModel)
+    modal: ModalModel = field(default_factory=ModalModel)
+    config_editor: ConfigEditorModel = field(default_factory=ConfigEditorModel)
     scan_time_ms: float = 0.0
     scan_count: int = 0
 
@@ -113,8 +138,10 @@ class POCSModel:
 __all__ = [
     "SPARKLINE_LEN",
     "CameraModel",
+    "ConfigEditorModel",
     "DomeModel",
     "FocuserModel",
+    "ModalModel",
     "MountModel",
     "ObservationModel",
     "POCSModel",

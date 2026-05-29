@@ -4,6 +4,28 @@
 
 ### Added
 
+- Added `pocs tui` command launching a curses terminal dashboard with live status panels (Dashboard, Operations, Help) and full lifecycle control (initialize, start/stop run, park, abort exposure, shutdown).
+- Added `src/panoptes/pocs/tui/bridge.py`: in-process command channel from TUI to POCS; actions run in a thread pool to avoid blocking the render loop.
+- TUI scanner (`scanner.py`) now reads live data from `TelemetryClient` to populate the `POCSModel` on every polling cycle.
+- TUI scanner falls back to direct in-process POCS reads when a `pocs` instance is provided (no telemetry server required).
+- TUI input layer simplified to menu-driven navigation (↑↓ Enter Esc Tab q); no memorised hotkeys required.
+- TUI OPERATIONS view provides a navigable menu tree covering all lifecycle, procedure, and hardware actions; destructive actions present a confirmation modal.
+- Added `--dev` option to `pocs update` to pull the latest commit from `main` instead of the latest tagged release.
+- Added `--branch/-b` option to `pocs update` to update from a specific branch (bypasses the tagged-release requirement).
+- `POCS.from_config` now accepts `simulators=["all"]` (a list) in addition to `simulators="all"` (a string).
+- Improvements to `pocs config setup`: base directory now defaults to the current working directory; added `--from` option to load a base config (auto-detects `conf_files/pocs.yaml` if present); added `--force` to skip the overwrite prompt; timezone detection now uses the system's `/etc/localtime` symlink (no subprocess, no confusing errors); GMT offset computed via Python's `datetime`; fixed double-colon in unit prompts.
+- POCS now auto-creates any missing configured directories (e.g. `images`, `resources`) on startup, logging each creation.
+- Added `pocs telemetry run` CLI command (`src/panoptes/pocs/utils/cli/telemetry.py`) — starts the POCS-flavoured telemetry server with an optional Firestore upload hook (`--no-upload` disables it for local dev).
+- Added `src/panoptes/pocs/utils/service/telemetry.py` with `make_firestore_hook()` and `make_pocs_telemetry_app()` — Firestore upload is non-blocking and non-fatal.
+- Added `pocs telemetry current` subcommand — thin wrapper around `panoptes-utils telemetry current` for live telemetry inspection.
+- Added `sequence_id` property to `Observation` (returns `seq_time`) so callers can use a stable name for an observation run before any exposures start.
+- Telemetry run directories are now `telemetry/runs/<sequence_id>/` (no unit-id prefix, images remain in `images/`); `seq_time` is stamped at scheduling time.
+- `PanBase.__init__` now accepts a `config_file` parameter, allowing hardware sub-processes to load a specific config file independently via `init_config(config_file=...)`.
+- `PanBase` now validates the loaded config against `POCSConfig` (Pydantic) at startup; a warning is logged if validation fails rather than crashing.
+- Added `docs/tui_plan.md` design document and initial `panoptes.pocs.tui` skeleton for a curses dashboard inspired by milk-CTRL.
+
+### Changed
+
 - Added `--dev` option to `pocs update` to pull the latest commit from `main` instead of the latest tagged release.
 - Added `--branch/-b` option to `pocs update` to update from a specific branch (bypasses the tagged-release requirement).
 - `POCS.from_config` now accepts `simulators=["all"]` (a list) in addition to `simulators="all"` (a string).

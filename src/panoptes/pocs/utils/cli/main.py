@@ -24,6 +24,7 @@ from panoptes.pocs.utils.cli import (
     run,
     sensor,
     telemetry,
+    tui,
     weather,
 )
 
@@ -39,6 +40,7 @@ app.add_typer(power.app, name="power", help="Interact with power relays.")
 app.add_typer(run.app, name="run", help="Run POCS!")
 app.add_typer(sensor.app, name="sensor", help="Interact with system sensors.")
 app.add_typer(telemetry.app, name="telemetry", help="Run the POCS telemetry server.")
+app.add_typer(tui.app, name="tui", help="Launch the POCS terminal dashboard.")
 app.add_typer(weather.app, name="weather", help="Interact with weather station service.")
 
 
