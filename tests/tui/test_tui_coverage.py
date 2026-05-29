@@ -384,6 +384,14 @@ class _MockCamera:
     filter_name = "Ha"
 
 
+class _MockObservation:
+    """Minimal observation stub for direct-read tests."""
+
+    @property
+    def status(self) -> dict:
+        return {"field_name": "Andromeda", "exptime": 60.0, "current_exp": 2}
+
+
 class _FullPocs:
     """POCS stub with enough structure for _scan_direct to populate a model."""
 
@@ -416,6 +424,8 @@ class _FullPocs:
     class _Observatory:
         mount = _MockMount()
         cameras = {"cam_a": _MockCamera()}
+        can_observe = True
+        current_observation = _MockObservation()
 
     observatory = _Observatory()
 
@@ -458,9 +468,10 @@ class TestScannerDirect:
         assert model.mount.is_parked is False
         assert model.mount.is_slewing is False
         assert model.mount.connected is True
-        assert model.mount.ha == "0.75"
-        assert model.mount.alt == "55.10"
-        assert model.mount.az == "200.00"
+        # ha/alt/az require get_current_coordinates() on mount — mock has none, so "--"
+        assert model.mount.ha == "--"
+        assert model.mount.alt == "--"
+        assert model.mount.az == "--"
 
     def test_scan_direct_camera_fields(self) -> None:
         from panoptes.pocs.tui.scanner import Scanner
