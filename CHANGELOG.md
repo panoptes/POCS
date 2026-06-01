@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## 0.8.5 - 2026-06-01
+
 ### Fixed
 
 - Fixed `pocs update` failing with `fatal: couldn't find remote ref --tags` by passing `tags=True` as a keyword argument to `origin.fetch()` instead of a positional refspec string.
