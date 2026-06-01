@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Changed
+
+- **Refactored POCS core:** Simplified the `POCS` class hierarchy by merging `PanStateMachine` directly into it and removing `panoptes/pocs/state/machine.py`.
+
 ## 0.8.4 - 2026-06-01
 
 ### Added

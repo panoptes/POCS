@@ -4,7 +4,7 @@ Defines light wrappers for domain-specific conditions such as camera busy,
 image saturation, twilight constraints, and safety violations.
 """
 
-from panoptes.utils.error import PanError
+from panoptes.utils.error import InvalidConfig, PanError  # noqa: F401
 
 
 class PocsError(PanError):
