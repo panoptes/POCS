@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## 0.8.4 - 2026-06-01
+
 ### Added
 
 - Added `--dev` option to `pocs update` to pull the latest commit from `main` instead of the latest tagged release.
