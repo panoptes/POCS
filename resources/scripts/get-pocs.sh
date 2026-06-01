@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-BRANCH="${BRANCH:-develop}"
+BRANCH="${BRANCH:-main}"
 
 # We don't check certificate because the Pi doesn't have an RTC.
 # The first install step is to fix system time.
