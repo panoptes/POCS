@@ -140,7 +140,7 @@ def update_repo(
         try:
             origin = repo.remotes.origin
             progress.update(t_update, description="Fetching remote information...")
-            origin.fetch("--tags")
+            origin.fetch(tags=True)
 
             # If local dir is dirty, stash changes.
             if repo.is_dirty():

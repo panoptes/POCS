@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- Fixed `pocs update` failing with `fatal: couldn't find remote ref --tags` by passing `tags=True` as a keyword argument to `origin.fetch()` instead of a positional refspec string.
+
 ### Changed
 
 - **Refactored POCS core:** Simplified the `POCS` class hierarchy by merging `PanStateMachine` directly into it and removing `panoptes/pocs/state/machine.py`.
