@@ -2,6 +2,17 @@
 
 ## [Unreleased]
 
+## 0.8.6 - 2026-06-09
+
+### Changed
+
+- Simplified the POCS state machine by removing the intermediate `pointing`, `tracking`, and `analyzing` states; the observation loop now goes directly `slewing → observing → scheduling`. #1378
+
+### Removed
+
+- Removed the `Image` class (`images.py`) and its tests (`test_images.py`) as they are no longer used by the simplified state machine. #1378
+- Removed the iOptron mount tests (`test_ioptron.py`). #1378
+
 ## 0.8.5 - 2026-06-01
 
 ### Fixed
