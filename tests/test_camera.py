@@ -873,3 +873,18 @@ def test_exposure_fraction(camera, tmpdir):
         assert header_tiny["EXPTIME"] == min_exposure.value
     else:
         assert header_tiny["EXPTIME"] == 1e-20
+
+
+def test_canon_shutterspeed_index():
+    from panoptes.pocs.camera.gphoto.canon import Camera as CanonCamera
+
+    # Test valid discrete speeds
+    assert CanonCamera.get_shutterspeed_index(0.25) == CanonCamera.get_shutterspeed_index("1/4")
+
+    # Test scientific notation
+    assert CanonCamera.get_shutterspeed_index(1e-2) == CanonCamera.get_shutterspeed_index("1/100")
+
+    # Test tiny value return_minimum
+    # min discrete speed is 1/4000
+    idx_4000 = list(CanonCamera._shutter_speeds.keys()).index("1/4000")
+    assert CanonCamera.get_shutterspeed_index(1e-20, return_minimum=True) == idx_4000
