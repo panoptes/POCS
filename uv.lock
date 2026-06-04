@@ -2406,7 +2406,7 @@ requires-dist = [
     { name = "certifi", specifier = ">=2024.2.2" },
     { name = "click", specifier = ">=8.2.1" },
     { name = "cryptography", specifier = ">=46.0.5" },
-    { name = "fastapi", extras = ["standard"], specifier = "==0.136.3" },
+    { name = "fastapi", extras = ["standard"], specifier = ">=0.136.3" },
     { name = "gitpython" },
     { name = "google-cloud-firestore", marker = "extra == 'google'" },
     { name = "google-cloud-logging", marker = "extra == 'google'" },
