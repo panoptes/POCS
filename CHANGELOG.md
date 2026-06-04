@@ -6,6 +6,10 @@
 
 - Updated `fastapi` to `0.136.3` and `panoptes-utils[config,images]` to `>0.3.0,<0.4.0`.
 
+### Fixed
+
+- Fixed scheduler tests time collision workaround by utilizing `POCSTIME` instead of `time.sleep`. #1451
+
 ## 0.8.6 - 2026-06-09
 
 ### Changed

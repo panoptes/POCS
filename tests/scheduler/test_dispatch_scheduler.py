@@ -1,5 +1,4 @@
 import os
-import time
 
 import pytest
 import yaml
@@ -191,8 +190,9 @@ def test_continue_observation(scheduler):
     assert scheduler.current_observation is None
 
 
-def test_set_observation_then_reset(scheduler):
+def test_set_observation_then_reset(scheduler, monkeypatch):
     obs_time = Time("2016-08-13 05:00:00")
+    monkeypatch.setenv("POCSTIME", obs_time.to_value("iso"))
     scheduler.get_observation(time=obs_time)
 
     obs1 = scheduler.current_observation
@@ -202,6 +202,7 @@ def test_set_observation_then_reset(scheduler):
     scheduler.observations[obs1.name].priority = 1.0
 
     obs_time = Time("2016-08-13 05:30:00")
+    monkeypatch.setenv("POCSTIME", obs_time.to_value("iso"))
     scheduler.get_observation(time=obs_time)
     obs2 = scheduler.current_observation
 
@@ -209,10 +210,8 @@ def test_set_observation_then_reset(scheduler):
 
     scheduler.observations[obs1.name].priority = 500.0
 
-    # Sleep to ensure a different wall-clock second for the new seq_time.
-    time.sleep(1)
-
     obs_time = Time("2016-08-13 06:00:00")
+    monkeypatch.setenv("POCSTIME", obs_time.to_value("iso"))
     scheduler.get_observation(time=obs_time)
     obs3 = scheduler.current_observation
     obs3_seq_time = obs3.seq_time
@@ -254,22 +253,23 @@ def test_new_observation_seq_time(scheduler):
     assert scheduler.current_observation.seq_time is not None
 
 
-def test_observed_list(scheduler):
+def test_observed_list(scheduler, monkeypatch):
     assert len(scheduler.observed_list) == 0
 
     time0 = Time("2016-09-11 07:08:00")
+    monkeypatch.setenv("POCSTIME", time0.to_value("iso"))
     scheduler.get_observation(time=time0)
     assert len(scheduler.observed_list) == 1
 
     # A few hours later should now be different
-    time.sleep(1)
     time1 = Time("2016-09-11 10:08:00")
+    monkeypatch.setenv("POCSTIME", time1.to_value("iso"))
     scheduler.get_observation(time=time1)
     assert len(scheduler.observed_list) == 2
 
     # A few hours later should be the same
-    time.sleep(1)
     time2 = Time("2016-09-11 14:38:00")
+    monkeypatch.setenv("POCSTIME", time2.to_value("iso"))
     scheduler.get_observation(time=time2)
     assert len(scheduler.observed_list) == 2
 
