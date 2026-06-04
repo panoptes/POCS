@@ -216,3 +216,14 @@ def test_create_observation_exptime_fraction(field):
     # Test setter with string fraction
     obs.exptime = "1/10"
     assert obs.exptime == 0.1 * u.second
+
+    # Test scientific notation
+    obs.exptime = "1e-5"
+    assert obs.exptime == 1e-5 * u.second
+
+    # Test tiny value (scientific notation and fraction)
+    obs.exptime = "1e-20"
+    assert obs.exptime == 1e-20 * u.second
+
+    obs.exptime = "1/10000000000000000"
+    assert obs.exptime == 1e-16 * u.second

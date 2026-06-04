@@ -854,3 +854,22 @@ def test_exposure_fraction(camera, tmpdir):
     assert os.path.exists(fits_path)
     header = fits_utils.getheader(fits_path)
     assert header["EXPTIME"] == 0.25
+
+    # Test scientific notation
+    fits_path_sci = str(tmpdir.join("test_exposure_sci.fits"))
+    camera.take_exposure(seconds="1e-2", filename=fits_path_sci, blocking=True)
+    assert os.path.exists(fits_path_sci)
+    header_sci = fits_utils.getheader(fits_path_sci)
+    assert header_sci["EXPTIME"] == 0.01
+
+    # Test tiny value (should be clipped to min_exposure for ZWO, or remain 1e-20)
+    fits_path_tiny = str(tmpdir.join("test_exposure_tiny.fits"))
+    camera.take_exposure(seconds="1e-20", filename=fits_path_tiny, blocking=True)
+    assert os.path.exists(fits_path_tiny)
+    header_tiny = fits_utils.getheader(fits_path_tiny)
+
+    if hasattr(camera, "_control_info") and "EXPOSURE" in camera._control_info:
+        min_exposure = camera._control_info["EXPOSURE"]["min_value"]
+        assert header_tiny["EXPTIME"] == min_exposure.value
+    else:
+        assert header_tiny["EXPTIME"] == 1e-20
