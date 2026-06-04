@@ -7,6 +7,7 @@ represent an observing block (target field, exposure timing/sets, and progress).
 import os
 from collections import OrderedDict, defaultdict
 from contextlib import suppress
+from fractions import Fraction
 from pathlib import Path
 
 from astropy import units as u
@@ -97,6 +98,12 @@ class Observation(PanBase):
         if exptime is None:
             exptime = self.get_config("cameras.defaults.exptime", default=120)
 
+        if isinstance(exptime, str):
+            try:
+                exptime = float(Fraction(exptime.strip()))
+            except (ValueError, TypeError):
+                pass
+
         exptime = get_quantity_value(exptime, u.second) * u.second
 
         if not isinstance(field, Field):
@@ -183,6 +190,11 @@ class Observation(PanBase):
     @exptime.setter
     def exptime(self, value):
         """Set the exposure time (Quantity or seconds)."""
+        if isinstance(value, str):
+            try:
+                value = float(Fraction(value.strip()))
+            except (ValueError, TypeError):
+                pass
         self._exptime = get_quantity_value(value, u.second) * u.second
 
     @property

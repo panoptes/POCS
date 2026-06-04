@@ -206,3 +206,13 @@ def test_observation_from_dict_without_exptime():
     # Should use default from config (120 seconds in test config)
     assert obs.exptime == 120 * u.second
     assert obs.priority == 100
+
+
+def test_create_observation_exptime_fraction(field):
+    """Test that exptime can be entered as a string fraction."""
+    obs = Observation(field, exptime="1/4")
+    assert obs.exptime == 0.25 * u.second
+
+    # Test setter with string fraction
+    obs.exptime = "1/10"
+    assert obs.exptime == 0.1 * u.second

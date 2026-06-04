@@ -844,3 +844,13 @@ def test_move_filterwheel_focus_offset(camera):
             assert new_position == initial_position + offset
         else:
             assert new_position == initial_position
+
+
+def test_exposure_fraction(camera, tmpdir):
+    """Test that take_exposure accepts exposure time as a string fraction."""
+    fits_path = str(tmpdir.join("test_exposure_fraction.fits"))
+    # A 1/4 second exposure (should parse as 0.25).
+    camera.take_exposure(seconds="1/4", filename=fits_path, blocking=True)
+    assert os.path.exists(fits_path)
+    header = fits_utils.getheader(fits_path)
+    assert header["EXPTIME"] == 0.25
