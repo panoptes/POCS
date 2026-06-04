@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Changed
+
+- Updated `fastapi` to `0.136.3` and `panoptes-utils[config,images]` to `>0.3.0,<0.4.0`.
+
 ## 0.8.6 - 2026-06-09
 
 ### Changed
