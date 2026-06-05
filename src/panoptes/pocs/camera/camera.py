@@ -13,6 +13,7 @@ import time
 import warnings
 from abc import ABCMeta, abstractmethod
 from contextlib import suppress
+from fractions import Fraction
 from pathlib import Path
 
 import astropy.units as u
@@ -586,6 +587,12 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
             self.logger.warning(f"Cameras not ready: {self.readiness!r}")
             raise error.PanError(f"Attempt to start exposure on {self} while not ready.")
 
+        if isinstance(seconds, str):
+            try:
+                seconds = float(Fraction(seconds.strip()))
+            except (ValueError, TypeError):
+                pass
+
         if not isinstance(seconds, u.Quantity):
             seconds = seconds * u.second
 
@@ -1017,6 +1024,11 @@ class AbstractCamera(PanBase, metaclass=ABCMeta):
         # The exptime header data is set as part of observation but can
         # be overridden by passed parameter so update here.
         exptime = kwargs.get("exptime", get_quantity_value(observation.exptime, unit=u.second))
+        if isinstance(exptime, str):
+            try:
+                exptime = float(Fraction(exptime.strip()))
+            except (ValueError, TypeError):
+                pass
 
         # Camera metadata
         metadata = {

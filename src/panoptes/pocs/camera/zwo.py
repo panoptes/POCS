@@ -8,6 +8,7 @@ and basic video capture.
 import threading
 import time
 from contextlib import suppress
+from fractions import Fraction
 
 import numpy as np
 from astropy import units as u
@@ -317,6 +318,12 @@ class Camera(AbstractSDKCamera):
         Returns:
             threading.Thread: The readout thread
         """
+        if isinstance(seconds, str):
+            try:
+                seconds = float(Fraction(seconds.strip()))
+            except (ValueError, TypeError):
+                pass
+
         # Ensure seconds is a Quantity
         if not isinstance(seconds, u.Quantity):
             seconds = seconds * u.second

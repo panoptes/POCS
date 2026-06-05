@@ -5,6 +5,7 @@ Implements exposure sequencing, property setup, and a shutterspeed index helper
 compatible with the CLI-driven gphoto2 interface.
 """
 
+from fractions import Fraction
 from functools import lru_cache
 
 from astropy import units as u
@@ -23,6 +24,62 @@ class Camera(AbstractGPhotoCamera):
     Provides Canon-specific property defaults and exposure sequencing on top of
     AbstractGPhotoCamera.
     """
+
+    _shutter_speeds = {
+        "bulb": "bulb",
+        "30": 30,
+        "25": 25,
+        "20": 20,
+        "15": 15,
+        "13": 13,
+        "10.3": 10.3,
+        "8": 8,
+        "6.3": 6.3,
+        "5": 5,
+        "4": 4,
+        "3.2": 3.2,
+        "2.5": 2.5,
+        "2": 2,
+        "1.6": 1.6,
+        "1.3": 1.3,
+        "1": 1,
+        "0.8": 0.8,
+        "0.6": 0.6,
+        "0.5": 0.5,
+        "0.4": 0.4,
+        "0.3": 0.3,
+        "1/4": 1 / 4,
+        "1/5": 1 / 5,
+        "1/6": 1 / 6,
+        "1/8": 1 / 8,
+        "1/10": 1 / 10,
+        "1/13": 1 / 13,
+        "1/15": 1 / 15,
+        "1/20": 1 / 20,
+        "1/25": 1 / 25,
+        "1/30": 1 / 30,
+        "1/40": 1 / 40,
+        "1/50": 1 / 50,
+        "1/60": 1 / 60,
+        "1/80": 1 / 80,
+        "1/100": 1 / 100,
+        "1/125": 1 / 125,
+        "1/160": 1 / 160,
+        "1/200": 1 / 200,
+        "1/250": 1 / 250,
+        "1/320": 1 / 320,
+        "1/400": 1 / 400,
+        "1/500": 1 / 500,
+        "1/640": 1 / 640,
+        "1/800": 1 / 800,
+        "1/1000": 1 / 1000,
+        "1/1250": 1 / 1250,
+        "1/1600": 1 / 1600,
+        "1/2000": 1 / 2000,
+        "1/2500": 1 / 2500,
+        "1/3200": 1 / 3200,
+        "1/4000": 1 / 4000,
+    }
 
     def __init__(
         self,
@@ -131,6 +188,15 @@ class Camera(AbstractGPhotoCamera):
 
         shutterspeed_idx = self.get_shutterspeed_index(seconds=seconds, return_minimum=True)
 
+        # Update FITS header with actual shutterspeed if not in bulb mode
+        shutter_speed_keys = list(self._shutter_speeds.keys())
+        if shutterspeed_idx < len(shutter_speed_keys):
+            actual_speed_str = shutter_speed_keys[shutterspeed_idx]
+            if actual_speed_str != "bulb":
+                actual_seconds = float(Fraction(actual_speed_str))
+                if header is not None:
+                    header.set("EXPTIME", actual_seconds, "Seconds")
+
         cmd_args = [
             "--set-config",
             f"iso={iso}",
@@ -190,72 +256,17 @@ class Camera(AbstractGPhotoCamera):
         seconds = get_quantity_value(seconds, unit="second")
         # TODO derive these from `load_properties`.
         # The index corresponds to what gphoto2 expects.
-        shutter_speeds = {
-            "bulb": "bulb",
-            "30": 30,
-            "25": 25,
-            "20": 20,
-            "15": 15,
-            "13": 13,
-            "10.3": 10.3,
-            "8": 8,
-            "6.3": 6.3,
-            "5": 5,
-            "4": 4,
-            "3.2": 3.2,
-            "2.5": 2.5,
-            "2": 2,
-            "1.6": 1.6,
-            "1.3": 1.3,
-            "1": 1,
-            "0.8": 0.8,
-            "0.6": 0.6,
-            "0.5": 0.5,
-            "0.4": 0.4,
-            "0.3": 0.3,
-            "1/4": 1 / 4,
-            "1/5": 1 / 5,
-            "1/6": 1 / 6,
-            "1/8": 1 / 8,
-            "1/10": 1 / 10,
-            "1/13": 1 / 13,
-            "1/15": 1 / 15,
-            "1/20": 1 / 20,
-            "1/25": 1 / 25,
-            "1/30": 1 / 30,
-            "1/40": 1 / 40,
-            "1/50": 1 / 50,
-            "1/60": 1 / 60,
-            "1/80": 1 / 80,
-            "1/100": 1 / 100,
-            "1/125": 1 / 125,
-            "1/160": 1 / 160,
-            "1/200": 1 / 200,
-            "1/250": 1 / 250,
-            "1/320": 1 / 320,
-            "1/400": 1 / 400,
-            "1/500": 1 / 500,
-            "1/640": 1 / 640,
-            "1/800": 1 / 800,
-            "1/1000": 1 / 1000,
-            "1/1250": 1 / 1250,
-            "1/1600": 1 / 1600,
-            "1/2000": 1 / 2000,
-            "1/2500": 1 / 2500,
-            "1/3200": 1 / 3200,
-            "1/4000": 1 / 4000,
-        }
 
         try:
             # First check by key.
-            return list(shutter_speeds.keys()).index(seconds)
+            return list(cls._shutter_speeds.keys()).index(seconds)
         except ValueError:
             # Then check by value.
             try:
                 # Check minimum of everything after 'bulb'.
-                if return_minimum and seconds < min(list(shutter_speeds.values())[1:]):
-                    return len(shutter_speeds) - 1
+                if return_minimum and seconds < min(list(cls._shutter_speeds.values())[1:]):
+                    return len(cls._shutter_speeds) - 1
                 else:
-                    return list(shutter_speeds.values()).index(seconds)
+                    return list(cls._shutter_speeds.values()).index(seconds)
             except ValueError:
                 return 0

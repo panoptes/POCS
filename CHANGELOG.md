@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Added
+
+- Added support for entering exposure times (`exptime`) as string fractions (e.g., `'1/4'`, `'1/1000'`) in cameras and scheduled observations. #1367
+
 ### Changed
 
 - Updated `fastapi` to `0.136.3` and `panoptes-utils[config,images]` to `>0.3.0,<0.4.0`.

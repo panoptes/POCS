@@ -844,3 +844,110 @@ def test_move_filterwheel_focus_offset(camera):
             assert new_position == initial_position + offset
         else:
             assert new_position == initial_position
+
+
+def test_exposure_fraction(camera, tmpdir):
+    """Test that take_exposure accepts exposure time as a string fraction."""
+    fits_path = str(tmpdir.join("test_exposure_fraction.fits"))
+    # A 1/4 second exposure (should parse as 0.25).
+    camera.take_exposure(seconds="1/4", filename=fits_path, blocking=True)
+    assert os.path.exists(fits_path)
+    header = fits_utils.getheader(fits_path)
+    assert header["EXPTIME"] == 0.25
+
+    # Test scientific notation
+    fits_path_sci = str(tmpdir.join("test_exposure_sci.fits"))
+    camera.take_exposure(seconds="1e-2", filename=fits_path_sci, blocking=True)
+    assert os.path.exists(fits_path_sci)
+    header_sci = fits_utils.getheader(fits_path_sci)
+    assert header_sci["EXPTIME"] == 0.01
+
+    # Test tiny value (should be clipped to min_exposure for ZWO, or go to 0 for DSLR/CCD simulator)
+    fits_path_tiny = str(tmpdir.join("test_exposure_tiny.fits"))
+    camera.take_exposure(seconds="1e-20", filename=fits_path_tiny, blocking=True)
+    assert os.path.exists(fits_path_tiny)
+    header_tiny = fits_utils.getheader(fits_path_tiny)
+
+    if hasattr(camera, "_control_info") and "EXPOSURE" in camera._control_info:
+        min_exposure = camera._control_info["EXPOSURE"]["min_value"]
+        assert header_tiny["EXPTIME"] == min_exposure.value
+    else:
+        assert header_tiny["EXPTIME"] == 0.0
+
+    # Test small value above zero-threshold (should clip to 1/4000 s for DSLR/CCD simulator)
+    fits_path_small = str(tmpdir.join("test_exposure_small.fits"))
+    camera.take_exposure(seconds="1e-5", filename=fits_path_small, blocking=True)
+    assert os.path.exists(fits_path_small)
+    header_small = fits_utils.getheader(fits_path_small)
+
+    if hasattr(camera, "_control_info") and "EXPOSURE" in camera._control_info:
+        min_exposure = camera._control_info["EXPOSURE"]["min_value"]
+        assert header_small["EXPTIME"] == min_exposure.value
+    else:
+        assert header_small["EXPTIME"] == 0.00025
+
+
+def test_canon_shutterspeed_index():
+    from panoptes.pocs.camera.gphoto.canon import Camera as CanonCamera
+
+    # Test valid discrete speeds
+    assert CanonCamera.get_shutterspeed_index(0.25) == CanonCamera.get_shutterspeed_index("1/4")
+
+    # Test scientific notation
+    assert CanonCamera.get_shutterspeed_index(1e-2) == CanonCamera.get_shutterspeed_index("1/100")
+
+    # Test tiny value return_minimum
+    # min discrete speed is 1/4000
+    idx_4000 = list(CanonCamera._shutter_speeds.keys()).index("1/4000")
+    assert CanonCamera.get_shutterspeed_index(1e-20, return_minimum=True) == idx_4000
+
+
+def test_exposure_invalid_seconds(camera, tmpdir):
+    fits_path = str(tmpdir.join("test_exposure_invalid.fits"))
+    with pytest.raises((ValueError, TypeError, error.PanError)):
+        camera.take_exposure(seconds="invalid_seconds", filename=fits_path)
+
+
+def test_observation_invalid_exptime(camera):
+    from panoptes.pocs.scheduler.field import Field
+    from panoptes.pocs.scheduler.observation.base import Observation
+
+    field = Field("Test Observation", "20h00m43.7135s +22d42m39.0645s")
+    observation = Observation(field)
+    with pytest.raises((ValueError, TypeError, error.PanError)):
+        camera.take_observation(observation, exptime="invalid_exptime")
+
+
+def test_observation_exptime_fraction(camera, images_dir):
+    """
+    Tests functionality of take_observation() with fractional/scientific notation exptime strings in kwargs.
+    """
+    from astropy import units as u
+
+    from panoptes.pocs.scheduler.field import Field
+    from panoptes.pocs.scheduler.observation.base import Observation
+
+    field = Field("Test Observation Fraction", "20h00m43.7135s +22d42m39.0645s")
+    observation = Observation(field, exptime=1.5 * u.second)
+    observation.seq_time = "19991231T234559"
+    # Override exptime with a fraction string
+    camera.take_observation(observation, exptime="1/4", blocking=True)
+    observation_pattern = os.path.join(
+        images_dir, "TestObservationFraction", camera.uid, observation.seq_time, "*.fits*"
+    )
+    image_files = glob.glob(observation_pattern)
+    assert len(image_files) == 1
+    headers = fits_utils.getheader(image_files[0])
+    assert headers["EXPTIME"] == 0.25
+
+    # Override exptime with a scientific notation string
+    observation2 = Observation(field, exptime=1.5 * u.second)
+    observation2.seq_time = "19991231T234659"
+    camera.take_observation(observation2, exptime="1e-2", blocking=True)
+    observation_pattern2 = os.path.join(
+        images_dir, "TestObservationFraction", camera.uid, observation2.seq_time, "*.fits*"
+    )
+    image_files2 = glob.glob(observation_pattern2)
+    assert len(image_files2) == 1
+    headers2 = fits_utils.getheader(image_files2[0])
+    assert headers2["EXPTIME"] == 0.01
