@@ -227,3 +227,13 @@ def test_create_observation_exptime_fraction(field):
 
     obs.exptime = "1/10000000000000000"
     assert obs.exptime == 1e-16 * u.second
+
+
+def test_create_observation_exptime_invalid(field):
+    """Test that invalid exptime strings are rejected with ValueError."""
+    with pytest.raises(ValueError):
+        Observation(field, exptime="invalid_exptime")
+
+    obs = Observation(field)
+    with pytest.raises(ValueError):
+        obs.exptime = "invalid_exptime"

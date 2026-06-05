@@ -888,3 +888,19 @@ def test_canon_shutterspeed_index():
     # min discrete speed is 1/4000
     idx_4000 = list(CanonCamera._shutter_speeds.keys()).index("1/4000")
     assert CanonCamera.get_shutterspeed_index(1e-20, return_minimum=True) == idx_4000
+
+
+def test_exposure_invalid_seconds(camera, tmpdir):
+    fits_path = str(tmpdir.join("test_exposure_invalid.fits"))
+    with pytest.raises((ValueError, TypeError, error.PanError)):
+        camera.take_exposure(seconds="invalid_seconds", filename=fits_path)
+
+
+def test_observation_invalid_exptime(camera):
+    from panoptes.pocs.scheduler.field import Field
+    from panoptes.pocs.scheduler.observation.base import Observation
+
+    field = Field("Test Observation", "20h00m43.7135s +22d42m39.0645s")
+    observation = Observation(field)
+    with pytest.raises((ValueError, TypeError, error.PanError)):
+        camera.take_observation(observation, exptime="invalid_exptime")
