@@ -98,7 +98,6 @@ class Camera(AbstractCamera):
         if isinstance(exptime, str):
             try:
                 exptime = float(Fraction(exptime.strip()))
-                kwargs["exptime"] = exptime
             except (ValueError, TypeError):
                 pass
 
