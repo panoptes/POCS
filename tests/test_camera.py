@@ -862,7 +862,7 @@ def test_exposure_fraction(camera, tmpdir):
     header_sci = fits_utils.getheader(fits_path_sci)
     assert header_sci["EXPTIME"] == 0.01
 
-    # Test tiny value (should be clipped to min_exposure for ZWO, or remain 1e-20)
+    # Test tiny value (should be clipped to min_exposure for ZWO, or go to 0 for DSLR/CCD simulator)
     fits_path_tiny = str(tmpdir.join("test_exposure_tiny.fits"))
     camera.take_exposure(seconds="1e-20", filename=fits_path_tiny, blocking=True)
     assert os.path.exists(fits_path_tiny)
@@ -872,7 +872,19 @@ def test_exposure_fraction(camera, tmpdir):
         min_exposure = camera._control_info["EXPOSURE"]["min_value"]
         assert header_tiny["EXPTIME"] == min_exposure.value
     else:
-        assert header_tiny["EXPTIME"] == 1e-20
+        assert header_tiny["EXPTIME"] == 0.0
+
+    # Test small value above zero-threshold (should clip to 1/4000 s for DSLR/CCD simulator)
+    fits_path_small = str(tmpdir.join("test_exposure_small.fits"))
+    camera.take_exposure(seconds="1e-5", filename=fits_path_small, blocking=True)
+    assert os.path.exists(fits_path_small)
+    header_small = fits_utils.getheader(fits_path_small)
+
+    if hasattr(camera, "_control_info") and "EXPOSURE" in camera._control_info:
+        min_exposure = camera._control_info["EXPOSURE"]["min_value"]
+        assert header_small["EXPTIME"] == min_exposure.value
+    else:
+        assert header_small["EXPTIME"] == 0.00025
 
 
 def test_canon_shutterspeed_index():

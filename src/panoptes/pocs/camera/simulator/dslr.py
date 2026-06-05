@@ -116,6 +116,17 @@ class Camera(AbstractCamera):
         self._is_exposing_event.set()
         seconds = kwargs.get("simulator_exptime", seconds)
         interval = get_quantity_value(seconds, unit=u.second)
+
+        # Clip to mimic discrete DSLR/CCD minimum shutterspeed (1/4000 s)
+        # or go to 0 when it's below a 1e-9 s threshold.
+        if interval < 1e-9:
+            interval = 0.0
+        elif interval < 0.00025:
+            interval = 0.00025
+
+        if header is not None:
+            header.set("EXPTIME", interval, "Seconds")
+
         if interval <= 0:
             self._end_exposure()
         else:
