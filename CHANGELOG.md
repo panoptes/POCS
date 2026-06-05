@@ -5,6 +5,7 @@
 ### Changed
 
 - Updated `fastapi` to `0.136.3` and `panoptes-utils[config,images]` to `>0.3.0,<0.4.0`.
+- Cleaned up the optional `google` dependencies in `pyproject.toml` by removing unused packages (`gsutil`, `protobuf`, `pyopenssl`, `rsa`) and setting modern minimum versions (`google-cloud-firestore>=2.23.0`, `google-cloud-logging>=3.13.0`, `google-cloud-storage>=3.9.0`).
 
 ### Fixed
 
