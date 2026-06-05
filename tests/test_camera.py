@@ -904,3 +904,38 @@ def test_observation_invalid_exptime(camera):
     observation = Observation(field)
     with pytest.raises((ValueError, TypeError, error.PanError)):
         camera.take_observation(observation, exptime="invalid_exptime")
+
+
+def test_observation_exptime_fraction(camera, images_dir):
+    """
+    Tests functionality of take_observation() with fractional/scientific notation exptime strings in kwargs.
+    """
+    from astropy import units as u
+
+    from panoptes.pocs.scheduler.field import Field
+    from panoptes.pocs.scheduler.observation.base import Observation
+
+    field = Field("Test Observation Fraction", "20h00m43.7135s +22d42m39.0645s")
+    observation = Observation(field, exptime=1.5 * u.second)
+    observation.seq_time = "19991231T234559"
+    # Override exptime with a fraction string
+    camera.take_observation(observation, exptime="1/4", blocking=True)
+    observation_pattern = os.path.join(
+        images_dir, "TestObservationFraction", camera.uid, observation.seq_time, "*.fits*"
+    )
+    image_files = glob.glob(observation_pattern)
+    assert len(image_files) == 1
+    headers = fits_utils.getheader(image_files[0])
+    assert headers["EXPTIME"] == 0.25
+
+    # Override exptime with a scientific notation string
+    observation2 = Observation(field, exptime=1.5 * u.second)
+    observation2.seq_time = "19991231T234659"
+    camera.take_observation(observation2, exptime="1e-2", blocking=True)
+    observation_pattern2 = os.path.join(
+        images_dir, "TestObservationFraction", camera.uid, observation2.seq_time, "*.fits*"
+    )
+    image_files2 = glob.glob(observation_pattern2)
+    assert len(image_files2) == 1
+    headers2 = fits_utils.getheader(image_files2[0])
+    assert headers2["EXPTIME"] == 0.01

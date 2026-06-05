@@ -92,8 +92,18 @@ class Camera(AbstractCamera):
         Returns:
             dict: The metadata returned by AbstractCamera.take_observation.
         """
+        from fractions import Fraction
+
         exptime = kwargs.get("exptime", observation.exptime.value)
-        if exptime > 1:
+        if isinstance(exptime, str):
+            try:
+                exptime = float(Fraction(exptime.strip()))
+                kwargs["exptime"] = exptime
+            except (ValueError, TypeError):
+                pass
+
+        exptime_val = get_quantity_value(exptime, unit=u.second)
+        if exptime_val > 1:
             kwargs["exptime"] = 1
             self.logger.debug("Trimming camera simulator exposure to 1 s")
 
