@@ -69,13 +69,9 @@ focuser = [
     "matplotlib",
 ]
 google = [
-    "google-cloud-firestore",
-    "google-cloud-logging",
-    "google-cloud-storage",
-    "gsutil",
-    "protobuf",
-    "pyopenssl>=26.0.0",
-    "rsa",
+    "google-cloud-firestore>=2.23.0",
+    "google-cloud-logging>=3.13.0",
+    "google-cloud-storage>=3.9.0",
 ]
 weather = [
     "panoptes-aag",
