@@ -101,10 +101,13 @@ class Camera(AbstractCamera):
             except (ValueError, TypeError):
                 pass
 
-        exptime_val = get_quantity_value(exptime, unit=u.second)
-        if exptime_val > 1:
-            kwargs["exptime"] = 1
-            self.logger.debug("Trimming camera simulator exposure to 1 s")
+        try:
+            exptime_val = get_quantity_value(exptime, unit=u.second)
+            if exptime_val > 1:
+                kwargs["exptime"] = 1
+                self.logger.debug("Trimming camera simulator exposure to 1 s")
+        except (ValueError, TypeError):
+            pass
 
         return super().take_observation(observation, headers, filename, **kwargs)
 
