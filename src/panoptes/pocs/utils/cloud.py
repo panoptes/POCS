@@ -2,8 +2,6 @@
 
 from pathlib import Path
 
-from google.cloud import storage
-
 from panoptes.pocs.utils.logger import get_logger
 
 logger = get_logger()
@@ -37,6 +35,8 @@ def upload_image(
         Ensure that application default credentials are configured (e.g., via GOOGLE_APPLICATION_CREDENTIALS)
         or the environment supports implicit credentials for the storage client.
     """
+    from google.cloud import storage
+
     storage_client: storage.Client = storage_client or storage.Client()
     bucket: storage.Bucket = storage_client.bucket(bucket_name)
 

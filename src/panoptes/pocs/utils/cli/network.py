@@ -12,7 +12,6 @@ from pathlib import Path
 
 import requests
 import typer
-from google.cloud import firestore, storage
 from rich import print
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
@@ -138,6 +137,8 @@ def upload_metadata(
     if verbose:
         print(f"Listening to {dir_path.absolute()} for {unit_id}")
 
+    from google.cloud import firestore
+
     firestore_db = firestore.Client()
     # Get the unit reference to link metadata to unit.
     unit_ref = firestore_db.document(f"units/{unit_id}")
@@ -253,6 +254,8 @@ def upload_directory(
         For bulk transfers, using 'gsutil -m rsync' is typically faster and more robust.
     """
     assert directory_path.is_dir() and directory_path.exists(), print("[red]Need a directory that exists")
+
+    from google.cloud import storage
 
     storage_client = storage_client or storage.Client()
 

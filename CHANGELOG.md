@@ -15,6 +15,7 @@
 ### Fixed
 
 - Fixed scheduler tests time collision workaround by utilizing `POCSTIME` instead of `time.sleep`. #1451
+- Fixed import error when running `pocs` CLI subcommands (e.g. `pocs weather setup --help`) without the `google` optional dependency installed by making `google-cloud` imports lazy (deferred to the functions that actually use them).
 
 ## 0.8.6 - 2026-06-09
 
