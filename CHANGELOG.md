@@ -6,6 +6,7 @@
 
 - Added support for entering exposure times (`exptime`) as string fractions (e.g., `'1/4'`, `'1/1000'`) in cameras and scheduled observations. #1367
 - `pocs weather setup` now asks whether the weather station is local (USB) or remote (network); remote mode prompts for a hostname/IP/URL, verifies connectivity, and updates `pocs-supervisord.conf` to enable `pocs-weather-reader-remote` and disable `pocs-weather-reader`.
+- Updated `docs/weather-station.md` and `docs/cli-guide.md` to document the local/remote weather station setup flow, including hostname resolution rules and supervisor restart instructions.
 
 ### Changed
 

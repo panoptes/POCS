@@ -287,8 +287,32 @@ pocs camera setup
 Check weather conditions:
 
 ```bash
+# Formatted status table
 pocs weather status
+
+# Raw JSON output
+pocs weather status --show-raw-values
+
+# Query a remote weather station
+pocs weather --host PAN026.local --port 6566 status
+
+# Show weather station configuration
+pocs weather config
+
+# Restart the weather reader service
+pocs weather restart
 ```
+
+Set up the weather station (local USB or remote network):
+
+```bash
+pocs weather setup
+```
+
+The setup command asks whether the station is connected locally (USB) or remotely
+(network). For remote stations, enter a hostname (e.g. `PAN026`), IP address, or full
+URL — the command verifies connectivity and updates `pocs-supervisord.conf` automatically.
+See [Weather Station](weather-station.md) for full details.
 
 ### Sensor Commands
 
