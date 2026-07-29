@@ -5,6 +5,7 @@ the weather station udev rules for persistent device naming.
 """
 
 import glob as _glob
+import re
 import subprocess
 from dataclasses import dataclass
 from datetime import datetime
@@ -249,26 +250,139 @@ def get_page(page, base_url):
         exit(1)
 
 
+def _normalize_remote_url(hostname_or_url: str) -> str:
+    """Normalize a hostname, IP address, or URL to a full weather station status URL.
+
+    If the input already looks like a full URL (starts with ``http://`` or
+    ``https://``), it is returned as-is.  If the input looks like an IP address
+    (e.g. ``192.168.1.42``) or is ``localhost``, the URL is built without a
+    ``.local`` suffix: ``http://{ip}:6566/status``.  Otherwise the input is
+    treated as a plain hostname and the standard mDNS URL is built:
+    ``http://{hostname}.local:6566/status``.
+
+    Args:
+        hostname_or_url: A plain hostname (e.g. ``PAN026``), an IP address
+            (e.g. ``192.168.1.42``), or a full URL.
+
+    Returns:
+        str: The full URL to the weather station status endpoint.
+    """
+    if hostname_or_url.startswith("http://") or hostname_or_url.startswith("https://"):
+        return hostname_or_url
+    # Detect IPv4 addresses: four dot-separated groups of digits.
+    if re.match(r"^\d{1,3}(\.\d{1,3}){3}$", hostname_or_url):
+        return f"http://{hostname_or_url}:6566/status"
+    # Pass 'localhost' through without a .local suffix.
+    if hostname_or_url == "localhost":
+        return "http://localhost:6566/status"
+    return f"http://{hostname_or_url}.local:6566/status"
+
+
+def _check_remote_weather_connection(url: str, console: Console) -> bool:
+    """Check if the remote weather station is reachable at the given URL.
+
+    Args:
+        url: The full URL to the weather station status endpoint.
+        console: A Rich Console instance for output.
+
+    Returns:
+        bool: True if the connection succeeded and returned valid JSON, False otherwise.
+    """
+    console.print(f"Checking connection to [cyan]{url}[/cyan]...")
+    try:
+        response = requests.get(url, timeout=10)
+        response.raise_for_status()
+        response.json()
+        console.print("[green]✅ Successfully connected to remote weather station.[/green]")
+        return True
+    except requests.exceptions.ConnectionError:
+        console.print(f"[bold red]Could not connect to {url}.[/bold red]")
+    except requests.exceptions.Timeout:
+        console.print(f"[bold red]Connection to {url} timed out.[/bold red]")
+    except requests.exceptions.HTTPError as exc:
+        console.print(f"[bold red]HTTP error: {exc}[/bold red]")
+    except ValueError:
+        console.print(f"[bold red]Invalid JSON response from {url}.[/bold red]")
+    return False
+
+
+def _update_supervisord_for_remote(console: Console) -> None:
+    """Update pocs-supervisord.conf to disable local and enable remote weather reader.
+
+    Sets ``autostart=false`` for ``pocs-weather-reader`` and
+    ``autostart=true`` for ``pocs-weather-reader-remote`` in the supervisord
+    configuration file located at ``conf_files/pocs-supervisord.conf`` relative
+    to the current working directory.
+
+    Args:
+        console: A Rich Console instance for output.
+
+    Returns:
+        None
+    """
+    conf_path = Path("conf_files/pocs-supervisord.conf")
+    if not conf_path.exists():
+        console.print(
+            f"[yellow]Warning: {conf_path} not found. Please update pocs-supervisord.conf manually.[/yellow]"
+        )
+        return
+
+    text = conf_path.read_text()
+
+    # Track whether we made any changes.
+    original = text
+
+    # Disable local weather reader (set autostart=true -> autostart=false under pocs-weather-reader).
+    # We operate section by section to avoid touching the remote block.
+    def _set_autostart(section_name: str, value: str, content: str) -> str:
+        """Set autostart for a named supervisord program section."""
+        pattern = re.compile(
+            rf"(\[program:{re.escape(section_name)}\].*?autostart=)(true|false)",
+            re.DOTALL,
+        )
+        return pattern.sub(rf"\g<1>{value}", content)
+
+    text = _set_autostart("pocs-weather-reader", "false", text)
+    text = _set_autostart("pocs-weather-reader-remote", "true", text)
+
+    if text == original:
+        console.print(
+            "[yellow]No changes made to pocs-supervisord.conf "
+            "(sections may already be configured correctly).[/yellow]"
+        )
+        return
+
+    conf_path.write_text(text)
+    console.print(
+        f"[green]Updated {conf_path}:[/green]\n"
+        "  • [cyan]pocs-weather-reader[/cyan] → autostart=false\n"
+        "  • [cyan]pocs-weather-reader-remote[/cyan] → autostart=true"
+    )
+
+
 @app.command(name="setup")
 def setup_weather(
     port_glob: str = typer.Option("/dev/ttyUSB*", help="Glob pattern for USB serial ports to scan."),
     baud_rate: int = typer.Option(9600, help="Baud rate for the weather station serial port."),
     read_timeout: float = typer.Option(2.0, help="Read timeout in seconds when probing each port."),
 ):
-    """Scan USB serial ports for an AAG CloudWatcher and write a udev rule.
+    """Set up the weather station — local (USB) or remote (network).
 
-    Each port matching ``port_glob`` is opened and sent the AAG
-    ``GET_INTERNAL_NAME`` command (``A!``).  A port that responds with the
-    expected ``!N `` response code is identified as the weather station.
+    When run interactively the command first asks whether the weather station
+    is connected **locally** (via USB serial) or **remotely** (over the
+    network).
 
-    Once found, a udev rule is written to
-    ``/etc/udev/rules.d/92-panoptes-weather.rules`` that creates a stable
-    ``/dev/weather`` symlink keyed on the device's USB vendor ID, product ID,
-    and serial number (when present).  ``udevadm`` is then called to reload
-    rules immediately.
+    **Local mode** — scans USB serial ports for an AAG CloudWatcher, writes a
+    udev rule to ``/etc/udev/rules.d/92-panoptes-weather.rules`` that creates
+    a stable ``/dev/weather`` symlink, reloads udev, and updates the config
+    server key ``environment.weather.serial_port``.
 
-    The config server key ``environment.weather.serial_port`` is updated to
-    ``/dev/weather`` if the config server is reachable.
+    **Remote mode** — prompts for the hostname, IP address, or full URL of the
+    remote weather station (e.g. ``PAN026``).  Plain hostnames are expanded to
+    ``http://<hostname>.local:6566/status``.  The connection is verified and,
+    on success, ``conf_files/pocs-supervisord.conf`` is updated to disable the
+    local ``pocs-weather-reader`` service and enable
+    ``pocs-weather-reader-remote``.
 
     Args:
         port_glob: Shell glob for candidate ports, e.g. ``/dev/ttyUSB*``.
@@ -279,6 +393,84 @@ def setup_weather(
         None
     """
     console = Console()
+
+    # ------------------------------------------------------------------
+    # Ask whether the weather station is local or remote.
+    # ------------------------------------------------------------------
+    is_remote = typer.confirm(
+        "Is the weather station connected remotely (over the network)?",
+        default=False,
+    )
+
+    if is_remote:
+        _setup_weather_remote(console)
+        return
+
+    _setup_weather_local(console, port_glob, baud_rate, read_timeout)
+
+
+def _setup_weather_remote(console: Console) -> None:
+    """Interactive setup for a remotely connected weather station.
+
+    Prompts the user for the hostname, IP address, or full URL of the remote
+    weather station, verifies the connection, and updates
+    ``conf_files/pocs-supervisord.conf`` accordingly.
+
+    Args:
+        console: A Rich Console instance for output.
+
+    Returns:
+        None
+    """
+    console.print(
+        "\n[bold]Remote weather station setup[/bold]\n"
+        "Enter the hostname, IP address, or full URL of the remote weather station.\n"
+        "[dim]Tip: you can enter a common hostname such as [cyan]PAN026[/cyan] — "
+        "it will be resolved to [cyan]http://PAN026.local:6566/status[/cyan].[/dim]\n"
+    )
+
+    raw_input = typer.prompt("Hostname, IP address, or URL")
+    url = _normalize_remote_url(raw_input.strip())
+
+    if not _check_remote_weather_connection(url, console):
+        console.print(
+            "\n[yellow]Could not verify the remote weather station connection.[/yellow]\n"
+            "Please check that the remote POCS unit is running and reachable, then try again.\n"
+            f"You can test manually with:\n"
+            f"  [bold]pocs sensor monitor --endpoint {url} --no-store --verbose "
+            f"--read-frequency 10 weather[/bold]"
+        )
+        raise typer.Exit(code=1)
+
+    _update_supervisord_for_remote(console)
+
+    console.print(
+        "\n[green]✅ Remote weather station configured.[/green]\n"
+        "Restart the supervisor services (or reboot the computer) for the changes to take effect:\n"
+        "  [bold]supervisorctl reread && supervisorctl update[/bold]"
+    )
+
+
+def _setup_weather_local(
+    console: Console,
+    port_glob: str,
+    baud_rate: int,
+    read_timeout: float,
+) -> None:
+    """Interactive setup for a locally connected (USB) weather station.
+
+    Scans USB serial ports for an AAG CloudWatcher, writes a udev rule, reloads
+    udev, and updates the config server.
+
+    Args:
+        console: A Rich Console instance for output.
+        port_glob: Shell glob for candidate ports, e.g. ``/dev/ttyUSB*``.
+        baud_rate: Serial baud rate; the AAG CloudWatcher uses 9600.
+        read_timeout: Per-port read timeout in seconds.
+
+    Returns:
+        None
+    """
 
     # ------------------------------------------------------------------
     # Enumerate candidate ports.

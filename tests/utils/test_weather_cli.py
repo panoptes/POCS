@@ -58,11 +58,14 @@ def _make_serial_cm(response: bytes):
 # ---------------------------------------------------------------------------
 
 
+@patch("panoptes.pocs.utils.cli.weather.typer.confirm", return_value=False)
 @patch("subprocess.run")
 @patch("panoptes.pocs.utils.cli.weather.serial.tools.list_ports.comports")
 @patch("panoptes.pocs.utils.cli.weather.serial.Serial")
 @patch("panoptes.pocs.utils.cli.weather._glob.glob")
-def test_setup_finds_aag_on_first_port(mock_glob, mock_serial_cls, mock_comports, mock_run, cli_runner):
+def test_setup_finds_aag_on_first_port(
+    mock_glob, mock_serial_cls, mock_comports, mock_run, mock_confirm, cli_runner
+):
     """First port responds with !N  → udev rule is written for that port."""
     mock_glob.return_value = ["/dev/ttyUSB0"]
     mock_comports.return_value = [_make_port_info("/dev/ttyUSB0")]
@@ -89,11 +92,14 @@ def test_setup_finds_aag_on_first_port(mock_glob, mock_serial_cls, mock_comports
 # ---------------------------------------------------------------------------
 
 
+@patch("panoptes.pocs.utils.cli.weather.typer.confirm", return_value=False)
 @patch("subprocess.run")
 @patch("panoptes.pocs.utils.cli.weather.serial.tools.list_ports.comports")
 @patch("panoptes.pocs.utils.cli.weather.serial.Serial")
 @patch("panoptes.pocs.utils.cli.weather._glob.glob")
-def test_setup_skips_non_aag_ports(mock_glob, mock_serial_cls, mock_comports, mock_run, cli_runner):
+def test_setup_skips_non_aag_ports(
+    mock_glob, mock_serial_cls, mock_comports, mock_run, mock_confirm, cli_runner
+):
     """Non-responding ports are skipped; the AAG is identified on the second port."""
     mock_glob.return_value = ["/dev/ttyUSB0", "/dev/ttyUSB1"]
     mock_comports.return_value = [
@@ -124,10 +130,11 @@ def test_setup_skips_non_aag_ports(mock_glob, mock_serial_cls, mock_comports, mo
 # ---------------------------------------------------------------------------
 
 
+@patch("panoptes.pocs.utils.cli.weather.typer.confirm", return_value=False)
 @patch("panoptes.pocs.utils.cli.weather.serial.tools.list_ports.comports")
 @patch("panoptes.pocs.utils.cli.weather.serial.Serial")
 @patch("panoptes.pocs.utils.cli.weather._glob.glob")
-def test_setup_no_aag_found(mock_glob, mock_serial_cls, mock_comports, cli_runner):
+def test_setup_no_aag_found(mock_glob, mock_serial_cls, mock_comports, mock_confirm, cli_runner):
     """If no port responds with an AAG handshake the command exits non-zero."""
     mock_glob.return_value = ["/dev/ttyUSB0"]
     mock_comports.return_value = [_make_port_info("/dev/ttyUSB0")]
@@ -144,8 +151,9 @@ def test_setup_no_aag_found(mock_glob, mock_serial_cls, mock_comports, cli_runne
 # ---------------------------------------------------------------------------
 
 
+@patch("panoptes.pocs.utils.cli.weather.typer.confirm", return_value=False)
 @patch("panoptes.pocs.utils.cli.weather._glob.glob")
-def test_setup_no_ports_match_glob(mock_glob, cli_runner):
+def test_setup_no_ports_match_glob(mock_glob, mock_confirm, cli_runner):
     """If the glob matches nothing, the command exits non-zero immediately."""
     mock_glob.return_value = []
 
@@ -160,10 +168,11 @@ def test_setup_no_ports_match_glob(mock_glob, cli_runner):
 # ---------------------------------------------------------------------------
 
 
+@patch("panoptes.pocs.utils.cli.weather.typer.confirm", return_value=False)
 @patch("panoptes.pocs.utils.cli.weather.serial.tools.list_ports.comports")
 @patch("panoptes.pocs.utils.cli.weather.serial.Serial")
 @patch("panoptes.pocs.utils.cli.weather._glob.glob")
-def test_setup_no_vid_pid(mock_glob, mock_serial_cls, mock_comports, cli_runner):
+def test_setup_no_vid_pid(mock_glob, mock_serial_cls, mock_comports, mock_confirm, cli_runner):
     """A port that responds to AAG but has no USB VID/PID exits non-zero."""
     mock_glob.return_value = ["/dev/ttyUSB0"]
     mock_comports.return_value = [_make_port_info("/dev/ttyUSB0", vid=None, pid=None)]
@@ -180,10 +189,13 @@ def test_setup_no_vid_pid(mock_glob, mock_serial_cls, mock_comports, cli_runner)
 # ---------------------------------------------------------------------------
 
 
+@patch("panoptes.pocs.utils.cli.weather.typer.confirm", return_value=False)
 @patch("panoptes.pocs.utils.cli.weather.serial.tools.list_ports.comports")
 @patch("panoptes.pocs.utils.cli.weather.serial.Serial")
 @patch("panoptes.pocs.utils.cli.weather._glob.glob")
-def test_setup_serial_exception_is_skipped(mock_glob, mock_serial_cls, mock_comports, cli_runner):
+def test_setup_serial_exception_is_skipped(
+    mock_glob, mock_serial_cls, mock_comports, mock_confirm, cli_runner
+):
     """Ports that raise SerialException are skipped gracefully."""
     import serial as _serial
 
@@ -202,11 +214,14 @@ def test_setup_serial_exception_is_skipped(mock_glob, mock_serial_cls, mock_comp
 # ---------------------------------------------------------------------------
 
 
+@patch("panoptes.pocs.utils.cli.weather.typer.confirm", return_value=False)
 @patch("subprocess.run")
 @patch("panoptes.pocs.utils.cli.weather.serial.tools.list_ports.comports")
 @patch("panoptes.pocs.utils.cli.weather.serial.Serial")
 @patch("panoptes.pocs.utils.cli.weather._glob.glob")
-def test_setup_rule_omits_serial_when_none(mock_glob, mock_serial_cls, mock_comports, mock_run, cli_runner):
+def test_setup_rule_omits_serial_when_none(
+    mock_glob, mock_serial_cls, mock_comports, mock_run, mock_confirm, cli_runner
+):
     """When serial_number is None the ATTRS{serial} clause is omitted from the rule."""
     mock_glob.return_value = ["/dev/ttyUSB0"]
     mock_comports.return_value = [_make_port_info("/dev/ttyUSB0", serial_number=None)]
@@ -228,11 +243,14 @@ def test_setup_rule_omits_serial_when_none(mock_glob, mock_serial_cls, mock_comp
 # ---------------------------------------------------------------------------
 
 
+@patch("panoptes.pocs.utils.cli.weather.typer.confirm", return_value=False)
 @patch("subprocess.run")
 @patch("panoptes.pocs.utils.cli.weather.serial.tools.list_ports.comports")
 @patch("panoptes.pocs.utils.cli.weather.serial.Serial")
 @patch("panoptes.pocs.utils.cli.weather._glob.glob")
-def test_setup_skips_mount_port(mock_glob, mock_serial_cls, mock_comports, mock_run, cli_runner):
+def test_setup_skips_mount_port(
+    mock_glob, mock_serial_cls, mock_comports, mock_run, mock_confirm, cli_runner
+):
     """/dev/ttyUSB0 claimed by /dev/mount is skipped; AAG found on /dev/ttyUSB1."""
     mock_glob.return_value = ["/dev/ttyUSB0", "/dev/ttyUSB1"]
     mock_comports.return_value = [
@@ -273,11 +291,14 @@ def test_setup_skips_mount_port(mock_glob, mock_serial_cls, mock_comports, mock_
 # ---------------------------------------------------------------------------
 
 
+@patch("panoptes.pocs.utils.cli.weather.typer.confirm", return_value=False)
 @patch("subprocess.run")
 @patch("panoptes.pocs.utils.cli.weather.serial.tools.list_ports.comports")
 @patch("panoptes.pocs.utils.cli.weather.serial.Serial")
 @patch("panoptes.pocs.utils.cli.weather._glob.glob")
-def test_setup_mount_symlink_resolve_oserror(mock_glob, mock_serial_cls, mock_comports, mock_run, cli_runner):
+def test_setup_mount_symlink_resolve_oserror(
+    mock_glob, mock_serial_cls, mock_comports, mock_run, mock_confirm, cli_runner
+):
     """/dev/mount exists but resolve() raises OSError — probing continues normally."""
     mock_glob.return_value = ["/dev/ttyUSB0"]
     mock_comports.return_value = [_make_port_info("/dev/ttyUSB0")]
@@ -310,10 +331,11 @@ def test_setup_mount_symlink_resolve_oserror(mock_glob, mock_serial_cls, mock_co
 # ---------------------------------------------------------------------------
 
 
+@patch("panoptes.pocs.utils.cli.weather.typer.confirm", return_value=False)
 @patch("panoptes.pocs.utils.cli.weather.serial.tools.list_ports.comports")
 @patch("panoptes.pocs.utils.cli.weather.serial.Serial")
 @patch("panoptes.pocs.utils.cli.weather._glob.glob")
-def test_setup_generic_exception_skipped(mock_glob, mock_serial_cls, mock_comports, cli_runner):
+def test_setup_generic_exception_skipped(mock_glob, mock_serial_cls, mock_comports, mock_confirm, cli_runner):
     """Generic Exception (not SerialException) during probe is caught; port is skipped."""
     mock_glob.return_value = ["/dev/ttyUSB0"]
     mock_comports.return_value = [_make_port_info("/dev/ttyUSB0")]
@@ -330,11 +352,14 @@ def test_setup_generic_exception_skipped(mock_glob, mock_serial_cls, mock_compor
 # ---------------------------------------------------------------------------
 
 
+@patch("panoptes.pocs.utils.cli.weather.typer.confirm", return_value=False)
 @patch("subprocess.run")
 @patch("panoptes.pocs.utils.cli.weather.serial.tools.list_ports.comports")
 @patch("panoptes.pocs.utils.cli.weather.serial.Serial")
 @patch("panoptes.pocs.utils.cli.weather._glob.glob")
-def test_setup_port_info_via_resolved_path(mock_glob, mock_serial_cls, mock_comports, mock_run, cli_runner):
+def test_setup_port_info_via_resolved_path(
+    mock_glob, mock_serial_cls, mock_comports, mock_run, mock_confirm, cli_runner
+):
     """When comports reports the real path but glob yields a symlink, the port_info
     is found by resolving the found device path."""
     mock_glob.return_value = ["/dev/ttyUSB-sym"]
@@ -371,12 +396,13 @@ def test_setup_port_info_via_resolved_path(mock_glob, mock_serial_cls, mock_comp
 # ---------------------------------------------------------------------------
 
 
+@patch("panoptes.pocs.utils.cli.weather.typer.confirm", return_value=False)
 @patch("subprocess.run")
 @patch("panoptes.pocs.utils.cli.weather.serial.tools.list_ports.comports")
 @patch("panoptes.pocs.utils.cli.weather.serial.Serial")
 @patch("panoptes.pocs.utils.cli.weather._glob.glob")
 def test_setup_no_description_no_manufacturer(
-    mock_glob, mock_serial_cls, mock_comports, mock_run, cli_runner
+    mock_glob, mock_serial_cls, mock_comports, mock_run, mock_confirm, cli_runner
 ):
     """When the port has no description or manufacturer the info lines are omitted."""
     mock_glob.return_value = ["/dev/ttyUSB0"]
@@ -398,10 +424,11 @@ def test_setup_no_description_no_manufacturer(
 # ---------------------------------------------------------------------------
 
 
+@patch("panoptes.pocs.utils.cli.weather.typer.confirm", return_value=False)
 @patch("panoptes.pocs.utils.cli.weather.serial.tools.list_ports.comports")
 @patch("panoptes.pocs.utils.cli.weather.serial.Serial")
 @patch("panoptes.pocs.utils.cli.weather._glob.glob")
-def test_setup_tee_fails(mock_glob, mock_serial_cls, mock_comports, cli_runner):
+def test_setup_tee_fails(mock_glob, mock_serial_cls, mock_comports, mock_confirm, cli_runner):
     """CalledProcessError from sudo tee produces an error message and exits non-zero."""
     mock_glob.return_value = ["/dev/ttyUSB0"]
     mock_comports.return_value = [_make_port_info("/dev/ttyUSB0")]
@@ -422,10 +449,11 @@ def test_setup_tee_fails(mock_glob, mock_serial_cls, mock_comports, cli_runner):
 # ---------------------------------------------------------------------------
 
 
+@patch("panoptes.pocs.utils.cli.weather.typer.confirm", return_value=False)
 @patch("panoptes.pocs.utils.cli.weather.serial.tools.list_ports.comports")
 @patch("panoptes.pocs.utils.cli.weather.serial.Serial")
 @patch("panoptes.pocs.utils.cli.weather._glob.glob")
-def test_setup_udevadm_reload_fails(mock_glob, mock_serial_cls, mock_comports, cli_runner):
+def test_setup_udevadm_reload_fails(mock_glob, mock_serial_cls, mock_comports, mock_confirm, cli_runner):
     """CalledProcessError from udevadm prints a warning but does not exit non-zero."""
     mock_glob.return_value = ["/dev/ttyUSB0"]
     mock_comports.return_value = [_make_port_info("/dev/ttyUSB0")]
@@ -451,11 +479,14 @@ def test_setup_udevadm_reload_fails(mock_glob, mock_serial_cls, mock_comports, c
 # ---------------------------------------------------------------------------
 
 
+@patch("panoptes.pocs.utils.cli.weather.typer.confirm", return_value=False)
 @patch("subprocess.run")
 @patch("panoptes.pocs.utils.cli.weather.serial.tools.list_ports.comports")
 @patch("panoptes.pocs.utils.cli.weather.serial.Serial")
 @patch("panoptes.pocs.utils.cli.weather._glob.glob")
-def test_setup_config_server_fails(mock_glob, mock_serial_cls, mock_comports, mock_run, cli_runner):
+def test_setup_config_server_fails(
+    mock_glob, mock_serial_cls, mock_comports, mock_run, mock_confirm, cli_runner
+):
     """Exception from set_config prints a warning but does not exit non-zero."""
     mock_glob.return_value = ["/dev/ttyUSB0"]
     mock_comports.return_value = [_make_port_info("/dev/ttyUSB0")]
@@ -474,10 +505,13 @@ def test_setup_config_server_fails(mock_glob, mock_serial_cls, mock_comports, mo
 # ---------------------------------------------------------------------------
 
 
+@patch("panoptes.pocs.utils.cli.weather.typer.confirm", return_value=False)
 @patch("panoptes.pocs.utils.cli.weather.serial.tools.list_ports.comports")
 @patch("panoptes.pocs.utils.cli.weather.serial.Serial")
 @patch("panoptes.pocs.utils.cli.weather._glob.glob")
-def test_setup_port_info_not_in_comports_no_symlink(mock_glob, mock_serial_cls, mock_comports, cli_runner):
+def test_setup_port_info_not_in_comports_no_symlink(
+    mock_glob, mock_serial_cls, mock_comports, mock_confirm, cli_runner
+):
     """AAG responds but the device isn't in comports and its path doesn't resolve to
     a different string — port_info stays None → vendor/product ID error."""
     mock_glob.return_value = ["/dev/ttyUSB0"]

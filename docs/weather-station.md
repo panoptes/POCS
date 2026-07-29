@@ -209,11 +209,44 @@ environment:
     store_permanently: false    # keep every reading, not just the latest
 ```
 
-To set up the stable `/dev/weather` symlink automatically, run:
+To configure the weather station, run:
 
 ```bash
 pocs weather setup
 ```
 
-This scans USB serial ports, identifies the AAG CloudWatcher by its handshake response,
-and writes a udev rule to `/etc/udev/rules.d/92-panoptes-weather.rules`.
+The command first asks whether the weather station is connected **locally** (USB) or
+**remotely** (over the network).
+
+### Local (USB) setup
+
+Scans USB serial ports, identifies the AAG CloudWatcher by its handshake response,
+writes a udev rule to `/etc/udev/rules.d/92-panoptes-weather.rules` that creates a
+stable `/dev/weather` symlink, reloads udev, and updates the config server key
+`environment.weather.serial_port`.
+
+### Remote (network) setup
+
+Prompts for the hostname, IP address, or full URL of the remote weather station:
+
+| Input | Resolved URL |
+|---|---|
+| `PAN026` (plain hostname) | `http://PAN026.local:6566/status` |
+| `192.168.1.42` (IP address) | `http://192.168.1.42:6566/status` |
+| `localhost` | `http://localhost:6566/status` |
+| `http://PAN026.local:6566/status` (full URL) | used as-is |
+
+The command verifies the connection and, on success, updates
+`conf_files/pocs-supervisord.conf` to disable `pocs-weather-reader` (local USB reader)
+and enable `pocs-weather-reader-remote`. Restart supervisor for the changes to take
+effect:
+
+```bash
+supervisorctl reread && supervisorctl update
+```
+
+You can test the connection manually with:
+
+```bash
+pocs sensor monitor --endpoint http://PAN026.local:6566/status --no-store --verbose --read-frequency 10 weather
+```
